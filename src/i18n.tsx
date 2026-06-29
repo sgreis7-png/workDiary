@@ -90,6 +90,11 @@ const STRINGS = {
   authorize_email: { he: 'הרשאה לפי דוא״ל', en: 'Authorize by email' },
   authorize_hint:  { he: 'הוסף דוא״ל מורשה — העובד יקבע סיסמה בכניסה הראשונה', en: 'Add an authorized email — the worker sets a password on first login' },
 
+  copy_report:      { he: 'צור דוח למייל', en: 'Create email report' },
+  open_report:      { he: 'פתח דוח', en: 'Open report' },
+  report_copied:    { he: 'הדוח הועתק ✓ — פתח מייל חדש (Outlook/Gmail), הדבק (Ctrl+V), הוסף נמענים ושלח', en: 'Report copied ✓ — open a new email, paste (Ctrl+V), add recipients, send' },
+  copy_failed:      { he: 'ההעתקה נכשלה — נפתח דוח בכרטיסייה, בחר הכל והעתק', en: 'Copy failed — opened the report in a tab; select all and copy' },
+
   change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
   update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
   password_changed: { he: 'הסיסמה עודכנה ✓', en: 'Password updated ✓' },
