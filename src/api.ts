@@ -150,8 +150,17 @@ export async function fetchUsers(): Promise<AppUser[]> {
   }))
 }
 export async function inviteUser(email: string, display_name: string, role: AppUser['role'] = 'member'): Promise<void> {
-  const { error } = await supabase.from('allowed_emails').insert({ email, display_name, role })
-  if (error) throw error
+  // authorizes the email on the allowlist AND emails an invite link (admin-only fn)
+  const { data, error } = await supabase.functions.invoke('invite', {
+    body: { email, display_name, role },
+  })
+  if (error) {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
+    const body = await ctx?.json?.().catch(() => null)
+    throw new Error(body?.error ?? error.message)
+  }
+  const d = data as { error?: string } | null
+  if (d?.error) throw new Error(d.error)
 }
 export async function setUserRole(email: string, role: AppUser['role']): Promise<void> {
   const { error } = await supabase.from('allowed_emails').update({ role }).eq('email', email)
