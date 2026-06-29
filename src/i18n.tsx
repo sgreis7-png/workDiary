@@ -93,7 +93,9 @@ const STRINGS = {
   delete_entry:     { he: 'מחיקה', en: 'Delete' },
   confirm_delete_entry: { he: 'למחוק רשומה זו לצמיתות? פעולה זו אינה הפיכה.', en: 'Delete this entry permanently? This cannot be undone.' },
   copy_report:      { he: 'צור דוח למייל', en: 'Create email report' },
-  open_report:      { he: 'פתח דוח', en: 'Open report' },
+  open_report:      { he: 'דוח', en: 'Report' },
+  print_pdf:        { he: 'הדפס / שמור PDF', en: 'Print / Save PDF' },
+  back:             { he: 'חזרה', en: 'Back' },
   report_copied:    { he: 'הדוח הועתק ✓ — פתח מייל חדש (Outlook/Gmail), הדבק (Ctrl+V), הוסף נמענים ושלח', en: 'Report copied ✓ — open a new email, paste (Ctrl+V), add recipients, send' },
   copy_failed:      { he: 'ההעתקה נכשלה — נפתח דוח בכרטיסייה, בחר הכל והעתק', en: 'Copy failed — opened the report in a tab; select all and copy' },
 

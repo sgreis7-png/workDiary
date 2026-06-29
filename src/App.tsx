@@ -12,6 +12,7 @@ import EntryDetail from './screens/EntryDetail'
 import Search from './screens/Search'
 import Lists from './screens/Lists'
 import Account from './screens/Account'
+import ReportView from './screens/ReportView'
 import Projects from './screens/admin/Projects'
 import FormBuilder from './screens/admin/FormBuilder'
 import Users from './screens/admin/Users'
@@ -32,6 +33,7 @@ export default function App() {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/set-password" element={<SetPassword />} />
+      <Route path="/report/:id" element={<RequireAuth><ReportView /></RequireAuth>} />
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Logbook />} />
         <Route path="calendar" element={<Calendar />} />

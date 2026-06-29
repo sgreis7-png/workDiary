@@ -292,3 +292,15 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   border: 3px solid var(--green-tint); border-top-color: var(--green);
   box-shadow: var(--shadow-green); }
 .loader__label { color: var(--ink-3); font-size: 14px; letter-spacing: .3px; }
+
+/* ---------- report page (print / save PDF) ---------- */
+.report-wrap { min-height: 100vh; background: var(--paper); padding: 18px; }
+.report-bar { display: flex; align-items: center; gap: 12px; max-width: 720px;
+  margin: 0 auto 16px; flex-wrap: wrap; }
+.report-paper { max-width: 720px; margin: 0 auto; }
+@media print {
+  .no-print { display: none !important; }
+  body { background: #fff !important; }
+  .report-wrap { padding: 0 !important; background: #fff !important; }
+  .report-paper table { border: none !important; }
+}
