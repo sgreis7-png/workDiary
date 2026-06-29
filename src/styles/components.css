@@ -248,6 +248,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .page-title { font-size: 28px; word-break: break-word; }
   .page__head .input { min-width: 0 !important; width: 100% !important; }
   .page__head > div[style*="flex"] { flex-wrap: wrap; }
+  /* let list rows (users/projects/fields) wrap their controls instead of overflowing */
+  .row-item { flex-wrap: wrap; gap: 10px 12px; padding: 14px 16px; }
+  .row-item > .grow { flex: 1 1 140px; }
+  .calendar { gap: 4px; }
   .cal-cell { min-height: 80px; }
   .cal-chip small { display: none; }
   .cal-legend { font-size: 12px; }
@@ -262,8 +266,11 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 /* ============ responsive ============ */
 @media (max-width: 920px) {
   .shell { grid-template-columns: 1fr; }
-  .sidebar { position: fixed; inset-inline-start: -300px; z-index: 50; transition: inset-inline-start .3s var(--ease); }
-  .sidebar.open { inset-inline-start: 0; box-shadow: var(--shadow-2); }
+  /* off-canvas via transform (not negative offset) so it never creates page overflow */
+  .sidebar { position: fixed; inset-inline-start: 0; top: 0; height: 100dvh; width: min(300px, 86vw);
+    z-index: 50; transform: translateX(100%); transition: transform .3s var(--ease); will-change: transform; }
+  html[dir='ltr'] .sidebar { transform: translateX(-100%); }
+  .sidebar.open { transform: translateX(0); box-shadow: var(--shadow-2); }
   .detail { grid-template-columns: 1fr; }
   .form-grid { grid-template-columns: 1fr; }
   .search-bar { grid-template-columns: 1fr 1fr; }
