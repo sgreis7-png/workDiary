@@ -20,6 +20,7 @@ by date with advanced search.
 - **Email:** Recipient gets all fields + photos rendered **inline in the email body** (no PDF).
 - **Recipients:** Saved named distribution lists **and** ad-hoc individual addresses, chosen at send time.
 - **Custom fields:** The form is a configurable template. **Admin only** can add / edit / remove / reorder fields.
+- **Projects:** **Admin only** manages a list of projects. When filling an entry, the user picks the project from a dropdown (required), so every entry is tagged to a project and the team knows which one it is. Entries are filterable/searchable by project.
 - **Backend:** Supabase (Postgres + Auth + Storage + Edge Functions). Email via Resend.
 
 ## 3. Architecture
@@ -68,10 +69,20 @@ Defines the form template itself.
 
 Seeded from the sample form (see §7).
 
+### projects
+Admin-managed list of projects.
+| column | type | notes |
+|---|---|---|
+| id | uuid pk | |
+| name | text | display name (e.g. בני נצרים) |
+| active | bool | soft-hide finished projects from the dropdown |
+| created_at | timestamptz | |
+
 ### entries
 | column | type | notes |
 |---|---|---|
 | id | uuid pk | |
+| project_id | uuid fk→projects | required; chosen from dropdown |
 | created_by | uuid fk→users | |
 | created_at | timestamptz | |
 | last_sent_at | timestamptz null | set when emailed |
@@ -95,34 +106,37 @@ At least one photo required per entry (enforced in UI; the seed includes a requi
 - `list_recipients`: `id, list_id fk, email, display_name`
 
 ### Row-Level Security
-- All authenticated team members: read all entries, photos, lists, field_definitions.
+- All authenticated team members: read all entries, photos, lists, field_definitions, projects.
 - Insert/update entries: any member (shared data).
 - field_definitions write: admin only.
+- projects write: admin only.
 - Storage bucket `photos`: authenticated read/write.
 
 ## 5. Screens
 
 1. **Login** — Supabase Auth (email/password).
-2. **New / Edit entry** — form rendered dynamically from `field_definitions`; date picker, select
-   inputs, multi-photo upload (camera capture on phone), He/En toggle. Validates required fields + ≥1 photo.
-3. **Entries list** — newest first, thumbnail + key fields, tap to open.
+2. **New / Edit entry** — **project dropdown at top (required)**, then form rendered dynamically from
+   `field_definitions`; date picker, select inputs, multi-photo upload (camera capture on phone), He/En
+   toggle. Validates project + required fields + ≥1 photo.
+3. **Entries list** — newest first, shows project name + thumbnail + key fields, tap to open.
 4. **Entry detail** — full record + photos; **Send email** and **Edit** actions; shows `last_sent_at`.
 5. **Send dialog** — pick saved list(s) and/or type individual addresses → send inline email.
-6. **Search** — date range + filters built from current field definitions + free-text search.
+6. **Search** — filter by **project**, date range, filters built from current field definitions + free-text search.
 7. **Distribution lists** — create/edit lists and recipients.
 8. **Form builder (admin only)** — add/edit/remove/reorder fields; set type, required, He/En labels, select options.
+9. **Projects (admin only)** — add/edit/activate/deactivate projects shown in the entry dropdown.
 
 ## 6. Key Flows
 
 ### Email
 Edge Function `send-email` receives `entry_id` + recipient list. It loads the entry + field
-definitions + photos, renders an HTML body (bilingual labels, photos embedded inline as `cid`/data),
+definitions + photos, renders an HTML body (project name at top, bilingual labels, photos embedded inline as `cid`/data),
 and sends via Resend to all resolved addresses (lists expanded + individuals). On success sets `entries.last_sent_at`.
 
 ### Search
-Search UI reads `field_definitions` to build filter controls. Query hits Postgres: date-range on
-`work_date`, equality/`ILIKE` on selected fields via `values`, and free-text across text fields.
-GIN index keeps it fast at thousands of entries.
+Search UI offers a **project filter** plus controls built from `field_definitions`. Query hits Postgres:
+filter on `project_id`, date-range on `work_date`, equality/`ILIKE` on selected fields via `values`, and
+free-text across text fields. GIN index keeps it fast at thousands of entries.
 
 ### Custom fields
 Admin edits `field_definitions` in the form builder. Entry form, entry detail, email rendering, and
