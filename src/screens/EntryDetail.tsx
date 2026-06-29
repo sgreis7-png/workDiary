@@ -4,11 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, WeatherChip, Avatar, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { getEntry, fetchLists, sendEntry, deleteEntry } from '../api'
+import { getEntry, deleteEntry } from '../api'
 import { buildReportHtml, buildReportText } from '../report'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
-import type { DistList, Entry, FieldDef } from '../data'
+import type { Entry, FieldDef } from '../data'
 
 export default function EntryDetail() {
   const { id } = useParams()
@@ -17,7 +17,6 @@ export default function EntryDetail() {
   const { fieldDefs, projectName, userName } = useStore()
   const { user, isAdmin } = useAuth()
   const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
-  const [sendOpen, setSendOpen] = useState(false)
   const [copyMsg, setCopyMsg] = useState('')
 
   useEffect(() => {
@@ -68,7 +67,6 @@ export default function EntryDetail() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           {canManage && <Button variant="ghost" onClick={() => nav(`/edit/${entry.id}`)}>✎ {t('edit')}</Button>}
           {canManage && <Button variant="danger" onClick={removeEntry}>🗑 {t('delete_entry')}</Button>}
-          <Button variant="ghost" onClick={() => setSendOpen(true)}>✉ {t('send_email')}</Button>
           <Button variant="primary" onClick={copyReport}>📋 {t('copy_report')}</Button>
         </div>
       </div>
@@ -118,81 +116,6 @@ export default function EntryDetail() {
           </motion.div>
         </div>
       </div>
-
-      <AnimatePresence>
-        {sendOpen && (
-          <SendDialog
-            entryId={entry.id}
-            onClose={() => setSendOpen(false)}
-            onSent={() => setEntry((e) => e ? { ...e, last_sent_at: new Date().toISOString() } : e)}
-          />
-        )}
-      </AnimatePresence>
     </div>
-  )
-}
-
-function SendDialog({ entryId, onClose, onSent }: { entryId: string; onClose: () => void; onSent: () => void }) {
-  const { t } = useI18n()
-  const [sent, setSent] = useState(false)
-  const [busy, setBusy] = useState(false)
-  const [err, setErr] = useState('')
-  const [lists, setLists] = useState<DistList[]>([])
-  const [picked, setPicked] = useState<string[]>([])
-  const [individuals, setIndividuals] = useState('')
-
-  useEffect(() => {
-    fetchLists().then((l) => { setLists(l); setPicked(l[0] ? [l[0].id] : []) }).catch(() => setLists([]))
-  }, [])
-
-  const submit = async () => {
-    const emails = individuals.split(/[,;\s]+/).map((s) => s.trim()).filter((s) => s.includes('@'))
-    if (!picked.length && !emails.length) { setErr(t('no_recipients')); return }
-    setBusy(true); setErr('')
-    try {
-      await sendEntry(entryId, picked, emails)
-      onSent(); setSent(true); setTimeout(onClose, 1200)
-    } catch (e) {
-      setErr(String((e as Error).message ?? e)); setBusy(false)
-    }
-  }
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      onClick={onClose}
-      style={{ position: 'fixed', inset: 0, background: 'rgba(20,24,27,.42)', display: 'grid', placeItems: 'center', zIndex: 60, padding: 20, backdropFilter: 'blur(3px)' }}>
-      <motion.div onClick={(e) => e.stopPropagation()}
-        initial={{ opacity: 0, scale: 0.94, y: 18 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.96, y: 10 }}
-        transition={{ type: 'spring', stiffness: 320, damping: 28 }}
-        className="form" style={{ width: 'min(520px, 100%)', boxShadow: 'var(--shadow-2)' }}>
-        <div className="form__section">{t('send_email')}</div>
-        {sent ? (
-          <div className="empty"><div className="big" style={{ color: 'var(--green-deep)' }}>{t('sent')}</div></div>
-        ) : (
-          <>
-            <div className="row-list" style={{ border: '1px solid var(--line)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 18 }}>
-              {lists.length === 0 && <div className="row-item"><span className="count mono">{t('no_recipients')}</span></div>}
-              {lists.map((l) => (
-                <label key={l.id} className="row-item" style={{ cursor: 'pointer' }}>
-                  <input type="checkbox" checked={picked.includes(l.id)}
-                    onChange={(e) => setPicked((p) => e.target.checked ? [...p, l.id] : p.filter((x) => x !== l.id))} />
-                  <div className="grow"><b>{l.name}</b></div>
-                  <Tag tone="muted">{l.recipients.length} {t('send_to')}</Tag>
-                </label>
-              ))}
-            </div>
-            <label className="field">
-              <span className="field__label">{t('individuals')}</span>
-              <input className="input" placeholder="a@x.com, b@y.com" value={individuals} onChange={(e) => setIndividuals(e.target.value)} />
-            </label>
-            {err && <p className="alert" style={{ marginTop: 12 }}>⚠ {err}</p>}
-            <div className="form-actions">
-              <Button variant="ghost" onClick={onClose} disabled={busy}>{t('cancel')}</Button>
-              <Button variant="primary" onClick={submit} disabled={busy}>{busy ? <><span className="spin" /> {t('sent')}</> : <>✉ {t('send_email')}</>}</Button>
-            </div>
-          </>
-        )}
-      </motion.div>
-    </motion.div>
   )
 }
