@@ -1893,6 +1893,16 @@ git commit -m "docs: setup and smoke-test guide"
 
 ---
 
+## Addendum — features added during the demo build
+
+These are reflected in `src/` (mock-data demo) and must be carried into the Supabase wiring:
+
+- **Allowlist + first-time registration** — add table `allowed_emails(id, email unique, role, name, active, invited_by, registered bool)`. Disable public sign-up. Add Edge Function `register` that: verifies email is in `allowed_emails`, `active`, and `registered=false`; creates the auth user with the chosen password (admin API); sets `profiles.role`; flips `registered=true`. Sign-in stays standard. Admin Users screen writes `allowed_emails` and shows pending/registered status. (UI: `src/screens/Login.tsx` register mode, `src/auth.tsx`, `src/screens/admin/Users.tsx`.)
+- **Calendar view** — month grid, multiple entries per day, chips colored per project, project filter, today highlight. Pure client over `entries` (group by `work_date`). (UI: `src/screens/Calendar.tsx`.)
+- **Project filter** — Logbook and Calendar both take a project selector → "show all records by date" for one project. Maps to `entries.eq('project_id', …).order('work_date')`.
+- **Recipient management** — distribution lists support add/remove recipient and delete list → `list_recipients` insert/delete, `distribution_lists` delete cascade. (UI: `src/screens/Lists.tsx`.)
+- **manager_notes** field already seeded (Task 3).
+
 ## Self-Review Notes (coverage vs spec)
 
 - Delivery PWA → Task 1 (vite-plugin-pwa), Task 16. ✓

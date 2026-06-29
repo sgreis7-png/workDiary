@@ -8,6 +8,7 @@ const STRINGS = {
   app_sub:        { he: 'תיעוד יומי מהשטח', en: 'Daily field log' },
 
   nav_log:        { he: 'יומן', en: 'Logbook' },
+  nav_calendar:   { he: 'לוח שנה', en: 'Calendar' },
   nav_new:        { he: 'רשומה חדשה', en: 'New entry' },
   nav_search:     { he: 'חיפוש', en: 'Search' },
   nav_lists:      { he: 'רשימות תפוצה', en: 'Distribution' },
@@ -69,7 +70,41 @@ const STRINGS = {
   sent:           { he: 'נשלח ✓', en: 'Sent ✓' },
   sign_out:       { he: 'יציאה', en: 'Sign out' },
   admin_only:     { he: 'מנהלי מערכת בלבד', en: 'Admins only' },
+
+  register:        { he: 'הרשמה', en: 'Register' },
+  first_time_q:    { he: 'פעם ראשונה? הרשמה וקביעת סיסמה', en: 'First time? Register & set password' },
+  have_account_q:  { he: 'כבר רשום? כניסה', en: 'Already registered? Sign in' },
+  set_password:    { he: 'קביעת סיסמה', en: 'Set password' },
+  confirm_password:{ he: 'אימות סיסמה', en: 'Confirm password' },
+  register_cta:    { he: 'הרשמה וכניסה', en: 'Register & enter' },
+  registering:     { he: 'נרשם…', en: 'Registering…' },
+  err_not_invited: { he: 'הדוא״ל לא מורשה. פנה למנהל המערכת.', en: 'Email not authorized. Contact your admin.' },
+  err_already_reg: { he: 'הדוא״ל כבר רשום — היכנס עם הסיסמה.', en: 'Email already registered — sign in instead.' },
+  err_pw_match:    { he: 'הסיסמאות אינן תואמות', en: 'Passwords do not match' },
+  err_pw_short:    { he: 'סיסמה קצרה מדי (6 תווים לפחות)', en: 'Password too short (min 6 chars)' },
+  err_must_reg:    { he: 'משתמש לא רשום — בצע הרשמה בפעם הראשונה.', en: 'Not registered yet — register first.' },
+  err_bad_login:   { he: 'דוא״ל או סיסמה שגויים', en: 'Wrong email or password' },
+  err_disabled:    { he: 'החשבון מושבת. פנה למנהל המערכת.', en: 'Account disabled. Contact your admin.' },
+  pending_reg:     { he: 'ממתין להרשמה', en: 'Pending registration' },
+  registered_on:   { he: 'רשום', en: 'Registered' },
+  authorize_email: { he: 'הרשאה לפי דוא״ל', en: 'Authorize by email' },
+  authorize_hint:  { he: 'הוסף דוא״ל מורשה — העובד יקבע סיסמה בכניסה הראשונה', en: 'Add an authorized email — the worker sets a password on first login' },
+
+  today:          { he: 'היום', en: 'Today' },
+  entries_on_day: { he: 'רשומות ביום זה', en: 'entries this day' },
+  delete_list:    { he: 'מחיקת רשימה', en: 'Delete list' },
+  add_recipient:  { he: 'הוספת נמען', en: 'Add recipient' },
+  no_recipients:  { he: 'אין נמענים', en: 'No recipients yet' },
 } as const
+
+export const MONTHS: Record<Lang, string[]> = {
+  he: ['ינואר','פברואר','מרץ','אפריל','מאי','יוני','יולי','אוגוסט','ספטמבר','אוקטובר','נובמבר','דצמבר'],
+  en: ['January','February','March','April','May','June','July','August','September','October','November','December'],
+}
+export const WEEKDAYS: Record<Lang, string[]> = {
+  he: ['א','ב','ג','ד','ה','ו','ש'],
+  en: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'],
+}
 
 type Key = keyof typeof STRINGS
 

@@ -21,7 +21,9 @@ at the top of every email body. Theme green `#3aaa35`.
 - **Delivery:** PWA (single React web app), installable on phone and Windows. No app stores.
 - **Connectivity:** Pure online (site internet assumed reliable). No offline sync.
 - **Users:** Team with shared data — every member can see and search all entries. Login required.
-- **Roles:** `member` (fill entries, send email, search) and `admin` (everything + edit form template).
+- **Access by allowlist:** Admin authorizes a worker by **email** (and assigns a role). Only authorized emails may enter. There is no open sign-up.
+- **First-time registration:** An authorized worker, on first use, **registers and sets their own password**. After that they sign in normally. Unauthorized emails are rejected at registration.
+- **Roles:** `member` (fill entries, send email, search) and `admin` (everything + edit form template + manage users).
 - **Language:** Bilingual Hebrew/English with a toggle; full RTL (He) / LTR (En) support.
 - **Email:** Recipient gets all fields + photos rendered **inline in the email body** (no PDF).
 - **Recipients:** Saved named distribution lists **and** ad-hoc individual addresses, chosen at send time.
@@ -56,8 +58,12 @@ single search index. Email is sent server-side by an Edge Function so API keys n
 
 ## 4. Data Model (Postgres)
 
-### users
-Managed by Supabase Auth (email + password). A `profiles` row stores `role` (`member` | `admin`).
+### users / access control
+- **allowed_emails** — the admin-managed allowlist: `id, email (unique), role, name, active, invited_by, registered (bool), created_at`. Admin adds a row to authorize a worker.
+- **auth.users** — created only when an authorized worker registers (Supabase Auth, email + password).
+- **profiles** — `id, role` mirrored from `allowed_emails` at registration.
+
+**Registration is gated:** public sign-up is disabled. A `register` Edge Function verifies the email exists in `allowed_emails`, is `active`, and is not yet `registered`; only then does it create the auth user (with the worker's chosen password), set the role, and mark `registered = true`. Unknown/disabled emails are rejected.
 
 ### field_definitions
 Defines the form template itself.
@@ -120,18 +126,19 @@ At least one photo required per entry (enforced in UI; the seed includes a requi
 
 ## 5. Screens
 
-1. **Login** — Supabase Auth (email/password).
+1. **Login / Register** — sign in (email + password); "first time?" switches to register, where an authorized worker sets a password. Unauthorized emails are blocked with a clear message.
 2. **New / Edit entry** — **project dropdown at top (required)**, then form rendered dynamically from
    `field_definitions`; date picker, select inputs, multi-photo upload (camera capture on phone), He/En
    toggle. Validates project + required fields + ≥1 photo.
 3. **Entries list** — newest first, shows project name + thumbnail + key fields, tap to open.
+3b. **Calendar** — month grid. A day can hold **multiple entries** (different projects, sites, and work managers on the same date); each renders as a colored chip (color keyed by project) showing project + manager. Click a chip → entry detail; click a day → that day's entries. Month navigation; today highlighted.
 4. **Entry detail** — full record + photos; **Send email** and **Edit** actions; shows `last_sent_at`.
 5. **Send dialog** — pick saved list(s) and/or type individual addresses → send inline email.
 6. **Search** — filter by **project**, date range, filters built from current field definitions + free-text search.
 7. **Distribution lists** — create/edit lists and recipients.
 8. **Form builder (admin only)** — add/edit/remove/reorder fields; set type, required, He/En labels, select options.
 9. **Projects (admin only)** — add/edit/activate/deactivate projects shown in the entry dropdown.
-10. **Users & permissions (admin only)** — admin invites users, assigns role (member/admin), and activates/deactivates accounts. Controls who can access the system and who can administer it.
+10. **Users & permissions (admin only)** — admin authorizes workers by email, assigns role (member/admin), and activates/deactivates accounts. Each user shows status: **pending registration** (authorized, no password yet) or **registered**.
 
 ## 6. Key Flows
 

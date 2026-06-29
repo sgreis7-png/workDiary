@@ -1,13 +1,16 @@
+import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Tag, WeatherChip, stagger, riseIn } from '../components/ui'
 import { useI18n } from '../i18n'
-import { listEntries, projectName, userName } from '../data'
+import { listEntries, projectName, userName, projectColor, PROJECTS } from '../data'
 
 export default function Logbook() {
-  const { t, lang } = useI18n()
+  const { t } = useI18n()
   const nav = useNavigate()
-  const entries = listEntries()
+  const [projectId, setProjectId] = useState('')
+  const all = listEntries()
+  const entries = useMemo(() => projectId ? all.filter((e) => e.project_id === projectId) : all, [projectId, all])
 
   return (
     <div className="page">
@@ -16,19 +19,25 @@ export default function Logbook() {
           <div className="kicker">{t('app_sub')}</div>
           <h1 className="page-title">{t('nav_log')}</h1>
         </div>
-        <span className="count mono">{entries.length} {t('entries')}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+          <select className="input" style={{ width: 'auto', minWidth: 200 }} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+            <option value="">{t('all_projects')}</option>
+            {PROJECTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <span className="count mono">{entries.length} {t('entries')}</span>
+        </div>
       </div>
 
       {entries.length === 0 ? (
         <div className="empty"><div className="big">{t('no_entries')}</div></div>
       ) : (
-        <motion.div className="entry-list" variants={stagger} initial="hidden" animate="show">
+        <motion.div className="entry-list" variants={stagger} initial="hidden" animate="show" key={projectId}>
           {entries.map((e, i) => (
             <motion.article
               key={e.id} className="entry-card" variants={riseIn}
               onClick={() => nav(`/entry/${e.id}`)} style={{ cursor: 'pointer' }}
             >
-              <div className="entry-card__index">
+              <div className="entry-card__index" style={{ color: projectColor(e.project_id) }}>
                 {String(entries.length - i).padStart(2, '0')}
                 <small>NO.</small>
               </div>

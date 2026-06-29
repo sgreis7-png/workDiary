@@ -11,7 +11,11 @@ export interface FieldDef {
   type: FieldType; required: boolean; options: Option[]; sort_order: number; active: boolean
 }
 export interface Project { id: string; name: string; active: boolean }
-export interface AppUser { id: string; name: string; email: string; role: Role; active: boolean }
+export interface AppUser {
+  id: string; name: string; email: string; role: Role; active: boolean
+  registered: boolean   // false = admin authorized the email, worker hasn't set a password yet
+  password?: string     // demo only — real auth stores a hash in Supabase Auth
+}
 export interface Entry {
   id: string; project_id: string; created_by: string; work_date: string
   created_at: string; last_sent_at: string | null; values: Record<string, string>
@@ -42,10 +46,10 @@ export const PROJECTS: Project[] = [
 ]
 
 export const USERS: AppUser[] = [
-  { id: 'u1', name: 'פבל איסחיזוב', email: 'pavel@agrotop.co.il', role: 'admin', active: true },
-  { id: 'u2', name: 'אלון טל', email: 'alon@agrotop.co.il', role: 'member', active: true },
-  { id: 'u3', name: 'ספיר כהן', email: 'sapir@agrotop.co.il', role: 'member', active: true },
-  { id: 'u4', name: 'חמודה', email: 'hamuda@contractor.co.il', role: 'member', active: false },
+  { id: 'u1', name: 'פבל איסחיזוב', email: 'pavel@agrotop.co.il', role: 'admin', active: true, registered: true, password: 'demo' },
+  { id: 'u2', name: 'אלון טל', email: 'alon@agrotop.co.il', role: 'member', active: true, registered: true, password: 'demo' },
+  { id: 'u3', name: 'ספיר כהן', email: 'sapir@agrotop.co.il', role: 'member', active: true, registered: false },
+  { id: 'u4', name: 'חמודה', email: 'hamuda@contractor.co.il', role: 'member', active: false, registered: false },
 ]
 
 // gradient swatch placeholders standing in for real site photos
@@ -77,6 +81,26 @@ export const ENTRIES: Entry[] = [
     photos: [ph('#d8a01a', '#8a5a0a'), ph('#3aaa35', '#0f3a0d')],
   },
   {
+    id: 'e4', project_id: 'p1', created_by: 'u3', work_date: '2026-06-29',
+    created_at: '2026-06-29T11:20:00Z', last_sent_at: null,
+    values: {
+      manager_name: 'ספיר כהן', phone: '050-7781234', work_date: '2026-06-29', site_location: 'בני נצרים',
+      weather: 'שמש', daily_content: 'יציקת רצפה בחממה 3 והכנת תשתית למערכת השקיה.', contractor: 'אבו-סאלם — 6 עובדים',
+      equipment: 'משאבת בטון + ערבל. שכור.', manager_notes: '',
+    },
+    photos: [ph('#277d23', '#0f3a0d'), ph('#6c747a', '#2b3034')],
+  },
+  {
+    id: 'e5', project_id: 'p3', created_by: 'u1', work_date: '2026-06-29',
+    created_at: '2026-06-29T09:05:00Z', last_sent_at: '2026-06-29T12:00:00Z',
+    values: {
+      manager_name: 'פבל איסחיזוב', phone: '052-5162702', work_date: '2026-06-29', site_location: 'מסועי ביצים — דצמן',
+      weather: 'מעונן', daily_content: 'התקנת מנועי מסוע והרצת בדיקה ראשונית.', contractor: 'עדי — 4 עובדים',
+      equipment: 'מנוף 25 טון. אגרוטופ.', manager_notes: 'נדרשת השלמת חיווט חשמל מחר.',
+    },
+    photos: [ph('#d8a01a', '#8a5a0a')],
+  },
+  {
     id: 'e3', project_id: 'p3', created_by: 'u2', work_date: '2026-06-25',
     created_at: '2026-06-25T13:00:00Z', last_sent_at: '2026-06-25T17:20:00Z',
     values: {
@@ -92,6 +116,18 @@ export const ENTRIES: Entry[] = [
 
 export const projectName = (id: string) => PROJECTS.find((p) => p.id === id)?.name ?? '—'
 export const userName = (id: string) => USERS.find((u) => u.id === id)?.name ?? '—'
+
+// stable color per project, used by the calendar chips and legends
+export const PROJECT_COLORS = ['#3aaa35', '#c2541f', '#277d23', '#d8a01a', '#6c747a', '#1c5a1a', '#a8431a']
+export function projectColor(id: string): string {
+  const i = PROJECTS.findIndex((p) => p.id === id)
+  return PROJECT_COLORS[(i < 0 ? 0 : i) % PROJECT_COLORS.length]
+}
+export function entriesByDate(): Record<string, Entry[]> {
+  const map: Record<string, Entry[]> = {}
+  for (const e of ENTRIES) (map[e.work_date] ||= []).push(e)
+  return map
+}
 
 export function listEntries(): Entry[] {
   return [...ENTRIES].sort((a, b) => b.work_date.localeCompare(a.work_date))

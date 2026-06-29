@@ -17,7 +17,8 @@ export default function Users() {
   const toggleActive = (id: string) => { const u = USERS.find((x) => x.id === id); if (u) u.active = !u.active; sync() }
   const invite = () => {
     if (!email.trim()) return
-    USERS.push({ id: Math.random().toString(36).slice(2), name: name.trim() || email.split('@')[0], email: email.trim(), role: 'member', active: true })
+    // authorize the email — account stays "pending" until the worker registers a password
+    USERS.push({ id: Math.random().toString(36).slice(2), name: name.trim() || email.split('@')[0], email: email.trim(), role: 'member', active: true, registered: false })
     setName(''); setEmail(''); sync()
   }
 
@@ -46,20 +47,24 @@ export default function Users() {
                 <button className={u.role === 'admin' ? 'on' : ''} onClick={() => setRole(u.id, 'admin')}>{t('role_admin')}</button>
               </div>
 
-              {u.active ? <Tag tone="green">{t('active')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
+              {!u.registered ? <Tag tone="amber">⧖ {t('pending_reg')}</Tag>
+                : u.active ? <Tag tone="green">✓ {t('registered_on')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               <Button variant="ghost" onClick={() => toggleActive(u.id)}>{u.active ? t('inactive') : t('active')}</Button>
             </motion.div>
           ))}
         </motion.div>
 
-        <div className="add-row" style={{ flexWrap: 'wrap' }}>
-          <input className="input" style={{ flex: '1 1 160px' }} placeholder={t('nav_users')} value={name} onChange={(e) => setName(e.target.value)} />
-          <input className="input" style={{ flex: '1 1 200px' }} type="email" placeholder={t('email')} value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && invite()} />
-          <Button variant="primary" onClick={invite}>✦ {t('invite_user')}</Button>
+        <div className="add-row" style={{ flexWrap: 'wrap', flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+          <span className="field__label">{t('authorize_email')} <span className="field__hint">{t('authorize_hint')}</span></span>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <input className="input" style={{ flex: '1 1 160px' }} placeholder={t('nav_users')} value={name} onChange={(e) => setName(e.target.value)} />
+            <input className="input" style={{ flex: '1 1 200px' }} type="email" placeholder={t('email')} value={email} onChange={(e) => setEmail(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && invite()} />
+            <Button variant="primary" onClick={invite}>✦ {t('invite_user')}</Button>
+          </div>
         </div>
       </div>
 
-      <p className="secure-note">🔒 {t('login_sub')} — {t('permissions')}: {t('admin_only')}</p>
+      <p className="secure-note">🔒 {t('authorize_hint')}</p>
     </div>
   )
 }

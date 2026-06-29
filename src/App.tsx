@@ -4,6 +4,7 @@ import { Shell } from './components/Shell'
 import { useAuth } from './auth'
 import Login from './screens/Login'
 import Logbook from './screens/Logbook'
+import Calendar from './screens/Calendar'
 import EntryForm from './screens/EntryForm'
 import EntryDetail from './screens/EntryDetail'
 import Search from './screens/Search'
@@ -28,6 +29,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Logbook />} />
+        <Route path="calendar" element={<Calendar />} />
         <Route path="new" element={<EntryForm />} />
         <Route path="entry/:id" element={<EntryDetail />} />
         <Route path="search" element={<Search />} />
