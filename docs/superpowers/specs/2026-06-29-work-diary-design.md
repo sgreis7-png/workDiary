@@ -5,10 +5,16 @@ Status: Approved (pending user spec review)
 
 ## 1. Purpose
 
-A work diary ("יומן עבודה") for construction/field work managers. A team logs daily
-site reports — structured fields plus site photos — from phone or Windows. Each entry can
-be emailed to saved distribution lists or individual recipients, and all entries are stored
-by date with advanced search.
+A work diary ("יומן עבודה") for **Agrotop** (Agriculture Turnkey Projects) construction/field
+work managers. A team logs daily site reports — structured fields plus site photos — from phone
+or Windows. Each entry can be emailed to saved distribution lists or individual recipients, and
+all entries are stored by date with advanced search.
+
+This replaces the current Google Forms → PDF workflow (the team currently fills a Google Form that
+emails a generated PDF), adding shared storage, advanced search, projects, and a configurable form.
+
+**Branding:** Agrotop logo (`src/assets/agrotop-logo.png`) shown in app header, Login screen, and
+at the top of every email body. Theme green `#3aaa35`.
 
 ## 2. Constraints & Decisions
 
@@ -155,6 +161,7 @@ search controls are all generated from these definitions, so changes propagate e
 | daily_content | תוכן יומי - קטע לביצוע | Daily content / section to execute | long_text | yes |
 | contractor | שם הקבלן ומספר העובדים | Contractor name & number of workers | text | yes |
 | equipment | ציוד בשימוש ולמי שייך | Equipment in use & owner | text | yes |
+| manager_notes | הערות מנהל עבודה | Work manager notes | long_text | no |
 | site_photos | תמונות מהשטח | Site photos | photo | yes (≥1) |
 
 Weather options (editable): שמש/Sunny, מעונן/Cloudy, גשם/Rain, רוח/Wind, אחר/Other.
