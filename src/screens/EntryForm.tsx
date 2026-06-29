@@ -1,25 +1,49 @@
-import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useEffect, useState } from 'react'
+import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Field, stagger, riseIn } from '../components/ui'
+import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { createEntry } from '../api'
+import { createEntry, getEntry, getEntryPhotos, updateEntry } from '../api'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 import type { FieldDef } from '../data'
 
-interface Photo { file: File; url: string }
+// new photo (file) or an existing one (storage path)
+interface Photo { url: string; file?: File; path?: string }
 
 export default function EntryForm() {
   const { t, lang } = useI18n()
   const nav = useNavigate()
+  const { id } = useParams()           // present => edit mode
+  const editing = Boolean(id)
   const { fieldDefs, projects } = useStore()
+  const { user, isAdmin } = useAuth()
   const defs = fieldDefs.filter((f) => f.active).sort((a, b) => a.sort_order - b.sort_order)
   const [project, setProject] = useState('')
   const [values, setValues] = useState<Record<string, string>>({})
   const [photos, setPhotos] = useState<Photo[]>([])
+  const [removedPaths, setRemovedPaths] = useState<string[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
   const [saveErr, setSaveErr] = useState('')
+  const [loading, setLoading] = useState(editing)
+
+  // load the entry when editing
+  useEffect(() => {
+    if (!id) return
+    let alive = true
+    ;(async () => {
+      const e = await getEntry(id)
+      if (!alive) return
+      if (!e) { nav('/'); return }
+      if (e.created_by !== user?.id && !isAdmin) { nav(`/entry/${id}`); return } // not owner/admin
+      setProject(e.project_id); setValues(e.values)
+      const ph = await getEntryPhotos(id)
+      if (alive) { setPhotos(ph.map((p) => ({ url: p.url, path: p.path }))); setLoading(false) }
+    })().catch(() => { if (alive) { setSaveErr('load failed'); setLoading(false) } })
+    return () => { alive = false }
+  }, [id, user, isAdmin, nav])
 
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }))
@@ -29,7 +53,9 @@ export default function EntryForm() {
     setPhotos((p) => [...p, ...next])
   }
   const removePhoto = (i: number) => setPhotos((ps) => {
-    URL.revokeObjectURL(ps[i].url)
+    const p = ps[i]
+    if (p.file) URL.revokeObjectURL(p.url)
+    if (p.path) setRemovedPaths((r) => [...r, p.path!])
     return ps.filter((_, k) => k !== i)
   })
 
@@ -45,14 +71,22 @@ export default function EntryForm() {
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
     setBusy(true); setSaveErr('')
     try {
-      await createEntry(project, values, photos.map((p) => p.file))
-      nav('/')
+      const newFiles = photos.filter((p) => p.file).map((p) => p.file!)
+      if (editing && id) {
+        await updateEntry(id, project, values, newFiles, removedPaths)
+        nav(`/entry/${id}`)
+      } else {
+        await createEntry(project, values, newFiles)
+        nav('/')
+      }
     } catch (e) {
       setSaveErr(String((e as Error).message ?? e))
       setBusy(false)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
   }
+
+  if (loading) return <Loader full />
 
   const textDefs = defs.filter((f) => f.type !== 'photo')
 
@@ -61,7 +95,7 @@ export default function EntryForm() {
       <div className="page__head">
         <div>
           <div className="kicker">Agrotop · {projects.find((p) => p.id === project)?.name ?? '—'}</div>
-          <h1 className="page-title">{t('new_entry')}</h1>
+          <h1 className="page-title">{editing ? t('edit_entry') : t('new_entry')}</h1>
         </div>
       </div>
 

@@ -90,6 +90,8 @@ const STRINGS = {
   authorize_email: { he: 'הרשאה לפי דוא״ל', en: 'Authorize by email' },
   authorize_hint:  { he: 'הוסף דוא״ל מורשה — העובד יקבע סיסמה בכניסה הראשונה', en: 'Add an authorized email — the worker sets a password on first login' },
 
+  delete_entry:     { he: 'מחיקה', en: 'Delete' },
+  confirm_delete_entry: { he: 'למחוק רשומה זו לצמיתות? פעולה זו אינה הפיכה.', en: 'Delete this entry permanently? This cannot be undone.' },
   copy_report:      { he: 'צור דוח למייל', en: 'Create email report' },
   open_report:      { he: 'פתח דוח', en: 'Open report' },
   report_copied:    { he: 'הדוח הועתק ✓ — פתח מייל חדש (Outlook/Gmail), הדבק (Ctrl+V), הוסף נמענים ושלח', en: 'Report copied ✓ — open a new email, paste (Ctrl+V), add recipients, send' },

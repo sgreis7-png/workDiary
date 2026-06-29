@@ -36,6 +36,7 @@ export default function App() {
         <Route index element={<Logbook />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="new" element={<EntryForm />} />
+        <Route path="edit/:id" element={<EntryForm />} />
         <Route path="entry/:id" element={<EntryDetail />} />
         <Route path="search" element={<Search />} />
         <Route path="lists" element={<Lists />} />

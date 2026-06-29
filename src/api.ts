@@ -95,6 +95,45 @@ export async function createEntry(
   return entryId
 }
 
+/** Existing photos of an entry as {path, signed url} — for the edit screen. */
+export async function getEntryPhotos(id: string): Promise<{ path: string; url: string }[]> {
+  const { data, error } = await supabase.from('entry_photos').select('storage_path').eq('entry_id', id)
+  if (error) throw error
+  const paths = (data ?? []).map((r: { storage_path: string }) => r.storage_path)
+  const signed = await signPaths(paths)
+  return paths.map((p) => ({ path: p, url: signed[p] })).filter((x) => x.url)
+}
+
+export async function updateEntry(
+  id: string, project_id: string, values: Record<string, string>,
+  newFiles: File[], removedPaths: string[],
+): Promise<void> {
+  const { error } = await supabase.from('entries')
+    .update({ project_id, work_date: values.work_date || null, values }).eq('id', id)
+  if (error) throw error
+
+  for (const path of removedPaths) {
+    await supabase.from('entry_photos').delete().eq('storage_path', path)
+    await supabase.storage.from('photos').remove([path])
+  }
+  for (const f of newFiles) {
+    const safe = f.name.replace(/[^\w.\-]+/g, '_')
+    const path = `${id}/${crypto.randomUUID()}-${safe}`
+    const { error: upErr } = await supabase.storage.from('photos').upload(path, f)
+    if (upErr) throw upErr
+    const { error: pErr } = await supabase.from('entry_photos').insert({ entry_id: id, storage_path: path })
+    if (pErr) throw pErr
+  }
+}
+
+export async function deleteEntry(id: string): Promise<void> {
+  const { data } = await supabase.from('entry_photos').select('storage_path').eq('entry_id', id)
+  const paths = (data ?? []).map((r: { storage_path: string }) => r.storage_path)
+  if (paths.length) await supabase.storage.from('photos').remove(paths)
+  const { error } = await supabase.from('entries').delete().eq('id', id)
+  if (error) throw error
+}
+
 export async function searchEntries(f: SearchFilters): Promise<Entry[]> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (f.projectId) q = q.eq('project_id', f.projectId)

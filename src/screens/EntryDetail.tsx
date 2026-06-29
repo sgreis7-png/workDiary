@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, WeatherChip, Avatar, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { getEntry, fetchLists, sendEntry } from '../api'
+import { getEntry, fetchLists, sendEntry, deleteEntry } from '../api'
 import { buildReportHtml, buildReportText } from '../report'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
 import type { DistList, Entry, FieldDef } from '../data'
 
 export default function EntryDetail() {
@@ -14,6 +15,7 @@ export default function EntryDetail() {
   const { t, lang } = useI18n()
   const nav = useNavigate()
   const { fieldDefs, projectName, userName } = useStore()
+  const { user, isAdmin } = useAuth()
   const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
   const [sendOpen, setSendOpen] = useState(false)
   const [copyMsg, setCopyMsg] = useState('')
@@ -43,10 +45,18 @@ export default function EntryDetail() {
     }
   }
 
+  const removeEntry = async () => {
+    if (!entry) return
+    if (!window.confirm(`${t('confirm_delete_entry')}\n\n${projectName(entry.project_id)} · ${entry.work_date}`)) return
+    try { await deleteEntry(entry.id); nav('/') }
+    catch (e) { setCopyMsg('⚠ ' + String((e as Error).message ?? e)) }
+  }
+
   if (entry === undefined) return <Loader full />
   if (!entry) return <div className="empty"><div className="big">404</div></div>
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const defs = fieldDefs.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
+  const canManage = entry.created_by === user?.id || isAdmin
 
   return (
     <div className="page">
@@ -56,7 +66,8 @@ export default function EntryDetail() {
           <h1 className="page-title">{projectName(entry.project_id)}</h1>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <Button variant="ghost" onClick={() => nav('/new')}>{t('edit')}</Button>
+          {canManage && <Button variant="ghost" onClick={() => nav(`/edit/${entry.id}`)}>✎ {t('edit')}</Button>}
+          {canManage && <Button variant="danger" onClick={removeEntry}>🗑 {t('delete_entry')}</Button>}
           <Button variant="ghost" onClick={() => setSendOpen(true)}>✉ {t('send_email')}</Button>
           <Button variant="primary" onClick={copyReport}>📋 {t('copy_report')}</Button>
         </div>
