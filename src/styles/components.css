@@ -262,7 +262,12 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .form-grid { grid-template-columns: 1fr; }
   .search-bar { grid-template-columns: 1fr 1fr; }
   .login { grid-template-columns: 1fr; }
-  .login__art { display: none; }
+  /* compact branded welcome on top (was hidden) so phones keep the logo + animations */
+  .login__art { padding: 26px 22px; gap: 14px; min-height: 36vh; }
+  .login__art .big { font-size: clamp(24px, 7vw, 36px); max-width: 18ch; }
+  .login__art .meta { gap: 16px; font-size: 11px; }
+  .login__art .meta div b { font-size: 18px; }
+  .login__form { padding: 26px 22px 44px; }
   .entry-card { grid-template-columns: 44px 1fr; }
   .entry-card__side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
 }
