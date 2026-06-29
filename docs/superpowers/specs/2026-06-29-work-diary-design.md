@@ -131,6 +131,7 @@ At least one photo required per entry (enforced in UI; the seed includes a requi
 7. **Distribution lists** — create/edit lists and recipients.
 8. **Form builder (admin only)** — add/edit/remove/reorder fields; set type, required, He/En labels, select options.
 9. **Projects (admin only)** — add/edit/activate/deactivate projects shown in the entry dropdown.
+10. **Users & permissions (admin only)** — admin invites users, assigns role (member/admin), and activates/deactivates accounts. Controls who can access the system and who can administer it.
 
 ## 6. Key Flows
 
@@ -165,6 +166,16 @@ search controls are all generated from these definitions, so changes propagate e
 | site_photos | תמונות מהשטח | Site photos | photo | yes (≥1) |
 
 Weather options (editable): שמש/Sunny, מעונן/Cloudy, גשם/Rain, רוח/Wind, אחר/Other.
+
+## 7.5 Security & Privacy
+
+Private business data — secured throughout:
+- **Auth:** email + password (Supabase Auth). No anonymous access; every route requires a session.
+- **Access control:** admin invites/activates users and assigns roles. Deactivated users cannot sign in.
+- **Roles:** `member` (log/search/send) vs `admin` (+ projects, form template, user management). Enforced in UI and Postgres RLS.
+- **Data isolation:** RLS on every table; storage `photos` bucket private with signed, expiring URLs (no public photo access).
+- **Secrets:** service-role key + Resend key live only in the Edge Function env, never in the client bundle.
+- **Transport:** HTTPS only; Supabase enforces TLS.
 
 ## 8. Out of Scope (YAGNI)
 
