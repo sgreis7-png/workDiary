@@ -242,6 +242,12 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .cal-chip small { font-weight: 500; font-size: 10px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 @media (max-width: 720px) {
+  /* stack the page header vertically so the title is never clipped by the filter */
+  .page__head { flex-direction: column; align-items: stretch; gap: 14px; }
+  .page__head > div { min-width: 0; max-width: 100%; }
+  .page-title { font-size: 28px; word-break: break-word; }
+  .page__head .input { min-width: 0 !important; width: 100% !important; }
+  .page__head > div[style*="flex"] { flex-wrap: wrap; }
   .cal-cell { min-height: 80px; }
   .cal-chip small { display: none; }
   .cal-legend { font-size: 12px; }

@@ -217,7 +217,11 @@ export async function sendEntry(entry_id: string, list_ids: string[], emails: st
   const { data, error } = await supabase.functions.invoke('send-entry', {
     body: { entry_id, list_ids, emails },
   })
-  if (error) throw error
+  if (error) {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
+    const body = await ctx?.json?.().catch(() => null)
+    throw new Error(body?.error ?? error.message)
+  }
   const d = data as { error?: string } | null
   if (d?.error) throw new Error(d.error)
 }
