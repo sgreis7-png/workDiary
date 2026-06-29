@@ -3,18 +3,27 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button, Tag, WeatherChip, Field, stagger, riseIn } from '../components/ui'
 import { useI18n } from '../i18n'
-import { PROJECTS, searchEntries, projectName, Entry } from '../data'
+import { searchEntries } from '../api'
+import { useStore } from '../store'
+import type { Entry } from '../data'
 
 export default function Search() {
   const { t } = useI18n()
   const nav = useNavigate()
+  const { projects, projectName } = useStore()
   const [projectId, setProjectId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [text, setText] = useState('')
   const [results, setResults] = useState<Entry[] | null>(null)
+  const [busy, setBusy] = useState(false)
 
-  const run = () => setResults(searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined }))
+  const run = async () => {
+    setBusy(true)
+    try {
+      setResults(await searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined }))
+    } finally { setBusy(false) }
+  }
 
   return (
     <div className="page">
@@ -33,11 +42,11 @@ export default function Search() {
         <Field label={t('project')}>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
-            {PROJECTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
-        <Button variant="primary" onClick={run}>⌕ {t('search')}</Button>
+        <Button variant="primary" onClick={run} disabled={busy}>{busy ? <><span className="spin" /> {t('search')}</> : <>⌕ {t('search')}</>}</Button>
       </div>
 
       {results && (

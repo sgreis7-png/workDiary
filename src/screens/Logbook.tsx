@@ -1,16 +1,30 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Tag, WeatherChip, stagger, riseIn } from '../components/ui'
+import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { listEntries, projectName, userName, projectColor, PROJECTS } from '../data'
+import { listEntries } from '../api'
+import { useStore } from '../store'
+import type { Entry } from '../data'
 
 export default function Logbook() {
   const { t } = useI18n()
   const nav = useNavigate()
+  const { projects, projectName, userName, projectColor } = useStore()
   const [projectId, setProjectId] = useState('')
-  const all = listEntries()
-  const entries = useMemo(() => projectId ? all.filter((e) => e.project_id === projectId) : all, [projectId, all])
+  const [all, setAll] = useState<Entry[] | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    setAll(null)
+    listEntries().then((e) => { if (alive) setAll(e) }).catch(() => { if (alive) setAll([]) })
+    return () => { alive = false }
+  }, [])
+
+  const entries = useMemo(() => (all ?? []).filter((e) => !projectId || e.project_id === projectId), [projectId, all])
+
+  if (!all) return <Loader full label={t('app_sub')} />
 
   return (
     <div className="page">
@@ -22,7 +36,7 @@ export default function Logbook() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <select className="input" style={{ width: 'auto', minWidth: 200 }} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
-            {PROJECTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <span className="count mono">{entries.length} {t('entries')}</span>
         </div>

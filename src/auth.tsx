@@ -1,53 +1,77 @@
-import { createContext, useContext, useState, ReactNode } from 'react'
-import { AppUser, USERS } from './data'
+import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
+import { supabase } from './lib/supabase'
+import type { Role } from './data'
 
+export interface SessionUser { id: string; email: string; name: string; role: Role; active: boolean }
 type Result = { error: string | null }
 
 interface Auth {
-  user: AppUser | null
+  user: SessionUser | null
+  loading: boolean
   signIn: (email: string, password: string) => Promise<Result>
   register: (email: string, password: string) => Promise<Result>
-  signOut: () => void
+  signOut: () => Promise<void>
   isAdmin: boolean
 }
 const Ctx = createContext<Auth>(null as unknown as Auth)
 export const useAuth = () => useContext(Ctx)
 
-const find = (email: string) => USERS.find((u) => u.email.toLowerCase() === email.trim().toLowerCase())
+// Pull role/name/active for the signed-in user via the me() RPC (security definer).
+async function loadProfile(id: string, email: string): Promise<SessionUser | null> {
+  const { data, error } = await supabase.rpc('me')
+  const row = Array.isArray(data) ? data[0] : data
+  if (error || !row) return { id, email, name: email.split('@')[0], role: 'member', active: true }
+  return { id, email, name: row.name ?? email.split('@')[0], role: row.role as Role, active: row.active }
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null)
+  const [user, setUser] = useState<SessionUser | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Returns error CODES (i18n keys); the UI maps them to localized text.
+  useEffect(() => {
+    let alive = true
+    supabase.auth.getSession().then(async ({ data }) => {
+      const s = data.session
+      if (s?.user && alive) setUser(await loadProfile(s.user.id, s.user.email ?? ''))
+      if (alive) setLoading(false)
+    })
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
+      if (!alive) return
+      if (s?.user) setUser(await loadProfile(s.user.id, s.user.email ?? ''))
+      else setUser(null)
+    })
+    return () => { alive = false; sub.subscription.unsubscribe() }
+  }, [])
+
   const signIn: Auth['signIn'] = async (email, password) => {
-    await new Promise((r) => setTimeout(r, 500))
-    const u = find(email)
-    if (!u) return { error: 'err_not_invited' }
-    if (!u.active) return { error: 'err_disabled' }
-    if (!u.registered) return { error: 'err_must_reg' }
-    if (u.password !== password) return { error: 'err_bad_login' }
-    setUser(u)
+    const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
+    if (error) return { error: 'err_bad_login' }
+    const prof = await loadProfile(data.user.id, data.user.email ?? '')
+    if (prof && !prof.active) { await supabase.auth.signOut(); return { error: 'err_disabled' } }
+    setUser(prof)
     return { error: null }
   }
 
-  // First-time registration: only emails the admin pre-authorized (present in the
-  // allowlist / USERS) may set a password. Unknown emails are rejected.
+  // First-time registration goes through the edge function (allowlist gate), then signs in.
   const register: Auth['register'] = async (email, password) => {
-    await new Promise((r) => setTimeout(r, 600))
-    const u = find(email)
-    if (!u) return { error: 'err_not_invited' }
-    if (!u.active) return { error: 'err_disabled' }
-    if (u.registered) return { error: 'err_already_reg' }
-    u.registered = true
-    u.password = password
-    setUser(u)
-    return { error: null }
+    const { data, error } = await supabase.functions.invoke('register', {
+      body: { email: email.trim(), password },
+    })
+    if (error) {
+      // edge function returns a non-2xx with { error: <i18n key> }
+      const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
+      const body = await ctx?.json?.().catch(() => null)
+      return { error: body?.error ?? 'err_bad_login' }
+    }
+    const d = data as { error?: string } | null
+    if (d?.error) return { error: d.error }
+    return signIn(email, password)
   }
 
-  const signOut = () => setUser(null)
+  const signOut = async () => { await supabase.auth.signOut(); setUser(null) }
 
   return (
-    <Ctx.Provider value={{ user, signIn, register, signOut, isAdmin: user?.role === 'admin' }}>
+    <Ctx.Provider value={{ user, loading, signIn, register, signOut, isAdmin: user?.role === 'admin' }}>
       {children}
     </Ctx.Provider>
   )

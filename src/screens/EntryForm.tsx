@@ -3,28 +3,35 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Field, stagger, riseIn } from '../components/ui'
 import { useI18n } from '../i18n'
-import { FIELD_DEFS, FieldDef, PROJECTS, createEntry } from '../data'
+import { createEntry } from '../api'
+import { useStore } from '../store'
+import type { FieldDef } from '../data'
+
+interface Photo { file: File; url: string }
 
 export default function EntryForm() {
   const { t, lang } = useI18n()
   const nav = useNavigate()
-  const defs = FIELD_DEFS.filter((f) => f.active).sort((a, b) => a.sort_order - b.sort_order)
+  const { fieldDefs, projects } = useStore()
+  const defs = fieldDefs.filter((f) => f.active).sort((a, b) => a.sort_order - b.sort_order)
   const [project, setProject] = useState('')
   const [values, setValues] = useState<Record<string, string>>({})
-  const [photos, setPhotos] = useState<string[]>([])
+  const [photos, setPhotos] = useState<Photo[]>([])
   const [errors, setErrors] = useState<string[]>([])
   const [busy, setBusy] = useState(false)
+  const [saveErr, setSaveErr] = useState('')
 
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }))
 
   const addPhotos = (files: FileList | null) => {
-    Array.from(files ?? []).forEach((f) => {
-      const reader = new FileReader()
-      reader.onload = () => setPhotos((p) => [...p, reader.result as string])
-      reader.readAsDataURL(f)
-    })
+    const next = Array.from(files ?? []).map((f) => ({ file: f, url: URL.createObjectURL(f) }))
+    setPhotos((p) => [...p, ...next])
   }
+  const removePhoto = (i: number) => setPhotos((ps) => {
+    URL.revokeObjectURL(ps[i].url)
+    return ps.filter((_, k) => k !== i)
+  })
 
   const save = async () => {
     const errs: string[] = []
@@ -36,10 +43,15 @@ export default function EntryForm() {
     }
     setErrors(errs)
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
-    setBusy(true)
-    createEntry(project, values, photos)
-    await new Promise((r) => setTimeout(r, 500))
-    nav('/')
+    setBusy(true); setSaveErr('')
+    try {
+      await createEntry(project, values, photos.map((p) => p.file))
+      nav('/')
+    } catch (e) {
+      setSaveErr(String((e as Error).message ?? e))
+      setBusy(false)
+      window.scrollTo({ top: 0, behavior: 'smooth' })
+    }
   }
 
   const textDefs = defs.filter((f) => f.type !== 'photo')
@@ -48,7 +60,7 @@ export default function EntryForm() {
     <div className="page">
       <div className="page__head">
         <div>
-          <div className="kicker">Agrotop · {PROJECTS.find((p) => p.id === project)?.name ?? '—'}</div>
+          <div className="kicker">Agrotop · {projects.find((p) => p.id === project)?.name ?? '—'}</div>
           <h1 className="page-title">{t('new_entry')}</h1>
         </div>
       </div>
@@ -59,6 +71,11 @@ export default function EntryForm() {
             ⚠ {t('missing')}
           </motion.div>
         )}
+        {saveErr && (
+          <motion.div className="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+            ⚠ {saveErr}
+          </motion.div>
+        )}
       </AnimatePresence>
 
       <motion.div className="form" variants={stagger} initial="hidden" animate="show">
@@ -67,7 +84,7 @@ export default function EntryForm() {
           <Field label={t('project')} hint={<span className="req">{t('required_field')}</span>}>
             <select className="input" value={project} onChange={(e) => setProject(e.target.value)} style={errors.includes('__project__') ? { borderColor: 'var(--clay)' } : undefined}>
               <option value="">— {t('choose')} —</option>
-              {PROJECTS.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </Field>
         </motion.div>
@@ -108,8 +125,8 @@ export default function EntryForm() {
           <AnimatePresence>
             {photos.map((p, i) => (
               <motion.div key={i} className="photo-thumb" initial={{ opacity: 0, scale: 0.85 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }} layout>
-                <img src={p} alt="" />
-                <button onClick={() => setPhotos((ps) => ps.filter((_, k) => k !== i))}>✕</button>
+                <img src={p.url} alt="" />
+                <button onClick={() => removePhoto(i)}>✕</button>
               </motion.div>
             ))}
           </AnimatePresence>

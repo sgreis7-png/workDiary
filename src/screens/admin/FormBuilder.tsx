@@ -1,28 +1,45 @@
-import { useState } from 'react'
-import { motion, Reorder } from 'framer-motion'
+import { useEffect, useState } from 'react'
+import { Reorder } from 'framer-motion'
 import { Button, Tag } from '../../components/ui'
 import { useI18n } from '../../i18n'
-import { FIELD_DEFS, FieldDef, FieldType } from '../../data'
+import { createField, deleteField, reorderFields } from '../../api'
+import { useStore } from '../../store'
+import type { FieldDef, FieldType } from '../../data'
 
 const TYPES: FieldType[] = ['text', 'long_text', 'number', 'date', 'phone', 'select', 'photo']
 
 export default function FormBuilder() {
   const { t, lang } = useI18n()
-  const [fields, setFields] = useState<FieldDef[]>([...FIELD_DEFS].sort((a, b) => a.sort_order - b.sort_order))
+  const { fieldDefs, reloadFields } = useStore()
+  const [fields, setFields] = useState<FieldDef[]>(fieldDefs)
   const [draft, setDraft] = useState({ label_he: '', label_en: '', type: 'text' as FieldType, required: false })
+  const [busy, setBusy] = useState(false)
+
+  // keep local order in sync when the store reloads
+  useEffect(() => { setFields([...fieldDefs].sort((a, b) => a.sort_order - b.sort_order)) }, [fieldDefs])
 
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
-  const add = () => {
-    if (!draft.label_he.trim() && !draft.label_en.trim()) return
-    const f: FieldDef = {
-      id: Math.random().toString(36).slice(2),
-      key: (draft.label_en || draft.label_he).toLowerCase().replace(/\s+/g, '_').slice(0, 24),
-      label_he: draft.label_he || draft.label_en, label_en: draft.label_en || draft.label_he,
-      type: draft.type, required: draft.required, options: [], sort_order: (fields.length + 1) * 10, active: true,
-    }
-    FIELD_DEFS.push(f); setFields([...fields, f]); setDraft({ label_he: '', label_en: '', type: 'text', required: false })
+
+  const add = async () => {
+    if ((!draft.label_he.trim() && !draft.label_en.trim()) || busy) return
+    setBusy(true)
+    try {
+      await createField({
+        key: (draft.label_en || draft.label_he).toLowerCase().replace(/\s+/g, '_').slice(0, 24),
+        label_he: draft.label_he || draft.label_en,
+        label_en: draft.label_en || draft.label_he,
+        type: draft.type, required: draft.required, sort_order: (fields.length + 1) * 10,
+      })
+      await reloadFields()
+      setDraft({ label_he: '', label_en: '', type: 'text', required: false })
+    } finally { setBusy(false) }
   }
-  const removeField = (id: string) => setFields((fs) => fs.filter((f) => f.id !== id))
+  const removeField = async (id: string) => { await deleteField(id); await reloadFields() }
+  const commitOrder = async (next: FieldDef[]) => {
+    setFields(next)
+    await reorderFields(next.map((f) => f.id))
+    await reloadFields()
+  }
 
   return (
     <div className="page">
@@ -37,7 +54,9 @@ export default function FormBuilder() {
       <div className="panel" style={{ marginBottom: 22 }}>
         <Reorder.Group axis="y" values={fields} onReorder={setFields} className="row-list">
           {fields.map((f) => (
-            <Reorder.Item key={f.id} value={f} className="row-item" whileDrag={{ scale: 1.01, boxShadow: 'var(--shadow-2)', backgroundColor: '#fff' }}>
+            <Reorder.Item key={f.id} value={f} className="row-item"
+              onDragEnd={() => commitOrder(fields)}
+              whileDrag={{ scale: 1.01, boxShadow: 'var(--shadow-2)', backgroundColor: '#fff' }}>
               <span style={{ cursor: 'grab', color: 'var(--ink-faint)' }} aria-hidden>⠿</span>
               <div className="grow">
                 <b>{label(f)}</b> {f.required && <span style={{ color: 'var(--clay)' }}>*</span>}
@@ -59,7 +78,7 @@ export default function FormBuilder() {
           <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, color: 'var(--ink-3)' }}>
             <input type="checkbox" checked={draft.required} onChange={(e) => setDraft({ ...draft, required: e.target.checked })} /> {t('required_field')}
           </label>
-          <Button variant="primary" onClick={add}>＋ {t('add')}</Button>
+          <Button variant="primary" onClick={add} disabled={busy}>＋ {t('add')}</Button>
         </div>
       </div>
       <p className="count mono">↕ {lang === 'he' ? 'גרור לשינוי סדר השדות' : 'Drag to reorder fields'}</p>

@@ -5,7 +5,6 @@ import { Logo } from '../components/Logo'
 import { Button, Field } from '../components/ui'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
-import { ENTRIES, PROJECTS } from '../data'
 
 type Mode = 'signin' | 'register'
 
@@ -14,8 +13,8 @@ export default function Login() {
   const { signIn, register } = useAuth()
   const nav = useNavigate()
   const [mode, setMode] = useState<Mode>('signin')
-  const [email, setEmail] = useState('pavel@agrotop.co.il')
-  const [pw, setPw] = useState('demo')
+  const [email, setEmail] = useState('')
+  const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -47,8 +46,8 @@ export default function Login() {
           {t('app_title')}.<br />תיעוד שטח <em>מדויק</em>,<br />בכל פרויקט.
         </motion.div>
         <motion.div className="meta" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.5 }}>
-          <div><b>{PROJECTS.filter((p) => p.active).length}</b> פרויקטים פעילים</div>
-          <div><b>{ENTRIES.length}</b> רשומות יומן</div>
+          <div><b>תיעוד</b> מהשטח</div>
+          <div><b>דו״ח</b> במייל</div>
           <div><b>100%</b> מאובטח</div>
         </motion.div>
       </div>

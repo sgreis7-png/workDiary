@@ -1,29 +1,25 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, Avatar, stagger, riseIn } from '../components/ui'
+import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-
-interface Rec { id: string; email: string }
-interface List { id: string; name: string; recipients: Rec[] }
-const uid = () => Math.random().toString(36).slice(2)
-
-const SEED: List[] = [
-  { id: 'l1', name: 'הנהלת אגרוטופ', recipients: [{ id: uid(), email: 'pavel@agrotop.co.il' }, { id: uid(), email: 'office@agrotop.co.il' }] },
-  { id: 'l2', name: 'צוות אתר — כפר יובל', recipients: [{ id: uid(), email: 'alon@agrotop.co.il' }, { id: uid(), email: 'sapir@agrotop.co.il' }] },
-  { id: 'l3', name: 'לקוח — דצמן', recipients: [{ id: uid(), email: 'projects@dazman.com' }] },
-]
+import { addRecipient, createList, deleteList, fetchLists, removeRecipient } from '../api'
+import type { DistList } from '../data'
 
 export default function Lists() {
   const { t } = useI18n()
-  const [lists, setLists] = useState<List[]>(SEED)
+  const [lists, setLists] = useState<DistList[] | null>(null)
   const [name, setName] = useState('')
 
-  const addList = () => { if (!name.trim()) return; setLists((l) => [...l, { id: uid(), name: name.trim(), recipients: [] }]); setName('') }
-  const deleteList = (id: string) => setLists((l) => l.filter((x) => x.id !== id))
-  const addRec = (listId: string, email: string) =>
-    setLists((ls) => ls.map((x) => x.id === listId ? { ...x, recipients: [...x.recipients, { id: uid(), email }] } : x))
-  const removeRec = (listId: string, recId: string) =>
-    setLists((ls) => ls.map((x) => x.id === listId ? { ...x, recipients: x.recipients.filter((r) => r.id !== recId) } : x))
+  const reload = () => fetchLists().then(setLists).catch(() => setLists([]))
+  useEffect(() => { reload() }, [])
+
+  const addList = async () => { if (!name.trim()) return; await createList(name.trim()); setName(''); reload() }
+  const removeList = async (id: string) => { await deleteList(id); reload() }
+  const addRec = async (listId: string, email: string) => { await addRecipient(listId, email); reload() }
+  const removeRec = async (recId: string) => { await removeRecipient(recId); reload() }
+
+  if (!lists) return <Loader full />
 
   return (
     <div className="page">
@@ -43,7 +39,7 @@ export default function Lists() {
                 <span style={{ color: 'var(--green)', fontSize: 18 }}>✉</span>
                 <h3 style={{ fontSize: 20 }}>{l.name}</h3>
                 <Tag tone="muted">{l.recipients.length} {t('send_to')}</Tag>
-                <Button variant="danger" style={{ marginInlineStart: 'auto' }} onClick={() => deleteList(l.id)}>🗑 {t('delete_list')}</Button>
+                <Button variant="danger" style={{ marginInlineStart: 'auto' }} onClick={() => removeList(l.id)}>🗑 {t('delete_list')}</Button>
               </div>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
                 {l.recipients.length === 0 && <span className="count mono">{t('no_recipients')}</span>}
@@ -53,7 +49,7 @@ export default function Lists() {
                       initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.8 }}>
                       <Avatar name={r.email} size={20} />
                       {r.email}
-                      <button className="recipient__x" title={t('remove')} onClick={() => removeRec(l.id, r.id)}>✕</button>
+                      <button className="recipient__x" title={t('remove')} onClick={() => removeRec(r.id)}>✕</button>
                     </motion.span>
                   ))}
                 </AnimatePresence>

@@ -1,6 +1,7 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ReactElement } from 'react'
 import { Shell } from './components/Shell'
+import { Loader } from './components/Loader'
 import { useAuth } from './auth'
 import Login from './screens/Login'
 import Logbook from './screens/Logbook'
@@ -14,8 +15,9 @@ import FormBuilder from './screens/admin/FormBuilder'
 import Users from './screens/admin/Users'
 
 function RequireAuth({ children }: { children: ReactElement }) {
-  const { user } = useAuth()
+  const { user, loading } = useAuth()
   const loc = useLocation()
+  if (loading) return <Loader full label="טוען…" />
   return user ? children : <Navigate to="/login" replace state={{ from: loc }} />
 }
 function RequireAdmin({ children }: { children: ReactElement }) {

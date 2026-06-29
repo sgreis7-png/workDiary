@@ -1,20 +1,31 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, WeatherChip, Avatar, stagger, riseIn } from '../components/ui'
+import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { FIELD_DEFS, FieldDef, getEntry, projectName, userName } from '../data'
+import { getEntry, fetchLists, sendEntry } from '../api'
+import { useStore } from '../store'
+import type { DistList, Entry, FieldDef } from '../data'
 
 export default function EntryDetail() {
   const { id } = useParams()
   const { t, lang } = useI18n()
   const nav = useNavigate()
-  const entry = getEntry(id ?? '')
+  const { fieldDefs, projectName, userName } = useStore()
+  const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
   const [sendOpen, setSendOpen] = useState(false)
 
+  useEffect(() => {
+    let alive = true
+    getEntry(id ?? '').then((e) => { if (alive) setEntry(e) }).catch(() => { if (alive) setEntry(null) })
+    return () => { alive = false }
+  }, [id])
+
+  if (entry === undefined) return <Loader full />
   if (!entry) return <div className="empty"><div className="big">404</div></div>
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
-  const defs = FIELD_DEFS.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
+  const defs = fieldDefs.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
 
   return (
     <div className="page">
@@ -66,21 +77,43 @@ export default function EntryDetail() {
         </div>
       </div>
 
-      <AnimatePresence>{sendOpen && <SendDialog onClose={() => setSendOpen(false)} />}</AnimatePresence>
+      <AnimatePresence>
+        {sendOpen && (
+          <SendDialog
+            entryId={entry.id}
+            onClose={() => setSendOpen(false)}
+            onSent={() => setEntry((e) => e ? { ...e, last_sent_at: new Date().toISOString() } : e)}
+          />
+        )}
+      </AnimatePresence>
     </div>
   )
 }
 
-function SendDialog({ onClose }: { onClose: () => void }) {
+function SendDialog({ entryId, onClose, onSent }: { entryId: string; onClose: () => void; onSent: () => void }) {
   const { t } = useI18n()
   const [sent, setSent] = useState(false)
-  const lists = [
-    { id: 'l1', name: 'הנהלת אגרוטופ', n: 4 },
-    { id: 'l2', name: 'צוות אתר — כפר יובל', n: 6 },
-    { id: 'l3', name: 'לקוח — דצמן', n: 2 },
-  ]
-  const [picked, setPicked] = useState<string[]>(['l1'])
+  const [busy, setBusy] = useState(false)
+  const [err, setErr] = useState('')
+  const [lists, setLists] = useState<DistList[]>([])
+  const [picked, setPicked] = useState<string[]>([])
   const [individuals, setIndividuals] = useState('')
+
+  useEffect(() => {
+    fetchLists().then((l) => { setLists(l); setPicked(l[0] ? [l[0].id] : []) }).catch(() => setLists([]))
+  }, [])
+
+  const submit = async () => {
+    const emails = individuals.split(/[,;\s]+/).map((s) => s.trim()).filter((s) => s.includes('@'))
+    if (!picked.length && !emails.length) { setErr(t('no_recipients')); return }
+    setBusy(true); setErr('')
+    try {
+      await sendEntry(entryId, picked, emails)
+      onSent(); setSent(true); setTimeout(onClose, 1200)
+    } catch (e) {
+      setErr(String((e as Error).message ?? e)); setBusy(false)
+    }
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -96,12 +129,13 @@ function SendDialog({ onClose }: { onClose: () => void }) {
         ) : (
           <>
             <div className="row-list" style={{ border: '1px solid var(--line)', borderRadius: 'var(--r)', overflow: 'hidden', marginBottom: 18 }}>
+              {lists.length === 0 && <div className="row-item"><span className="count mono">{t('no_recipients')}</span></div>}
               {lists.map((l) => (
                 <label key={l.id} className="row-item" style={{ cursor: 'pointer' }}>
                   <input type="checkbox" checked={picked.includes(l.id)}
                     onChange={(e) => setPicked((p) => e.target.checked ? [...p, l.id] : p.filter((x) => x !== l.id))} />
                   <div className="grow"><b>{l.name}</b></div>
-                  <Tag tone="muted">{l.n} {t('send_to')}</Tag>
+                  <Tag tone="muted">{l.recipients.length} {t('send_to')}</Tag>
                 </label>
               ))}
             </div>
@@ -109,9 +143,10 @@ function SendDialog({ onClose }: { onClose: () => void }) {
               <span className="field__label">{t('individuals')}</span>
               <input className="input" placeholder="a@x.com, b@y.com" value={individuals} onChange={(e) => setIndividuals(e.target.value)} />
             </label>
+            {err && <p className="alert" style={{ marginTop: 12 }}>⚠ {err}</p>}
             <div className="form-actions">
-              <Button variant="ghost" onClick={onClose}>{t('cancel')}</Button>
-              <Button variant="primary" onClick={() => { setSent(true); setTimeout(onClose, 1100) }}>✉ {t('send_email')}</Button>
+              <Button variant="ghost" onClick={onClose} disabled={busy}>{t('cancel')}</Button>
+              <Button variant="primary" onClick={submit} disabled={busy}>{busy ? <><span className="spin" /> {t('sent')}</> : <>✉ {t('send_email')}</>}</Button>
             </div>
           </>
         )}

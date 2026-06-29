@@ -1,8 +1,12 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { Loader } from '../components/Loader'
 import { useI18n, MONTHS, WEEKDAYS } from '../i18n'
-import { listEntries, entriesByDate, projectColor, projectName, userName, PROJECTS } from '../data'
+import { listEntries } from '../api'
+import { useStore } from '../store'
+import { groupByDate } from '../data'
+import type { Entry } from '../data'
 
 const pad = (n: number) => String(n).padStart(2, '0')
 const ymd = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
@@ -10,11 +14,24 @@ const ymd = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
 export default function Calendar() {
   const { t, lang } = useI18n()
   const nav = useNavigate()
+  const { projects, projectColor, projectName, userName } = useStore()
   const [projectId, setProjectId] = useState('')
-  const byDate = useMemo(entriesByDate, [])
+  const [entries, setEntries] = useState<Entry[] | null>(null)
+
+  useEffect(() => {
+    let alive = true
+    listEntries().then((e) => {
+      if (!alive) return
+      setEntries(e)
+      if (e[0]?.work_date) { setY(Number(e[0].work_date.slice(0, 4))); setM(Number(e[0].work_date.slice(5, 7)) - 1) }
+    }).catch(() => { if (alive) setEntries([]) })
+    return () => { alive = false }
+  }, [])
+
+  const byDate = useMemo(() => groupByDate(entries ?? []), [entries])
 
   // open on the month of the most recent entry so data is visible
-  const latest = listEntries()[0]?.work_date ?? new Date().toISOString().slice(0, 10)
+  const latest = (entries ?? [])[0]?.work_date ?? new Date().toISOString().slice(0, 10)
   const [y, setY] = useState(Number(latest.slice(0, 4)))
   const [m, setM] = useState(Number(latest.slice(5, 7)) - 1)
 
@@ -30,7 +47,9 @@ export default function Calendar() {
     setM(((nm % 12) + 12) % 12)
   }
 
-  const usedProjects = PROJECTS.filter((p) => listEntries().some((e) => e.project_id === p.id))
+  const usedProjects = projects.filter((p) => (entries ?? []).some((e) => e.project_id === p.id))
+
+  if (!entries) return <Loader full label={t('app_sub')} />
 
   return (
     <div className="page">
@@ -42,7 +61,7 @@ export default function Calendar() {
         <div className="cal-nav">
           <select className="input" style={{ width: 'auto', minWidth: 170 }} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
-            {PROJECTS.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <button className="btn btn--ghost" onClick={() => step(-1)}>‹</button>
           <button className="btn btn--quiet" onClick={() => { setY(Number(todayStr.slice(0, 4))); setM(Number(todayStr.slice(5, 7)) - 1) }}>{t('today')}</button>
