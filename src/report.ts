@@ -17,7 +17,7 @@ export function buildReportHtml(o: {
   const rows = o.defs
     .filter((f) => f.type !== 'photo' && String(v[f.key] ?? '').trim())
     .map((f, i) => `<tr style="background:${i % 2 ? '#f6f8f4' : '#ffffff'}">
-      <td style="padding:14px 18px;color:${MUT};font-weight:700;font-size:16px;white-space:nowrap;vertical-align:top;width:34%;border-bottom:1px solid ${LINE}">${esc(f.label_he)}</td>
+      <td style="padding:14px 18px;color:${MUT};font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">${esc(f.label_he)}</td>
       <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(v[f.key]).replace(/\n/g, '<br>')}</td></tr>`).join('')
 
   // Photos rendered as separate, large, full-resolution images so recipients can
