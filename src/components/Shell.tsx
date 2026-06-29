@@ -68,7 +68,8 @@ export function Shell() {
             <b>{user?.name}</b>
             <small>{user?.email}</small>
           </div>
-          <button className="btn btn--quiet" style={{ marginInlineStart: 'auto' }} onClick={() => { signOut(); nav('/login') }} title={t('sign_out')}>⇥</button>
+          <button className="btn btn--quiet" style={{ marginInlineStart: 'auto' }} onClick={() => nav('/account')} title={t('change_password')}>🔑</button>
+          <button className="btn btn--quiet" onClick={() => { signOut(); nav('/login') }} title={t('sign_out')}>⇥</button>
         </div>
       </div>
     </aside>

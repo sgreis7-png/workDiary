@@ -165,6 +165,22 @@ export async function setUserActive(email: string, active: boolean): Promise<voi
   const { error } = await supabase.from('allowed_emails').update({ active }).eq('email', email)
   if (error) throw error
 }
+export async function deleteUser(email: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('delete-user', { body: { email } })
+  if (error) {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
+    const body = await ctx?.json?.().catch(() => null)
+    throw new Error(body?.error ?? error.message)
+  }
+  const d = data as { error?: string } | null
+  if (d?.error) throw new Error(d.error)
+}
+
+/** Current user changes their own password. */
+export async function changeMyPassword(newPassword: string): Promise<void> {
+  const { error } = await supabase.auth.updateUser({ password: newPassword })
+  if (error) throw error
+}
 
 // ---------- distribution lists ----------
 

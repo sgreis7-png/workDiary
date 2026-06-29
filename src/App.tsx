@@ -11,6 +11,7 @@ import EntryForm from './screens/EntryForm'
 import EntryDetail from './screens/EntryDetail'
 import Search from './screens/Search'
 import Lists from './screens/Lists'
+import Account from './screens/Account'
 import Projects from './screens/admin/Projects'
 import FormBuilder from './screens/admin/FormBuilder'
 import Users from './screens/admin/Users'
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="entry/:id" element={<EntryDetail />} />
         <Route path="search" element={<Search />} />
         <Route path="lists" element={<Lists />} />
+        <Route path="account" element={<Account />} />
         <Route path="admin/projects" element={<RequireAdmin><Projects /></RequireAdmin>} />
         <Route path="admin/fields" element={<RequireAdmin><FormBuilder /></RequireAdmin>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />

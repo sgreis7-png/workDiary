@@ -3,11 +3,13 @@ import { motion } from 'framer-motion'
 import { Button, Avatar, Tag, RoleBadge, stagger, riseIn } from '../../components/ui'
 import { Loader } from '../../components/Loader'
 import { useI18n } from '../../i18n'
-import { fetchUsers, inviteUser, setUserActive, setUserRole } from '../../api'
+import { deleteUser, fetchUsers, inviteUser, setUserActive, setUserRole } from '../../api'
+import { useAuth } from '../../auth'
 import type { AppUser, Role } from '../../data'
 
 export default function Users() {
   const { t } = useI18n()
+  const { user: me } = useAuth()
   const [users, setUsers] = useState<AppUser[] | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
@@ -20,6 +22,12 @@ export default function Users() {
 
   const setRole = async (email: string, role: Role) => { await setUserRole(email, role); reload() }
   const toggleActive = async (u: AppUser) => { await setUserActive(u.email, !u.active); reload() }
+  const remove = async (u: AppUser) => {
+    if (!window.confirm(`${t('confirm_delete_user')}\n\n${u.name} · ${u.email}`)) return
+    setErr('')
+    try { await deleteUser(u.email); reload() }
+    catch (e) { setErr(String((e as Error).message ?? e)) }
+  }
   const invite = async () => {
     if (!email.trim() || busy) return
     setBusy(true); setErr('')
@@ -61,6 +69,9 @@ export default function Users() {
               {!u.registered ? <Tag tone="amber">⧖ {t('pending_reg')}</Tag>
                 : u.active ? <Tag tone="green">✓ {t('registered_on')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               <Button variant="ghost" onClick={() => toggleActive(u)}>{u.active ? t('inactive') : t('active')}</Button>
+              {me?.email?.toLowerCase() !== u.email.toLowerCase() && (
+                <Button variant="danger" onClick={() => remove(u)} title={t('delete_user')}>🗑</Button>
+              )}
             </motion.div>
           ))}
         </motion.div>

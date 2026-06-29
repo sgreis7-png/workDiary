@@ -90,6 +90,13 @@ const STRINGS = {
   authorize_email: { he: 'הרשאה לפי דוא״ל', en: 'Authorize by email' },
   authorize_hint:  { he: 'הוסף דוא״ל מורשה — העובד יקבע סיסמה בכניסה הראשונה', en: 'Add an authorized email — the worker sets a password on first login' },
 
+  change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
+  update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
+  password_changed: { he: 'הסיסמה עודכנה ✓', en: 'Password updated ✓' },
+  delete_user:      { he: 'מחיקה', en: 'Delete' },
+  confirm_delete_user: { he: 'למחוק משתמש זה לצמיתות? פעולה זו אינה הפיכה.', en: 'Delete this user permanently? This cannot be undone.' },
+  account:          { he: 'החשבון שלי', en: 'My account' },
+
   today:          { he: 'היום', en: 'Today' },
   entries_on_day: { he: 'רשומות ביום זה', en: 'entries this day' },
   delete_list:    { he: 'מחיקת רשימה', en: 'Delete list' },
