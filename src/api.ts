@@ -193,21 +193,41 @@ export async function createProject(p: ProjectInput): Promise<string> {
   return data.id as string
 }
 
-// project ↔ worker assignments (optional, admin-managed)
+// project ↔ worker assignments (by email, optional, admin-managed)
 export async function fetchAssignments(): Promise<Record<string, string[]>> {
-  const { data, error } = await supabase.from('project_assignments').select('project_id,user_id')
+  const { data, error } = await supabase.from('project_assignments').select('project_id,email')
   if (error) throw error
   const m: Record<string, string[]> = {}
-  for (const r of data as { project_id: string; user_id: string }[]) (m[r.project_id] ||= []).push(r.user_id)
+  for (const r of data as { project_id: string; email: string }[]) (m[r.project_id] ||= []).push(r.email)
   return m
 }
-export async function setProjectStaff(projectId: string, userIds: string[]): Promise<void> {
+export async function setProjectStaff(projectId: string, emails: string[]): Promise<void> {
   await supabase.from('project_assignments').delete().eq('project_id', projectId)
-  if (userIds.length) {
+  if (emails.length) {
     const { error } = await supabase.from('project_assignments')
-      .insert(userIds.map((user_id) => ({ project_id: projectId, user_id })))
+      .insert(emails.map((email) => ({ project_id: projectId, email })))
     if (error) throw error
   }
+}
+
+// in-app notifications
+export interface AppNotification { id: string; title: string; body: string | null; link: string | null; read: boolean; created_at: string }
+export async function notifyAssigned(emails: string[], projectName: string): Promise<void> {
+  if (!emails.length) return
+  const rows = emails.map((email) => ({ recipient_email: email, title: 'שויכת לפרויקט', body: projectName, link: '/projects' }))
+  await supabase.from('notifications').insert(rows) // admin-only via RLS
+}
+export async function fetchMyNotifications(): Promise<AppNotification[]> {
+  const { data, error } = await supabase.from('notifications')
+    .select('id,title,body,link,read,created_at').order('created_at', { ascending: false }).limit(30)
+  if (error) throw error
+  return data as AppNotification[]
+}
+export async function markNotificationRead(id: string): Promise<void> {
+  await supabase.from('notifications').update({ read: true }).eq('id', id)
+}
+export async function markAllNotificationsRead(): Promise<void> {
+  await supabase.from('notifications').update({ read: true }).eq('read', false)
 }
 export async function updateProject(id: string, p: ProjectInput): Promise<void> {
   const { error } = await supabase.from('projects').update(cleanProject(p)).eq('id', id)

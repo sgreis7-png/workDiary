@@ -6,6 +6,7 @@ import { Avatar } from './ui'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { useOfflineSync } from '../lib/useOfflineSync'
+import { NotificationsBell } from './Notifications'
 
 function LangToggle() {
   const { lang, setLang } = useI18n()
@@ -71,7 +72,10 @@ export function Shell() {
       </nav>
 
       <div className="sidebar__foot">
-        {syncBadge}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <NotificationsBell />
+          {syncBadge}
+        </div>
         <LangToggle />
         <div className="user-chip">
           <Avatar name={user?.name ?? '?'} />
@@ -95,6 +99,7 @@ export function Shell() {
           <button className="btn btn--ghost" onClick={() => setOpen(true)}>☰</button>
           <Logo height={26} withTag={false} />
           {syncBadge}
+          <NotificationsBell />
           <LangToggle />
         </div>
         <main className="main">

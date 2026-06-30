@@ -1,11 +1,11 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, Field, stagger, riseIn } from '../../components/ui'
 import { useI18n } from '../../i18n'
-import { createProject, setProjectActive, setProjectStaff, updateProject } from '../../api'
+import { createProject, fetchUsers, notifyAssigned, setProjectActive, setProjectStaff, updateProject } from '../../api'
 import { useStore } from '../../store'
 import { useAuth } from '../../auth'
-import type { Project, ProjectInput } from '../../data'
+import type { AppUser, Project, ProjectInput } from '../../data'
 
 const empty: ProjectInput = {
   name: '', active: true, location: '', budget: null, pmo: '',
@@ -15,8 +15,13 @@ const empty: ProjectInput = {
 export default function Projects() {
   const { t } = useI18n()
   const { isAdmin } = useAuth()
-  const { projects, myPriorities, setUserPriority, reloadProjects, assignments, userMap, userName, reloadAssignments } = useStore()
+  const { projects, myPriorities, setUserPriority, reloadProjects, assignments, reloadAssignments } = useStore()
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
+  const [allStaff, setAllStaff] = useState<AppUser[]>([])
+
+  // admins load the full authorized-worker list for the assignment picker
+  useEffect(() => { if (isAdmin) fetchUsers().then(setAllStaff).catch(() => setAllStaff([])) }, [isAdmin])
+  const staffLabel = (email: string) => allStaff.find((u) => u.email === email)?.name ?? email.split('@')[0]
 
   const toggle = async (id: string, active: boolean) => { await setProjectActive(id, !active); await reloadProjects() }
 
@@ -58,7 +63,7 @@ export default function Projects() {
             </div>
             {(assignments[p.id]?.length ?? 0) > 0 && (
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
-                {assignments[p.id].map((uid) => <Tag key={uid} tone="green">👤 {userName(uid)}</Tag>)}
+                {assignments[p.id].map((email) => <Tag key={email} tone="green">👤 {staffLabel(email)}</Tag>)}
               </div>
             )}
             {p.notes && <p style={{ marginTop: 10, color: 'var(--ink-2)', fontSize: 14 }}>{p.notes}</p>}
@@ -93,18 +98,22 @@ export default function Projects() {
     initial: ProjectInput; isNew: boolean; onClose: () => void; onSaved: () => void
   }) {
     const [form, setForm] = useState<ProjectInput>({ ...initial })
-    const [staffIds, setStaffIds] = useState<string[]>(isNew ? [] : (assignments[(initial as Project).id] ?? []))
+    const prevStaff = isNew ? [] : (assignments[(initial as Project).id] ?? [])
+    const [staffEmails, setStaffEmails] = useState<string[]>(prevStaff)
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState('')
     const set = (k: keyof ProjectInput, v: string | boolean | number | null) => setForm((f) => ({ ...f, [k]: v }))
-    const toggleStaff = (uid: string) => setStaffIds((s) => s.includes(uid) ? s.filter((x) => x !== uid) : [...s, uid])
+    const toggleStaff = (email: string) => setStaffEmails((s) => s.includes(email) ? s.filter((x) => x !== email) : [...s, email])
 
     const save = async () => {
       if (!form.name.trim()) { setErr(t('project_name')); return }
       setBusy(true); setErr('')
       try {
         const id = isNew ? await createProject(form) : ((await updateProject((initial as Project).id, form)), (initial as Project).id)
-        await setProjectStaff(id, staffIds)
+        await setProjectStaff(id, staffEmails)
+        // notify only the newly-added workers
+        const added = staffEmails.filter((e) => !prevStaff.includes(e))
+        await notifyAssigned(added, form.name.trim())
         onSaved()
       } catch (e) { setErr(String((e as Error).message ?? e)); setBusy(false) }
     }
@@ -138,11 +147,11 @@ export default function Projects() {
             </Field>
             <Field label={`${t('assign_staff')} (${t('optional')})`}>
               <div className="staff-pick">
-                {Object.entries(userMap).length === 0 && <span className="count mono">—</span>}
-                {Object.entries(userMap).map(([uid, name]) => (
-                  <label key={uid} className={`staff-chip ${staffIds.includes(uid) ? 'on' : ''}`}>
-                    <input type="checkbox" checked={staffIds.includes(uid)} onChange={() => toggleStaff(uid)} hidden />
-                    {name}
+                {allStaff.length === 0 && <span className="count mono">—</span>}
+                {allStaff.map((u) => (
+                  <label key={u.email} className={`staff-chip ${staffEmails.includes(u.email) ? 'on' : ''}`}>
+                    <input type="checkbox" checked={staffEmails.includes(u.email)} onChange={() => toggleStaff(u.email)} hidden />
+                    {u.name} {!u.registered && <span style={{ opacity: .6, fontSize: 11 }}>⧖</span>}
                   </label>
                 ))}
               </div>
