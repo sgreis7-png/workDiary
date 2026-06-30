@@ -150,6 +150,7 @@ export async function deleteEntry(id: string): Promise<void> {
 
 export interface DashboardStats {
   total: number; this_week: number
+  this_month?: number; total_photos?: number; unsent?: number
   by_project: Record<string, number>
   latest_by_project: Record<string, string>
   by_worker: Record<string, number>
@@ -228,9 +229,10 @@ export async function setProjectStaff(projectId: string, emails: string[]): Prom
 
 // in-app notifications
 export interface AppNotification { id: string; title: string; body: string | null; link: string | null; read: boolean; created_at: string }
-export async function notifyAssigned(emails: string[], projectName: string): Promise<void> {
+export async function notifyAssigned(emails: string[], projectName: string, projectId?: string): Promise<void> {
   if (!emails.length) return
-  const rows = emails.map((email) => ({ recipient_email: email, title: 'שויכת לפרויקט', body: projectName, link: '/projects' }))
+  const link = projectId ? `/projects?p=${projectId}` : '/projects'
+  const rows = emails.map((email) => ({ recipient_email: email, title: 'שויכת לפרויקט', body: projectName, link }))
   await supabase.from('notifications').insert(rows) // admin-only via RLS
 }
 export async function fetchMyNotifications(): Promise<AppNotification[]> {

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, Field, stagger, riseIn } from '../../components/ui'
 import { useI18n } from '../../i18n'
@@ -18,6 +19,20 @@ export default function Projects() {
   const { projects, myPriorities, setUserPriority, reloadProjects, assignments, reloadAssignments } = useStore()
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
   const [allStaff, setAllStaff] = useState<AppUser[]>([])
+  const [params] = useSearchParams()
+  const focusId = params.get('p')
+  const [flash, setFlash] = useState<string | null>(null)
+
+  // deep-link from an assignment notification: scroll to + briefly highlight the project
+  useEffect(() => {
+    if (!focusId || !projects.length) return
+    const el = document.getElementById(`project-${focusId}`)
+    if (!el) return
+    el.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setFlash(focusId)
+    const id = setTimeout(() => setFlash(null), 2400)
+    return () => clearTimeout(id)
+  }, [focusId, projects])
 
   // admins load the full authorized-worker list for the assignment picker
   useEffect(() => { if (isAdmin) fetchUsers().then(setAllStaff).catch(() => setAllStaff([])) }, [isAdmin])
@@ -42,7 +57,8 @@ export default function Projects() {
 
       <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 14 }}>
         {projects.map((p) => (
-          <motion.div key={p.id} variants={riseIn} className="panel" style={{ padding: 20, opacity: p.active ? 1 : 0.6 }}>
+          <motion.div key={p.id} id={`project-${p.id}`} variants={riseIn}
+            className={`panel ${flash === p.id ? 'panel--flash' : ''}`} style={{ padding: 20, opacity: p.active ? 1 : 0.6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
               <h3 style={{ fontSize: 20 }}>{p.name}</h3>
               {p.active ? <Tag tone="green">{t('active')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
@@ -113,7 +129,7 @@ export default function Projects() {
         await setProjectStaff(id, staffEmails)
         // notify only the newly-added workers
         const added = staffEmails.filter((e) => !prevStaff.includes(e))
-        await notifyAssigned(added, form.name.trim())
+        await notifyAssigned(added, form.name.trim(), id)
         onSaved()
       } catch (e) { setErr(String((e as Error).message ?? e)); setBusy(false) }
     }
@@ -133,7 +149,6 @@ export default function Projects() {
               <Field label={t('proj_location')}><input className="input" value={form.location ?? ''} onChange={(e) => set('location', e.target.value)} /></Field>
               <Field label={t('proj_pmo')}><input className="input" value={form.pmo ?? ''} onChange={(e) => set('pmo', e.target.value)} /></Field>
               <Field label={t('proj_budget')}><input className="input" type="number" inputMode="numeric" value={form.budget ?? ''} onChange={(e) => set('budget', e.target.value === '' ? null : Number(e.target.value))} /></Field>
-              <Field label={t('proj_staff')}><input className="input" value={form.staff ?? ''} onChange={(e) => set('staff', e.target.value)} /></Field>
               <Field label={t('proj_start')}><input className="input" type="date" value={form.start_date ?? ''} onChange={(e) => set('start_date', e.target.value)} /></Field>
               <Field label={t('proj_end')}><input className="input" type="date" value={form.end_date ?? ''} onChange={(e) => set('end_date', e.target.value)} /></Field>
               <Field label={t('company_priority')}>

@@ -1,6 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type MouseEvent } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
 import { Loader } from '../components/Loader'
+import { Lightbox } from '../components/Lightbox'
 import { useI18n } from '../i18n'
 import { getEntry } from '../api'
 import { buildReportHtml, buildReportText } from '../report'
@@ -16,6 +18,7 @@ export default function ReportView() {
   const { fieldDefs, projectName, userName } = useStore()
   const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
   const [copyMsg, setCopyMsg] = useState('')
+  const [lightbox, setLightbox] = useState<number | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -28,6 +31,15 @@ export default function ReportView() {
 
   const defs = fieldDefs.filter((f) => f.active)
   const html = buildReportHtml({ projectName: projectName(entry.project_id), authorName: userName(entry.created_by), entry, defs })
+
+  // Photos in the report HTML are <a><img>; intercept clicks to open the
+  // in-app Lightbox (centered, zoomable) instead of navigating to a new tab.
+  const onPaperClick = (e: MouseEvent) => {
+    const img = (e.target as HTMLElement).closest('img')
+    if (!img) return
+    const idx = entry.photos.indexOf(img.getAttribute('src') ?? '')
+    if (idx >= 0) { e.preventDefault(); setLightbox(idx) }
+  }
 
   const copy = async () => {
     const text = buildReportText({ projectName: projectName(entry.project_id), authorName: userName(entry.created_by), entry, defs })
@@ -47,7 +59,12 @@ export default function ReportView() {
         </div>
       </div>
       {copyMsg && <div className="tag tag--green no-print" style={{ display: 'block', padding: '12px 16px', margin: '0 auto 16px', maxWidth: 680 }}>{copyMsg}</div>}
-      <div className="report-paper" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className="report-paper" onClickCapture={onPaperClick} dangerouslySetInnerHTML={{ __html: html }} />
+      <AnimatePresence>
+        {lightbox !== null && (
+          <Lightbox photos={entry.photos} index={lightbox} onClose={() => setLightbox(null)} onIndex={setLightbox} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

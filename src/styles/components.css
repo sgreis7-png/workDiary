@@ -221,18 +221,20 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .cal-legend__item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
 .cal-legend__item i { width: 11px; height: 11px; border-radius: 3px; flex: none; }
 
-.calendar { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+/* fixed-height rows so every day cell is identical; busy days scroll internally */
+.calendar { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 116px; gap: 8px; }
 .cal-dow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--ink-3); text-align: center; padding: 6px 0 2px; }
-.cal-cell { min-height: 116px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r);
-  padding: 8px; display: flex; flex-direction: column; gap: 6px; transition: border-color .18s var(--ease); }
+.cal-cell { height: 116px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r);
+  padding: 8px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; transition: border-color .18s var(--ease); }
 .cal-cell--empty { background: transparent; border: 1px dashed var(--rule); }
 .cal-cell:not(.cal-cell--empty):hover { border-color: var(--line-strong); }
 .cal-cell.is-today { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow); }
 .cal-cell.is-today .cal-cell__num { color: var(--green-deep); font-weight: 800; }
 .cal-cell__num { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); display: flex; align-items: baseline; gap: 8px; }
 .cal-cell__count { font-size: 9px; color: var(--ink-faint); letter-spacing: .04em; }
-.cal-cell__chips { display: flex; flex-direction: column; gap: 4px; overflow: hidden; }
+.cal-cell__chips { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; min-height: 0; }
+.cal-cell__num { flex: none; }
 .cal-chip { text-align: start; border: none; border-inline-start: 3px solid var(--c); background: color-mix(in srgb, var(--c) 12%, #fff);
   border-radius: 4px; padding: 4px 7px; display: flex; flex-direction: column; line-height: 1.2; cursor: pointer;
   transition: transform .14s var(--ease), background .14s var(--ease); }
@@ -251,10 +253,14 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   /* let list rows (users/projects/fields) wrap their controls instead of overflowing */
   .row-item { flex-wrap: wrap; gap: 10px 12px; padding: 14px 16px; }
   .row-item > .grow { flex: 1 1 140px; }
-  .calendar { gap: 4px; }
-  .cal-cell { min-height: 80px; }
+  .calendar { gap: 4px; grid-auto-rows: 88px; }
+  .cal-cell { height: 88px; padding: 5px; }
   .cal-chip small { display: none; }
   .cal-legend { font-size: 12px; }
+  /* keep month navigation fully visible (overflow-x:hidden was clipping it) */
+  .cal-nav { flex-wrap: wrap; width: 100%; gap: 6px; }
+  .cal-nav .input { flex: 1 1 100%; width: 100% !important; min-width: 0 !important; }
+  .cal-nav .btn { flex: 1 1 auto; }
 }
 
 /* ============ misc ============ */
@@ -317,6 +323,14 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .report-bar { display: flex; align-items: center; gap: 12px; max-width: 720px;
   margin: 0 auto 16px; flex-wrap: wrap; }
 .report-paper { max-width: 720px; margin: 0 auto; }
+.report-paper img { cursor: zoom-in; }
+/* brief highlight when a project is opened from an assignment notification */
+.panel--flash { animation: panel-flash 2.4s var(--ease); }
+@keyframes panel-flash {
+  0%, 100% { box-shadow: 0 0 0 0 transparent; }
+  12% { box-shadow: 0 0 0 3px var(--green-glow); border-color: var(--green); }
+  70% { box-shadow: 0 0 0 3px var(--green-glow); border-color: var(--green); }
+}
 @media print {
   .no-print { display: none !important; }
   body { background: #fff !important; }

@@ -32,7 +32,11 @@ export default function Dashboard() {
     const topProjects = Object.entries(raw.by_project).sort((a, b) => b[1] - a[1]).slice(0, 8)
     const maxProj = Math.max(1, ...topProjects.map(([, n]) => n))
     const workers = Object.entries(raw.by_worker).sort((a, b) => b[1] - a[1]).slice(0, 6)
-    return { total: raw.total, thisWeek: raw.this_week, activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, byWeather: raw.by_weather, workers }
+    return {
+      total: raw.total, thisWeek: raw.this_week, thisMonth: raw.this_month ?? 0,
+      totalPhotos: raw.total_photos ?? 0, unsent: raw.unsent ?? 0,
+      activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, byWeather: raw.by_weather, workers,
+    }
   }, [raw, projects])
 
   if (!raw || !stats) return <Loader full label={t('nav_dashboard')} />
@@ -50,8 +54,11 @@ export default function Dashboard() {
         {/* stat cards */}
         <motion.div variants={riseIn} className="stat-grid">
           <Stat label={t('dash_total')} value={stats.total} />
+          <Stat label={t('dash_month')} value={stats.thisMonth} />
           <Stat label={t('dash_week')} value={stats.thisWeek} />
           <Stat label={t('dash_active_projects')} value={stats.activeProjects} />
+          <Stat label={t('dash_photos')} value={stats.totalPhotos} />
+          <Stat label={t('dash_unsent')} value={stats.unsent} tone={stats.unsent ? 'clay' : 'green'} clickable onClick={() => nav('/export')} />
           <Stat label={t('dash_needs_update')} value={stats.stale.length} tone={stats.stale.length ? 'clay' : 'green'} />
         </motion.div>
 
@@ -118,10 +125,12 @@ export default function Dashboard() {
   )
 }
 
-function Stat({ label, value, tone }: { label: string; value: number; tone?: 'clay' | 'green' }) {
+function Stat({ label, value, tone, clickable, onClick }: { label: string; value: number; tone?: 'clay' | 'green'; clickable?: boolean; onClick?: () => void }) {
+  const color = tone === 'clay' && value > 0 ? 'var(--clay)' : tone === 'green' ? 'var(--green-deep)' : undefined
   return (
-    <div className="panel stat" style={tone === 'clay' && value > 0 ? { borderColor: 'var(--clay)' } : undefined}>
-      <div className="stat__value" style={{ color: tone === 'clay' && value > 0 ? 'var(--clay)' : tone === 'green' ? 'var(--green-deep)' : undefined }}>{value}</div>
+    <div className="panel stat" onClick={clickable ? onClick : undefined}
+      style={{ ...(tone === 'clay' && value > 0 ? { borderColor: 'var(--clay)' } : {}), ...(clickable ? { cursor: 'pointer' } : {}) }}>
+      <div className="stat__value" style={{ color }}>{value}</div>
       <div className="stat__label">{label}</div>
     </div>
   )
