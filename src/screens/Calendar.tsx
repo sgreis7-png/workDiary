@@ -17,23 +17,23 @@ export default function Calendar() {
   const { projects, projectColor, projectName, userName } = useStore()
   const [projectId, setProjectId] = useState('')
   const [entries, setEntries] = useState<Entry[] | null>(null)
+  const now = new Date()
+  const [y, setY] = useState(now.getFullYear())
+  const [m, setM] = useState(now.getMonth())
 
+  // fetch only the visible month (scales — no full-table read)
   useEffect(() => {
     let alive = true
-    listEntries().then((e) => {
-      if (!alive) return
-      setEntries(e)
-      if (e[0]?.work_date) { setY(Number(e[0].work_date.slice(0, 4))); setM(Number(e[0].work_date.slice(5, 7)) - 1) }
-    }).catch(() => { if (alive) setEntries([]) })
+    setEntries(null)
+    const from = ymd(y, m, 1)
+    const to = ymd(y, m, new Date(y, m + 1, 0).getDate())
+    listEntries(undefined, { from, to, limit: 1000 })
+      .then((e) => { if (alive) setEntries(e) })
+      .catch(() => { if (alive) setEntries([]) })
     return () => { alive = false }
-  }, [])
+  }, [y, m])
 
   const byDate = useMemo(() => groupByDate(entries ?? []), [entries])
-
-  // open on the month of the most recent entry so data is visible
-  const latest = (entries ?? [])[0]?.work_date ?? new Date().toISOString().slice(0, 10)
-  const [y, setY] = useState(Number(latest.slice(0, 4)))
-  const [m, setM] = useState(Number(latest.slice(5, 7)) - 1)
 
   const todayStr = new Date().toISOString().slice(0, 10)
   const first = new Date(y, m, 1).getDay()

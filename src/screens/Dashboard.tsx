@@ -4,9 +4,8 @@ import { motion } from 'framer-motion'
 import { Tag, WeatherChip, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { listEntries } from '../api'
+import { fetchDashboardStats, type DashboardStats } from '../api'
 import { useStore } from '../store'
-import type { Entry } from '../data'
 
 const STALE_DAYS = 7
 const dayKey = (d: Date) => d.toISOString().slice(0, 10)
@@ -15,41 +14,28 @@ export default function Dashboard() {
   const { t } = useI18n()
   const nav = useNavigate()
   const { projects, projectName, projectColor, userName } = useStore()
-  const [entries, setEntries] = useState<Entry[] | null>(null)
+  const [raw, setRaw] = useState<DashboardStats | null>(null)
 
   useEffect(() => {
     let alive = true
-    listEntries().then((e) => { if (alive) setEntries(e) }).catch(() => { if (alive) setEntries([]) })
+    fetchDashboardStats().then((s) => { if (alive) setRaw(s) }).catch(() => { if (alive) setRaw(null) })
     return () => { alive = false }
   }, [])
 
   const stats = useMemo(() => {
-    if (!entries) return null
+    if (!raw) return null
     const today = new Date()
-    const weekAgo = dayKey(new Date(today.getTime() - 7 * 864e5))
-    const thisWeek = entries.filter((e) => e.work_date >= weekAgo).length
-
-    const byProject: Record<string, number> = {}
-    const latestByProject: Record<string, string> = {}
-    const byWorker: Record<string, number> = {}
-    const byWeather: Record<string, number> = {}
-    for (const e of entries) {
-      byProject[e.project_id] = (byProject[e.project_id] ?? 0) + 1
-      if (!latestByProject[e.project_id] || e.work_date > latestByProject[e.project_id]) latestByProject[e.project_id] = e.work_date
-      byWorker[e.created_by] = (byWorker[e.created_by] ?? 0) + 1
-      const w = e.values.weather; if (w) byWeather[w] = (byWeather[w] ?? 0) + 1
-    }
     const staleCut = dayKey(new Date(today.getTime() - STALE_DAYS * 864e5))
-    const stale = projects.filter((p) => p.active && (!latestByProject[p.id] || latestByProject[p.id] < staleCut))
-      .map((p) => ({ p, last: latestByProject[p.id] }))
-    const topProjects = Object.entries(byProject).sort((a, b) => b[1] - a[1]).slice(0, 8)
+    const latest = raw.latest_by_project
+    const stale = projects.filter((p) => p.active && (!latest[p.id] || latest[p.id] < staleCut))
+      .map((p) => ({ p, last: latest[p.id] }))
+    const topProjects = Object.entries(raw.by_project).sort((a, b) => b[1] - a[1]).slice(0, 8)
     const maxProj = Math.max(1, ...topProjects.map(([, n]) => n))
-    const workers = Object.entries(byWorker).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    const workers = Object.entries(raw.by_worker).sort((a, b) => b[1] - a[1]).slice(0, 6)
+    return { total: raw.total, thisWeek: raw.this_week, activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, byWeather: raw.by_weather, workers }
+  }, [raw, projects])
 
-    return { total: entries.length, thisWeek, activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, byWeather, workers }
-  }, [entries, projects])
-
-  if (!entries || !stats) return <Loader full label={t('nav_dashboard')} />
+  if (!raw || !stats) return <Loader full label={t('nav_dashboard')} />
 
   return (
     <div className="page">

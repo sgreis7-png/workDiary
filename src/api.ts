@@ -57,9 +57,11 @@ async function hydrate(rows: EntryRow[]): Promise<Entry[]> {
 
 // ---------- entries ----------
 
-export async function listEntries(projectId?: string, opts?: { limit?: number; offset?: number }): Promise<Entry[]> {
+export async function listEntries(projectId?: string, opts?: { limit?: number; offset?: number; from?: string; to?: string }): Promise<Entry[]> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (projectId) q = q.eq('project_id', projectId)
+  if (opts?.from) q = q.gte('work_date', opts.from)
+  if (opts?.to) q = q.lte('work_date', opts.to)
   if (opts?.limit != null) q = q.range(opts.offset ?? 0, (opts.offset ?? 0) + opts.limit - 1)
   const { data, error } = await q
   if (error) throw error
@@ -144,6 +146,19 @@ export async function deleteEntry(id: string): Promise<void> {
   if (paths.length) await supabase.storage.from('photos').remove(paths)
   const { error } = await supabase.from('entries').delete().eq('id', id)
   if (error) throw error
+}
+
+export interface DashboardStats {
+  total: number; this_week: number
+  by_project: Record<string, number>
+  latest_by_project: Record<string, string>
+  by_worker: Record<string, number>
+  by_weather: Record<string, number>
+}
+export async function fetchDashboardStats(): Promise<DashboardStats> {
+  const { data, error } = await supabase.rpc('dashboard_stats')
+  if (error) throw error
+  return data as DashboardStats
 }
 
 export async function searchEntries(f: SearchFilters): Promise<Entry[]> {
