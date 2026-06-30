@@ -233,7 +233,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .cal-cell.is-today .cal-cell__num { color: var(--green-deep); font-weight: 800; }
 .cal-cell__num { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); display: flex; align-items: baseline; gap: 8px; }
 .cal-cell__count { font-size: 9px; color: var(--ink-faint); letter-spacing: .04em; }
-.cal-cell__chips { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; min-height: 0; }
+.cal-cell__chips { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; min-height: 0;
+  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
+.cal-cell__chips::-webkit-scrollbar { width: 5px; }
+.cal-cell__chips::-webkit-scrollbar-thumb { background: var(--line-strong); border: none; border-radius: 99px; }
 .cal-cell__num { flex: none; }
 .cal-chip { text-align: start; border: none; border-inline-start: 3px solid var(--c); background: color-mix(in srgb, var(--c) 12%, #fff);
   border-radius: 4px; padding: 4px 7px; display: flex; flex-direction: column; line-height: 1.2; cursor: pointer;
