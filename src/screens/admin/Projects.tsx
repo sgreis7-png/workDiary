@@ -19,7 +19,11 @@ export default function Projects() {
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
 
   const toggle = async (id: string, active: boolean) => { await setProjectActive(id, !active); await reloadProjects() }
-  const bump = (id: string, delta: number) => setUserPriority(id, (myPriorities[id] ?? 0) + delta)
+
+  // priority levels: 0 none .. 4 critical
+  const LEVELS = [0, 1, 2, 3, 4]
+  const levelKey = (v: number) => (['prio_none', 'prio_low', 'prio_medium', 'prio_high', 'prio_critical'] as const)[v] ?? 'prio_none'
+  const levelTone = (v: number): 'muted' | 'green' | 'amber' | 'clay' => (v >= 4 ? 'clay' : v === 3 ? 'amber' : v === 2 ? 'green' : 'muted')
 
   return (
     <div className="page">
@@ -35,12 +39,6 @@ export default function Projects() {
         {projects.map((p) => (
           <motion.div key={p.id} variants={riseIn} className="panel" style={{ padding: 20, opacity: p.active ? 1 : 0.6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
-              {/* personal priority — every user */}
-              <div className="prio" title={t('my_priority')}>
-                <button onClick={() => bump(p.id, 1)} aria-label="up">▲</button>
-                <span className="prio__n">{myPriorities[p.id] ?? 0}</span>
-                <button onClick={() => bump(p.id, -1)} aria-label="down">▼</button>
-              </div>
               <h3 style={{ fontSize: 20 }}>{p.name}</h3>
               {p.active ? <Tag tone="green">{t('active')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               {isAdmin && (
@@ -51,7 +49,7 @@ export default function Projects() {
               )}
             </div>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 8px' }}>
-              {(p.priority ?? 0) > 0 && <Tag tone="amber">★ {t('company_priority')}: {p.priority}</Tag>}
+              {(p.priority ?? 0) > 0 && <Tag tone={levelTone(p.priority!)}>★ {t('company_priority')}: {t(levelKey(p.priority!))}</Tag>}
               {p.location && <Tag tone="muted">📍 {p.location}</Tag>}
               {p.pmo && <Tag tone="muted">👤 {p.pmo}</Tag>}
               {p.budget != null && <Tag tone="muted">₪ {Number(p.budget).toLocaleString()}</Tag>}
@@ -59,6 +57,16 @@ export default function Projects() {
               {p.staff && <Tag tone="muted">👥 {p.staff}</Tag>}
             </div>
             {p.notes && <p style={{ marginTop: 10, color: 'var(--ink-2)', fontSize: 14 }}>{p.notes}</p>}
+
+            {/* personal priority — every user sets their own here */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 14, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+              <span className="field__label" style={{ margin: 0 }}>{t('my_priority')}</span>
+              <select className="input" style={{ width: 'auto', minWidth: 130 }}
+                value={myPriorities[p.id] ?? 0}
+                onChange={(e) => setUserPriority(p.id, Number(e.target.value))}>
+                {LEVELS.map((v) => <option key={v} value={v}>{t(levelKey(v))}</option>)}
+              </select>
+            </div>
           </motion.div>
         ))}
       </motion.div>
@@ -112,7 +120,11 @@ export default function Projects() {
               <Field label={t('proj_staff')}><input className="input" value={form.staff ?? ''} onChange={(e) => set('staff', e.target.value)} /></Field>
               <Field label={t('proj_start')}><input className="input" type="date" value={form.start_date ?? ''} onChange={(e) => set('start_date', e.target.value)} /></Field>
               <Field label={t('proj_end')}><input className="input" type="date" value={form.end_date ?? ''} onChange={(e) => set('end_date', e.target.value)} /></Field>
-              <Field label={t('company_priority')}><input className="input" type="number" inputMode="numeric" value={form.priority ?? 0} onChange={(e) => set('priority', e.target.value === '' ? 0 : Number(e.target.value))} /></Field>
+              <Field label={t('company_priority')}>
+                <select className="input" value={form.priority ?? 0} onChange={(e) => set('priority', Number(e.target.value))}>
+                  {LEVELS.map((v) => <option key={v} value={v}>{t(levelKey(v))}</option>)}
+                </select>
+              </Field>
             </div>
             <Field label={t('proj_notes')}>
               <textarea className="input" value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />

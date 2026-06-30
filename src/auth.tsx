@@ -17,11 +17,19 @@ const Ctx = createContext<Auth>(null as unknown as Auth)
 export const useAuth = () => useContext(Ctx)
 
 // Pull role/name/active for the signed-in user via the me() RPC (security definer).
+// Never let a slow/cold request hang sign-in: fall back to a basic profile after 6s
+// (the session is already valid; role refreshes on the next load).
 async function loadProfile(id: string, email: string): Promise<SessionUser | null> {
-  const { data, error } = await supabase.rpc('me')
-  const row = Array.isArray(data) ? data[0] : data
-  if (error || !row) return { id, email, name: email.split('@')[0], role: 'member', active: true }
-  return { id, email, name: row.name ?? email.split('@')[0], role: row.role as Role, active: row.active }
+  const basic: SessionUser = { id, email, name: email.split('@')[0], role: 'member', active: true }
+  try {
+    const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
+    const { data, error } = await Promise.race([supabase.rpc('me'), timeout]) as { data: unknown; error: unknown }
+    const row = (Array.isArray(data) ? data[0] : data) as { role?: string; active?: boolean; name?: string } | null
+    if (error || !row) return basic
+    return { id, email, name: row.name ?? email.split('@')[0], role: (row.role as Role) ?? 'member', active: row.active ?? true }
+  } catch {
+    return basic
+  }
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
