@@ -102,6 +102,7 @@ const STRINGS = {
   err_must_reg:    { he: 'משתמש לא רשום — בצע הרשמה בפעם הראשונה.', en: 'Not registered yet — register first.' },
   err_bad_login:   { he: 'דוא״ל או סיסמה שגויים', en: 'Wrong email or password' },
   err_disabled:    { he: 'החשבון מושבת. פנה למנהל המערכת.', en: 'Account disabled. Contact your admin.' },
+  rate_limited:    { he: 'יותר מדי ניסיונות. נסה שוב בעוד שעה.', en: 'Too many attempts. Try again in an hour.' },
   pending_reg:     { he: 'ממתין להרשמה', en: 'Pending registration' },
   registered_on:   { he: 'רשום', en: 'Registered' },
   authorize_email: { he: 'הרשאה לפי דוא״ל', en: 'Authorize by email' },

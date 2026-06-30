@@ -24,6 +24,9 @@ Deno.serve(async (req) => {
       .from('allowed_emails').select('role,active').ilike('email', user.email).maybeSingle()
     if (caller?.role !== 'admin' || !caller.active) return json({ error: 'forbidden' }, 403)
 
+    const { data: allowed } = await db.rpc('rl_check', { p_actor: user.email, p_action: 'invite', p_max: 100, p_window_seconds: 3600 })
+    if (allowed === false) return json({ error: 'rate_limited' }, 429)
+
     const { email, display_name, role = 'member' } = await req.json()
     if (!email || !String(email).includes('@')) return json({ error: 'err_bad_login' }, 400)
 

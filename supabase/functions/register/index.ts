@@ -18,6 +18,9 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
+    const { data: allowed } = await admin.rpc('rl_check', { p_actor: String(email).toLowerCase(), p_action: 'register', p_max: 5, p_window_seconds: 3600 })
+    if (allowed === false) return json({ error: 'rate_limited' }, 429)
+
     const { data: rows, error: selErr } = await admin
       .from('allowed_emails').select('*').ilike('email', email).limit(1)
     if (selErr) return json({ error: selErr.message }, 500)

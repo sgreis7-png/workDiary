@@ -30,6 +30,9 @@ Deno.serve(async (req) => {
 
     const db = createClient(URL, SERVICE)
 
+    const { data: allowed } = await db.rpc('rl_check', { p_actor: user.id, p_action: 'send', p_max: 30, p_window_seconds: 3600 })
+    if (allowed === false) return json({ error: 'rate_limited' }, 429)
+
     const { data: entry, error: eErr } = await db
       .from('entries')
       .select('id, project_id, created_by, work_date, values, entry_photos(storage_path)')
