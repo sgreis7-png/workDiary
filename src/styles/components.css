@@ -255,11 +255,6 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .cal-cell { min-height: 80px; }
   .cal-chip small { display: none; }
   .cal-legend { font-size: 12px; }
-  /* export filter bar: stack each filter full-width instead of the desktop row */
-  .report-wrap { padding: 14px; }
-  .report-bar { align-items: stretch; gap: 10px; }
-  .report-bar > .field { flex: 1 1 100%; }
-  .report-bar > .btn { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ============ misc ============ */
@@ -288,6 +283,16 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .login__form { padding: 26px 22px 44px; }
   .entry-card { grid-template-columns: 44px 1fr; }
   .entry-card__side { grid-column: 1 / -1; flex-direction: row; align-items: center; justify-content: space-between; }
+  /* export/report: stack each filter full-width + fit the report to the screen
+     (must share the 920px breakpoint with the sidebar so it never lands in the
+      721–920px gap where the menu is mobile but the filter bar is still desktop) */
+  .report-wrap { padding: 14px; }
+  .report-bar { align-items: stretch; gap: 10px; }
+  .report-bar > .field { flex: 1 1 100%; }
+  .report-bar > .btn { flex: 1 1 100%; justify-content: center; }
+  .report-paper, .report-bar { max-width: 100%; }
+  .export-entry, .export-entry * { max-width: 100% !important; }
+  .export-entry table { width: 100% !important; }
 }
 .mobile-bar { display: none; }
 @media (max-width: 920px) {
