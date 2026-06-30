@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, WeatherChip, Avatar, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
+import { Lightbox } from '../components/Lightbox'
 import { useI18n } from '../i18n'
 import { getEntry, deleteEntry } from '../api'
 import { useStore } from '../store'
@@ -16,6 +17,7 @@ export default function EntryDetail() {
   const { fieldDefs, projectName, userName } = useStore()
   const { user, isAdmin } = useAuth()
   const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
+  const [lightbox, setLightbox] = useState<number | null>(null)
 
   useEffect(() => {
     let alive = true
@@ -66,7 +68,7 @@ export default function EntryDetail() {
           <motion.div className="aside-card" initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.15 }}>
             <div className="kicker" style={{ marginBottom: 14 }}>{t('photos_n')}</div>
             <div className="photo-strip">
-              {entry.photos.map((p, i) => <img key={i} src={p} alt="" />)}
+              {entry.photos.map((p, i) => <img key={i} src={p} alt="" style={{ cursor: 'zoom-in' }} onClick={() => setLightbox(i)} />)}
             </div>
           </motion.div>
 
@@ -86,6 +88,12 @@ export default function EntryDetail() {
           </motion.div>
         </div>
       </div>
+
+      <AnimatePresence>
+        {lightbox !== null && (
+          <Lightbox photos={entry.photos} index={lightbox} onClose={() => setLightbox(null)} onIndex={setLightbox} />
+        )}
+      </AnimatePresence>
     </div>
   )
 }

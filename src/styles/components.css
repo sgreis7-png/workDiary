@@ -335,3 +335,17 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .stat { padding: 22px; text-align: center; }
 .stat__value { font-family: var(--font-display); font-weight: 800; font-size: 40px; line-height: 1; color: var(--ink); }
 .stat__label { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; color: var(--ink-3); margin-top: 8px; }
+
+/* ---------- photo lightbox ---------- */
+.lightbox { position: fixed; inset: 0; z-index: 100; background: rgba(10,13,15,.93);
+  display: grid; place-items: center; padding: 24px; overflow: auto; }
+.lightbox img { max-width: 94vw; max-height: 92vh; object-fit: contain; border-radius: 8px; touch-action: pinch-zoom; }
+.lightbox__close, .lightbox__nav { position: fixed; border: none; background: rgba(255,255,255,.16); color: #fff;
+  cursor: pointer; display: inline-flex; align-items: center; justify-content: center; backdrop-filter: blur(4px); }
+.lightbox__close { top: 16px; inset-inline-end: 16px; width: 44px; height: 44px; border-radius: 50%; font-size: 20px; }
+.lightbox__nav { top: 50%; transform: translateY(-50%); width: 48px; height: 48px; border-radius: 50%; font-size: 30px; line-height: 1; }
+.lightbox__prev { left: 16px; }
+.lightbox__next { right: 16px; }
+.lightbox__close:hover, .lightbox__nav:hover { background: rgba(255,255,255,.3); }
+.lightbox__count { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff;
+  font-family: var(--font-mono); font-size: 13px; background: rgba(255,255,255,.14); padding: 6px 14px; border-radius: 99px; }
