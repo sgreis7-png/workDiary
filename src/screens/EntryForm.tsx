@@ -6,6 +6,7 @@ import { Loader } from '../components/Loader'
 import { MicButton } from '../components/MicButton'
 import { useI18n } from '../i18n'
 import { createEntry, getEntry, getEntryPhotos, lastEntryForProject, updateEntry } from '../api'
+import { queueEntry } from '../lib/offline'
 import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
@@ -72,16 +73,24 @@ export default function EntryForm() {
     setErrors(errs)
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
     setBusy(true); setSaveErr('')
+    const newFiles = photos.filter((p) => p.file).map((p) => p.file!)
     try {
-      const newFiles = photos.filter((p) => p.file).map((p) => p.file!)
       if (editing && id) {
         await updateEntry(id, project, values, newFiles, removedPaths)
         nav(`/entry/${id}`)
+      } else if (!navigator.onLine) {
+        // offline: queue locally, sync when back online
+        await queueEntry({ project_id: project, values, files: newFiles })
+        nav('/')
       } else {
         await createEntry(project, values, newFiles)
         nav('/')
       }
     } catch (e) {
+      // network failure while creating → queue it instead of losing the work
+      if (!editing && !navigator.onLine) {
+        try { await queueEntry({ project_id: project, values, files: newFiles }); nav('/'); return } catch { /* fall through */ }
+      }
       setSaveErr(String((e as Error).message ?? e))
       setBusy(false)
       window.scrollTo({ top: 0, behavior: 'smooth' })

@@ -363,3 +363,9 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   font-size: 14px; cursor: pointer; user-select: none; transition: all .15s var(--ease); background: #fff; }
 .staff-chip:hover { border-color: var(--green); }
 .staff-chip.on { background: var(--green-deep); color: #fff; border-color: var(--green-deep); }
+
+/* ---------- offline / sync badge ---------- */
+.sync-badge { display: inline-flex; align-items: center; gap: 6px; font-family: var(--font-mono);
+  font-size: 11px; padding: 5px 11px; border-radius: 99px; font-weight: 600; white-space: nowrap; }
+.sync-badge--off { color: var(--clay); background: var(--clay-tint); border: 1px solid rgba(194,84,31,.3); }
+.sync-badge--pending { color: #8a5a0a; background: #f7eccf; border: 1px solid rgba(216,160,26,.35); }

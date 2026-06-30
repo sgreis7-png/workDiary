@@ -5,6 +5,7 @@ import { Logo } from './Logo'
 import { Avatar } from './ui'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
+import { useOfflineSync } from '../lib/useOfflineSync'
 
 function LangToggle() {
   const { lang, setLang } = useI18n()
@@ -33,9 +34,16 @@ function NavItem({ to, icon, label, end }: { to: string; icon: string; label: st
 export function Shell() {
   const { t } = useI18n()
   const { user, signOut, isAdmin } = useAuth()
+  const { online, pending } = useOfflineSync()
   const [open, setOpen] = useState(false)
   const loc = useLocation()
   const nav = useNavigate()
+
+  const syncBadge = (!online || pending > 0) ? (
+    <div className={`sync-badge ${!online ? 'sync-badge--off' : 'sync-badge--pending'}`}>
+      {!online ? `● ${t('offline')}` : `⟳ ${pending} ${t('pending_sync')}`}
+    </div>
+  ) : null
 
   const sidebar = (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
@@ -63,6 +71,7 @@ export function Shell() {
       </nav>
 
       <div className="sidebar__foot">
+        {syncBadge}
         <LangToggle />
         <div className="user-chip">
           <Avatar name={user?.name ?? '?'} />
@@ -85,6 +94,7 @@ export function Shell() {
         <div className="mobile-bar">
           <button className="btn btn--ghost" onClick={() => setOpen(true)}>☰</button>
           <Logo height={26} withTag={false} />
+          {syncBadge}
           <LangToggle />
         </div>
         <main className="main">
