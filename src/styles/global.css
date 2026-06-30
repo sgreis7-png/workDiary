@@ -2,6 +2,11 @@
 
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; }
+/* Never let any page grow wider than the viewport. Without this, a too-wide
+   report on mobile makes the browser zoom out to fit, which pushes the effective
+   CSS width past the 920px breakpoint and snaps the desktop sidebar back in
+   ("menu opens, resolution changes"). Clip horizontally instead. */
+html, body { max-width: 100%; overflow-x: hidden; }
 
 body {
   margin: 0;

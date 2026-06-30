@@ -291,8 +291,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .report-bar > .field { flex: 1 1 100%; }
   .report-bar > .btn { flex: 1 1 100%; justify-content: center; }
   .report-paper, .report-bar { max-width: 100%; }
+  .report-paper { overflow-x: auto; }
   .export-entry, .export-entry * { max-width: 100% !important; }
   .export-entry table { width: 100% !important; }
+  .export-entry td { overflow-wrap: anywhere; word-break: break-word; }
 }
 .mobile-bar { display: none; }
 @media (max-width: 920px) {
