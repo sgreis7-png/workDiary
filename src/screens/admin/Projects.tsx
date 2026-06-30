@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, Field, stagger, riseIn } from '../../components/ui'
 import { useI18n } from '../../i18n'
-import { createProject, fetchUsers, notifyAssigned, setProjectActive, setProjectStaff, updateProject } from '../../api'
+import { createProject, deleteProject, fetchUsers, notifyAssigned, setProjectActive, setProjectStaff, updateProject } from '../../api'
 import { useStore } from '../../store'
 import { useAuth } from '../../auth'
 import type { AppUser, Project, ProjectInput } from '../../data'
@@ -40,6 +40,14 @@ export default function Projects() {
 
   const toggle = async (id: string, active: boolean) => { await setProjectActive(id, !active); await reloadProjects() }
 
+  const remove = async (p: Project) => {
+    if (!window.confirm(`${t('confirm_delete_project')}\n\n${p.name}`)) return
+    try { await deleteProject(p.id); await Promise.all([reloadProjects(), reloadAssignments()]) }
+    catch (e) {
+      window.alert((e as Error).message === 'project_has_entries' ? t('project_has_entries') : '⚠ ' + String((e as Error).message ?? e))
+    }
+  }
+
   // priority levels: 0 none .. 4 critical
   const LEVELS = [0, 1, 2, 3, 4]
   const levelKey = (v: number) => (['prio_none', 'prio_low', 'prio_medium', 'prio_high', 'prio_critical'] as const)[v] ?? 'prio_none'
@@ -66,6 +74,7 @@ export default function Projects() {
                 <div style={{ display: 'flex', gap: 8, marginInlineStart: 'auto', flexWrap: 'wrap' }}>
                   <Button variant="ghost" onClick={() => setEditing(p)}>✎ {t('edit')}</Button>
                   <Button variant="ghost" onClick={() => toggle(p.id, p.active)}>{p.active ? t('inactive') : t('active')}</Button>
+                  <Button variant="danger" onClick={() => remove(p)}>🗑 {t('delete')}</Button>
                 </div>
               )}
             </div>

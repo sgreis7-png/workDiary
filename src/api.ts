@@ -255,6 +255,17 @@ export async function setProjectActive(id: string, active: boolean): Promise<voi
   const { error } = await supabase.from('projects').update({ active }).eq('id', id)
   if (error) throw error
 }
+/** Hard-delete a project. Refuses if it still has diary entries (those would be
+ *  orphaned / FK-blocked) — deactivate such projects instead. Assignments and
+ *  per-user priorities cascade away automatically. Admin-only via RLS. */
+export async function deleteProject(id: string): Promise<void> {
+  const { count, error: cErr } = await supabase
+    .from('entries').select('id', { count: 'exact', head: true }).eq('project_id', id)
+  if (cErr) throw cErr
+  if ((count ?? 0) > 0) throw new Error('project_has_entries')
+  const { error } = await supabase.from('projects').delete().eq('id', id)
+  if (error) throw error
+}
 
 // ---------- admin: field definitions ----------
 
