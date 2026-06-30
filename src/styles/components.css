@@ -349,3 +349,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .lightbox__close:hover, .lightbox__nav:hover { background: rgba(255,255,255,.3); }
 .lightbox__count { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff;
   font-family: var(--font-mono); font-size: 13px; background: rgba(255,255,255,.14); padding: 6px 14px; border-radius: 99px; }
+
+/* ---------- bulk export ---------- */
+.export-entry { margin-bottom: 22px; }
+@media print {
+  .export-entry { page-break-after: always; margin-bottom: 0; }
+  .export-entry:last-child { page-break-after: auto; }
+}

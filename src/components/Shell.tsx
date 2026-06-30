@@ -52,6 +52,7 @@ export function Shell() {
         <NavItem to="/search" icon="⌕" label={t('nav_search')} />
         <NavItem to="/lists" icon="✉" label={t('nav_lists')} />
         <NavItem to="/projects" icon="◆" label={t('nav_projects')} />
+        <NavItem to="/export" icon="⭳" label={t('nav_export')} />
         {isAdmin && (
           <>
             <div className="nav__heading">{t('nav_admin')}</div>

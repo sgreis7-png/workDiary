@@ -29,6 +29,7 @@ const STRINGS = {
   nav_fields:     { he: 'בונה הטופס', en: 'Form builder' },
   nav_users:      { he: 'משתמשים והרשאות', en: 'Users & permissions' },
   nav_admin:      { he: 'ניהול', en: 'Admin' },
+  nav_export:     { he: 'ייצוא דוחות', en: 'Export' },
 
   login_title:    { he: 'כניסה למערכת', en: 'Sign in' },
   login_sub:      { he: 'מידע עסקי מאובטח — לעובדי אגרוטופ בלבד', en: 'Secured business data — Agrotop staff only' },
