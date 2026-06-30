@@ -54,6 +54,7 @@ const STRINGS = {
   all_projects:   { he: 'כל הפרויקטים', en: 'All projects' },
   user:           { he: 'עובד', en: 'Worker' },
   more_n:         { he: 'נוספים', en: 'more' },
+  show_weekend:   { he: 'הצג שישי/שבת', en: 'Show Fri/Sat' },
   all_users:      { he: 'כל העובדים', en: 'All workers' },
   choose:         { he: 'בחירה', en: 'Choose' },
   required_field: { he: 'שדה חובה', en: 'Required' },

@@ -220,6 +220,9 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .cal-legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 16px; }
 .cal-legend__item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
 .cal-legend__item i { width: 11px; height: 11px; border-radius: 3px; flex: none; }
+.cal-weekend { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2);
+  cursor: pointer; user-select: none; }
+.cal-weekend input { accent-color: var(--green); width: 15px; height: 15px; cursor: pointer; }
 
 /* roomy month grid: fixed-height rows so every day cell is identical */
 .calendar { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 160px; gap: 5px; }

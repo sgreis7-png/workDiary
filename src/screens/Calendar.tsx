@@ -20,6 +20,9 @@ export default function Calendar() {
   const now = new Date()
   const [y, setY] = useState(now.getFullYear())
   const [m, setM] = useState(now.getMonth())
+  // Israeli work week is Sun–Thu; hide Fri(5)+Sat(6) unless the user opts in (persisted)
+  const [showWeekend, setShowWeekend] = useState(() => localStorage.getItem('cal_weekend') === '1')
+  const toggleWeekend = (v: boolean) => { setShowWeekend(v); localStorage.setItem('cal_weekend', v ? '1' : '0') }
 
   // fetch only the visible month (scales — no full-table read)
   useEffect(() => {
@@ -36,10 +39,19 @@ export default function Calendar() {
   const byDate = useMemo(() => groupByDate(entries ?? []), [entries])
 
   const todayStr = new Date().toISOString().slice(0, 10)
-  const first = new Date(y, m, 1).getDay()
+  const dows = showWeekend ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4]
+  const cols = dows.length
   const days = new Date(y, m + 1, 0).getDate()
-  const cells: (number | null)[] = [...Array(first).fill(null), ...Array.from({ length: days }, (_, i) => i + 1)]
-  while (cells.length % 7 !== 0) cells.push(null)
+  const colOf = (day: number) => dows.indexOf(new Date(y, m, day).getDay())
+  // build grid cells, skipping hidden weekend days (Fri/Sat sit at the row end so
+  // skipping them keeps every other day aligned to its column)
+  const cells: (number | null)[] = []
+  for (let d = 1; d <= days; d++) {
+    if (colOf(d) < 0) continue
+    if (cells.length === 0) for (let k = 0; k < colOf(d); k++) cells.push(null)
+    cells.push(d)
+  }
+  while (cells.length % cols !== 0) cells.push(null)
 
   const step = (delta: number) => {
     const nm = m + delta
@@ -70,13 +82,17 @@ export default function Calendar() {
       </div>
 
       <div className="cal-legend">
+        <label className="cal-weekend">
+          <input type="checkbox" checked={showWeekend} onChange={(e) => toggleWeekend(e.target.checked)} />
+          {t('show_weekend')}
+        </label>
         {usedProjects.map((p) => (
           <span key={p.id} className="cal-legend__item"><i style={{ background: projectColor(p.id) }} />{p.name}</span>
         ))}
       </div>
 
-      <div className="calendar">
-        {WEEKDAYS[lang].map((w) => <div key={w} className="cal-dow">{w}</div>)}
+      <div className="calendar" style={{ gridTemplateColumns: `repeat(${cols}, 1fr)` }}>
+        {dows.map((dw) => <div key={dw} className="cal-dow">{WEEKDAYS[lang][dw]}</div>)}
         {cells.map((d, i) => {
           if (!d) return <div key={i} className="cal-cell cal-cell--empty" />
           const date = ymd(y, m, d)
