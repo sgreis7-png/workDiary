@@ -61,6 +61,7 @@ const STRINGS = {
   edit_entry:     { he: 'עריכת רשומה', en: 'Edit entry' },
   entries:        { he: 'רשומות', en: 'entries' },
   no_entries:     { he: 'אין רשומות עדיין', en: 'No entries yet' },
+  load_more:      { he: 'טען עוד', en: 'Load more' },
   last_sent:      { he: 'נשלח לאחרונה', en: 'Last sent' },
   created_by:     { he: 'נרשם ע״י', en: 'Logged by' },
   view:           { he: 'צפייה', en: 'View' },

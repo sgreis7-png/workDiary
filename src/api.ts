@@ -57,9 +57,10 @@ async function hydrate(rows: EntryRow[]): Promise<Entry[]> {
 
 // ---------- entries ----------
 
-export async function listEntries(projectId?: string): Promise<Entry[]> {
+export async function listEntries(projectId?: string, opts?: { limit?: number; offset?: number }): Promise<Entry[]> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (projectId) q = q.eq('project_id', projectId)
+  if (opts?.limit != null) q = q.range(opts.offset ?? 0, (opts.offset ?? 0) + opts.limit - 1)
   const { data, error } = await q
   if (error) throw error
   return hydrate((data ?? []) as unknown as EntryRow[])
