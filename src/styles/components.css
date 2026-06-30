@@ -347,7 +347,7 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .lightbox__prev { left: 16px; }
 .lightbox__next { right: 16px; }
 .lightbox__close:hover, .lightbox__nav:hover { background: rgba(255,255,255,.3); }
-.lightbox__count { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff;
+.lightbox__count { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); color: #fff; direction: ltr;
   font-family: var(--font-mono); font-size: 13px; background: rgba(255,255,255,.14); padding: 6px 14px; border-radius: 99px; }
 
 /* ---------- bulk export ---------- */
