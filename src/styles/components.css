@@ -255,6 +255,11 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .cal-cell { min-height: 80px; }
   .cal-chip small { display: none; }
   .cal-legend { font-size: 12px; }
+  /* export filter bar: stack each filter full-width instead of the desktop row */
+  .report-wrap { padding: 14px; }
+  .report-bar { align-items: stretch; gap: 10px; }
+  .report-bar > .field { flex: 1 1 100%; }
+  .report-bar > .btn { flex: 1 1 100%; justify-content: center; }
 }
 
 /* ============ misc ============ */

@@ -49,6 +49,8 @@ const STRINGS = {
 
   project:        { he: 'פרויקט', en: 'Project' },
   all_projects:   { he: 'כל הפרויקטים', en: 'All projects' },
+  user:           { he: 'עובד', en: 'Worker' },
+  all_users:      { he: 'כל העובדים', en: 'All workers' },
   choose:         { he: 'בחירה', en: 'Choose' },
   required_field: { he: 'שדה חובה', en: 'Required' },
   optional:       { he: 'רשות', en: 'Optional' },

@@ -164,6 +164,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 export async function searchEntries(f: SearchFilters): Promise<Entry[]> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (f.projectId) q = q.eq('project_id', f.projectId)
+  if (f.userId) q = q.eq('created_by', f.userId)
   if (f.from) q = q.gte('work_date', f.from)
   if (f.to) q = q.lte('work_date', f.to)
   const { data, error } = await q

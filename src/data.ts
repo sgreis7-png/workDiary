@@ -33,7 +33,7 @@ export interface Entry {
 export interface DistList { id: string; name: string; recipients: Recipient[] }
 export interface Recipient { id: string; email: string; display_name?: string | null }
 
-export interface SearchFilters { projectId?: string; from?: string; to?: string; text?: string }
+export interface SearchFilters { projectId?: string; userId?: string; from?: string; to?: string; text?: string }
 
 // stable color per project, by its position in the active list
 export const PROJECT_COLORS = ['#3aaa35', '#c2541f', '#277d23', '#d8a01a', '#6c747a', '#1c5a1a', '#a8431a']

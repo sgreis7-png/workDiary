@@ -10,19 +10,21 @@ import type { Entry } from '../data'
 // and prints to PDF (one entry per page) — for client billing / handover.
 export default function ExportView() {
   const { t } = useI18n()
-  const { projects, fieldDefs, projectName, userName } = useStore()
+  const { projects, fieldDefs, userMap, projectName, userName } = useStore()
   const [projectId, setProjectId] = useState('')
+  const [userId, setUserId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [entries, setEntries] = useState<Entry[] | null>(null)
   const [busy, setBusy] = useState(false)
 
   const defs = fieldDefs.filter((f) => f.active)
+  const users = Object.entries(userMap).sort((a, b) => a[1].localeCompare(b[1]))
 
   const generate = async () => {
     setBusy(true)
     try {
-      const r = await searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined })
+      const r = await searchEntries({ projectId: projectId || undefined, userId: userId || undefined, from: from || undefined, to: to || undefined })
       setEntries(r)
     } finally { setBusy(false) }
   }
@@ -34,6 +36,12 @@ export default function ExportView() {
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+        </Field>
+        <Field label={t('user')}>
+          <select className="input" value={userId} onChange={(e) => setUserId(e.target.value)}>
+            <option value="">{t('all_users')}</option>
+            {users.map(([id, name]) => <option key={id} value={id}>{name}</option>)}
           </select>
         </Field>
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
