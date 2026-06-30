@@ -393,7 +393,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .notif__backdrop { position: fixed; inset: 0; z-index: 70; }
 .notif__panel { position: absolute; bottom: 48px; inset-inline-start: 0; z-index: 71; width: 300px; max-width: 86vw;
   background: #fff; border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-2); overflow: hidden; max-height: 60vh; overflow-y: auto; }
-.mobile-bar .notif__panel { bottom: auto; top: 50px; inset-inline-end: 0; inset-inline-start: auto; }
+/* On phones, anchoring to the 38px bell pushes the 300px panel off-screen.
+   Pin it to the viewport instead so it always fits within the margins. */
+.mobile-bar .notif__panel { position: fixed; top: 58px; left: 12px; right: 12px; bottom: auto;
+  inset-inline-start: auto; inset-inline-end: auto; width: auto; max-width: none; }
 .notif__head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
 .notif__empty { padding: 22px; text-align: center; color: var(--ink-3); font-size: 14px; }
 .notif__item { display: block; width: 100%; text-align: start; padding: 12px 14px; border: none; border-bottom: 1px solid var(--line);
