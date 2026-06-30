@@ -311,3 +311,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .report-wrap { padding: 0 !important; background: #fff !important; }
   .report-paper table { border: none !important; }
 }
+
+/* ---------- priority up/down control ---------- */
+.prio { display: inline-flex; flex-direction: column; align-items: center; line-height: 1;
+  border: 1px solid var(--line-strong); border-radius: 8px; overflow: hidden; flex: none; }
+.prio button { border: none; background: transparent; cursor: pointer; padding: 2px 9px; color: var(--ink-3); font-size: 11px; }
+.prio button:hover { color: var(--green-deep); background: var(--green-tint); }
+.prio__n { font-family: var(--font-mono); font-weight: 700; font-size: 13px; padding: 1px 0; color: var(--ink); min-width: 18px; text-align: center; }

@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Button, Tag, WeatherChip, Field, stagger, riseIn } from '../components/ui'
+import { Tag, WeatherChip, Field, stagger, riseIn } from '../components/ui'
 import { useI18n } from '../i18n'
 import { searchEntries } from '../api'
 import { useStore } from '../store'
@@ -18,12 +18,20 @@ export default function Search() {
   const [results, setResults] = useState<Entry[] | null>(null)
   const [busy, setBusy] = useState(false)
 
-  const run = async () => {
+  // Live search: runs as criteria change; clears the moment all criteria are empty.
+  useEffect(() => {
+    const hasCriteria = Boolean(text.trim() || projectId || from || to)
+    if (!hasCriteria) { setResults(null); setBusy(false); return }
     setBusy(true)
-    try {
-      setResults(await searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined }))
-    } finally { setBusy(false) }
-  }
+    let alive = true
+    const handle = setTimeout(() => {
+      searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined })
+        .then((r) => { if (alive) setResults(r) })
+        .catch(() => { if (alive) setResults([]) })
+        .finally(() => { if (alive) setBusy(false) })
+    }, 300)
+    return () => { alive = false; clearTimeout(handle) }
+  }, [projectId, from, to, text])
 
   return (
     <div className="page">
@@ -32,12 +40,13 @@ export default function Search() {
           <div className="kicker">Query</div>
           <h1 className="page-title">{t('nav_search')}</h1>
         </div>
-        {results && <span className="count mono">{results.length} {t('results_n')}</span>}
+        {busy ? <span className="count mono"><span className="spin" /></span>
+          : results && <span className="count mono">{results.length} {t('results_n')}</span>}
       </div>
 
       <div className="search-bar">
         <Field label={t('free_text')}>
-          <input className="input" placeholder="…" value={text} onChange={(e) => setText(e.target.value)} onKeyDown={(e) => e.key === 'Enter' && run()} />
+          <input className="input" placeholder="…" value={text} onChange={(e) => setText(e.target.value)} autoFocus />
         </Field>
         <Field label={t('project')}>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
@@ -46,7 +55,7 @@ export default function Search() {
           </select>
         </Field>
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
-        <Button variant="primary" onClick={run} disabled={busy}>{busy ? <><span className="spin" /> {t('search')}</> : <>⌕ {t('search')}</>}</Button>
+        <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
 
       {results && (

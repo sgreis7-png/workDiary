@@ -50,10 +50,10 @@ export function Shell() {
         <NavItem to="/new" icon="✛" label={t('nav_new')} />
         <NavItem to="/search" icon="⌕" label={t('nav_search')} />
         <NavItem to="/lists" icon="✉" label={t('nav_lists')} />
+        <NavItem to="/projects" icon="◆" label={t('nav_projects')} />
         {isAdmin && (
           <>
             <div className="nav__heading">{t('nav_admin')}</div>
-            <NavItem to="/admin/projects" icon="◆" label={t('nav_projects')} />
             <NavItem to="/admin/fields" icon="⚙" label={t('nav_fields')} />
             <NavItem to="/admin/users" icon="◎" label={t('nav_users')} />
           </>

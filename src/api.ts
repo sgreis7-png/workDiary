@@ -2,13 +2,14 @@
 // read the same — only now they're async and hit the real database.
 import { supabase } from './lib/supabase'
 import { entryMatchesText } from './data'
-import type { AppUser, DistList, Entry, FieldDef, Project, SearchFilters } from './data'
+import type { AppUser, DistList, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
 
 // ---------- reference data ----------
 
+const PROJECT_COLS = 'id,name,active,location,budget,pmo,start_date,end_date,staff,notes,priority'
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
-    .from('projects').select('id,name,active').order('created_at')
+    .from('projects').select(PROJECT_COLS).order('created_at')
   if (error) throw error
   return data as Project[]
 }
@@ -148,8 +149,39 @@ export async function searchEntries(f: SearchFilters): Promise<Entry[]> {
 
 // ---------- admin: projects ----------
 
-export async function createProject(name: string): Promise<void> {
-  const { error } = await supabase.from('projects').insert({ name })
+function cleanProject(p: ProjectInput) {
+  return {
+    name: p.name, active: p.active,
+    location: p.location || null, pmo: p.pmo || null, staff: p.staff || null, notes: p.notes || null,
+    budget: p.budget === undefined || p.budget === null || (p.budget as unknown) === '' ? null : Number(p.budget),
+    start_date: p.start_date || null, end_date: p.end_date || null,
+    priority: Number(p.priority) || 0,
+  }
+}
+
+/** current user's per-project priority map */
+export async function fetchMyPriorities(): Promise<Record<string, number>> {
+  const { data: u } = await supabase.auth.getUser()
+  if (!u.user) return {}
+  const { data, error } = await supabase
+    .from('project_priorities').select('project_id,priority').eq('user_id', u.user.id)
+  if (error) throw error
+  const m: Record<string, number> = {}
+  for (const r of data as { project_id: string; priority: number }[]) m[r.project_id] = r.priority
+  return m
+}
+export async function setMyPriority(project_id: string, priority: number): Promise<void> {
+  const { data: u } = await supabase.auth.getUser()
+  const { error } = await supabase.from('project_priorities')
+    .upsert({ user_id: u.user!.id, project_id, priority }, { onConflict: 'user_id,project_id' })
+  if (error) throw error
+}
+export async function createProject(p: ProjectInput): Promise<void> {
+  const { error } = await supabase.from('projects').insert(cleanProject(p))
+  if (error) throw error
+}
+export async function updateProject(id: string, p: ProjectInput): Promise<void> {
+  const { error } = await supabase.from('projects').update(cleanProject(p)).eq('id', id)
   if (error) throw error
 }
 export async function setProjectActive(id: string, active: boolean): Promise<void> {

@@ -43,7 +43,7 @@ export default function App() {
         <Route path="search" element={<Search />} />
         <Route path="lists" element={<Lists />} />
         <Route path="account" element={<Account />} />
-        <Route path="admin/projects" element={<RequireAdmin><Projects /></RequireAdmin>} />
+        <Route path="projects" element={<Projects />} />
         <Route path="admin/fields" element={<RequireAdmin><FormBuilder /></RequireAdmin>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
       </Route>

@@ -9,7 +9,14 @@ export interface FieldDef {
   id: string; key: string; label_he: string; label_en: string
   type: FieldType; required: boolean; options: Option[]; sort_order: number; active: boolean
 }
-export interface Project { id: string; name: string; active: boolean }
+export interface Project {
+  id: string; name: string; active: boolean
+  location?: string | null; budget?: number | null; pmo?: string | null
+  start_date?: string | null; end_date?: string | null; staff?: string | null; notes?: string | null
+  priority?: number | null // company priority (admin)
+}
+export type ProjectInput = Omit<Project, 'id'>
+
 
 /** A row of the allowlist, optionally joined with profile status. */
 export interface AppUser {
