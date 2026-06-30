@@ -149,9 +149,13 @@ export default function EntryForm() {
           <Field label={t('project')} hint={<span className="req">{t('required_field')}</span>}>
             <select className="input" value={project} onChange={(e) => setProject(e.target.value)} style={errors.includes('__project__') ? { borderColor: 'var(--clay)' } : undefined}>
               <option value="">— {t('choose')} —</option>
-              {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {[...projects].sort((a, b) => Number(b.active) - Number(a.active))
+                .map((p) => <option key={p.id} value={p.id}>{p.name}{p.active ? '' : ` (${t('inactive')})`}</option>)}
             </select>
           </Field>
+          {projects.length === 0 && (
+            <Button variant="ghost" onClick={() => nav('/projects')} style={{ marginTop: 10 }}>＋ {t('add_project')}</Button>
+          )}
           {!editing && (
             <Button variant="ghost" onClick={copyLast} disabled={copyBusy || !project} style={{ marginTop: 10 }}>
               {copyBusy ? <><span className="spin" /> {t('copy_last')}</> : <>⧉ {t('copy_last')}</>}
