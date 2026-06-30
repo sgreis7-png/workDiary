@@ -13,6 +13,7 @@ import Search from './screens/Search'
 import Lists from './screens/Lists'
 import Account from './screens/Account'
 import ReportView from './screens/ReportView'
+import Dashboard from './screens/Dashboard'
 import Projects from './screens/admin/Projects'
 import FormBuilder from './screens/admin/FormBuilder'
 import Users from './screens/admin/Users'
@@ -36,6 +37,7 @@ export default function App() {
       <Route path="/report/:id" element={<RequireAuth><ReportView /></RequireAuth>} />
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Logbook />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="new" element={<EntryForm />} />
         <Route path="edit/:id" element={<EntryForm />} />
