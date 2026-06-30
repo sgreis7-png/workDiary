@@ -82,12 +82,18 @@ export default function Calendar() {
           const date = ymd(y, m, d)
           const items = (byDate[date] ?? []).filter((e) => !projectId || e.project_id === projectId)
           const isToday = date === todayStr
+          const MAX = 3
+          const shown = items.slice(0, MAX)
+          const extra = items.length - shown.length
           return (
             <motion.div key={i} className={`cal-cell ${isToday ? 'is-today' : ''}`}
               initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: Math.min(i * 0.005, 0.2) }}>
-              <div className="cal-cell__num">{d}{items.length > 1 && <span className="cal-cell__count">{items.length} {t('entries_on_day')}</span>}</div>
+              <div className="cal-cell__num">
+                {d === 1 && <span className="cal-cell__mon">{MONTHS[lang][m]}</span>}
+                <b>{d}</b>
+              </div>
               <div className="cal-cell__chips">
-                {items.map((e) => (
+                {shown.map((e) => (
                   <button key={e.id} className="cal-chip" style={{ ['--c' as string]: projectColor(e.project_id) }}
                     onClick={() => nav(`/entry/${e.id}`)} title={`${projectName(e.project_id)} · ${userName(e.created_by)}`}>
                     <i />{projectName(e.project_id)}
@@ -95,6 +101,7 @@ export default function Calendar() {
                   </button>
                 ))}
               </div>
+              {extra > 0 && <div className="cal-cell__more">+{extra} {t('more_n')}</div>}
             </motion.div>
           )
         })}

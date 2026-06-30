@@ -221,23 +221,24 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .cal-legend__item { display: inline-flex; align-items: center; gap: 7px; font-size: 13px; color: var(--ink-2); }
 .cal-legend__item i { width: 11px; height: 11px; border-radius: 3px; flex: none; }
 
-/* fixed-height rows so every day cell is identical; busy days scroll internally */
-.calendar { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 116px; gap: 8px; }
+/* roomy month grid: fixed-height rows so every day cell is identical */
+.calendar { display: grid; grid-template-columns: repeat(7, 1fr); grid-auto-rows: 160px; gap: 5px; }
 .cal-dow { font-family: var(--font-mono); font-size: 11px; letter-spacing: .1em; text-transform: uppercase;
   color: var(--ink-3); text-align: center; padding: 6px 0 2px; }
-.cal-cell { height: 116px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r);
-  padding: 8px; display: flex; flex-direction: column; gap: 6px; overflow: hidden; transition: border-color .18s var(--ease); }
+.cal-cell { height: 160px; background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r);
+  padding: 7px; display: flex; flex-direction: column; gap: 5px; overflow: hidden; transition: border-color .18s var(--ease); }
 .cal-cell--empty { background: transparent; border: 1px dashed var(--rule); }
 .cal-cell:not(.cal-cell--empty):hover { border-color: var(--line-strong); }
 .cal-cell.is-today { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-glow); }
-.cal-cell.is-today .cal-cell__num { color: var(--green-deep); font-weight: 800; }
-.cal-cell__num { font-family: var(--font-mono); font-size: 13px; color: var(--ink-2); display: flex; align-items: baseline; gap: 8px; }
-.cal-cell__count { font-size: 9px; color: var(--ink-faint); letter-spacing: .04em; }
-.cal-cell__chips { display: flex; flex-direction: column; gap: 4px; overflow-y: auto; flex: 1; min-height: 0;
-  scrollbar-width: thin; scrollbar-color: var(--line-strong) transparent; }
-.cal-cell__chips::-webkit-scrollbar { width: 5px; }
-.cal-cell__chips::-webkit-scrollbar-thumb { background: var(--line-strong); border: none; border-radius: 99px; }
-.cal-cell__num { flex: none; }
+/* big day number at the top of each cell; today gets a filled pill */
+.cal-cell__num { flex: none; font-family: var(--font-mono); display: flex; align-items: center; gap: 7px; }
+.cal-cell__num b { font-size: 17px; font-weight: 700; color: var(--ink); line-height: 1; }
+.cal-cell__mon { font-size: 11px; font-weight: 700; letter-spacing: .04em; color: var(--green-deep); }
+.cal-cell.is-today .cal-cell__num b { background: var(--green); color: #fff; border-radius: 99px;
+  min-width: 24px; height: 24px; padding: 0 7px; display: inline-flex; align-items: center; justify-content: center; }
+.cal-cell__chips { display: flex; flex-direction: column; gap: 4px; overflow: hidden; flex: 1; min-height: 0; }
+.cal-cell__more { flex: none; font-family: var(--font-mono); font-size: 10.5px; color: var(--ink-3);
+  background: var(--paper-2); border-radius: 4px; padding: 3px 6px; text-align: center; }
 .cal-chip { text-align: start; border: none; border-inline-start: 3px solid var(--c); background: color-mix(in srgb, var(--c) 12%, #fff);
   border-radius: 4px; padding: 4px 7px; display: flex; flex-direction: column; line-height: 1.2; cursor: pointer;
   transition: transform .14s var(--ease), background .14s var(--ease); }
@@ -256,8 +257,9 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   /* let list rows (users/projects/fields) wrap their controls instead of overflowing */
   .row-item { flex-wrap: wrap; gap: 10px 12px; padding: 14px 16px; }
   .row-item > .grow { flex: 1 1 140px; }
-  .calendar { gap: 4px; grid-auto-rows: 88px; }
-  .cal-cell { height: 88px; padding: 5px; }
+  .calendar { gap: 3px; grid-auto-rows: 150px; }
+  .cal-cell { height: 150px; padding: 5px; }
+  .cal-cell__num b { font-size: 16px; }
   .cal-chip small { display: none; }
   .cal-legend { font-size: 12px; }
   /* keep month navigation fully visible (overflow-x:hidden was clipping it) */
