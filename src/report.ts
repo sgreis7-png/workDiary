@@ -9,9 +9,12 @@ export const LOGO_URL = `${SUPA}/storage/v1/object/public/brand/logo.png`
 const esc = (s: string) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
 
+// NOTE: the email edge function (supabase/functions/send-entry) renders a near-
+// identical template; keep them in sync. They can't share code across the
+// browser/Deno boundary. logoUrl is a param so this stays pure/testable.
 export function buildReportHtml(o: {
   projectName: string; authorName: string; entry: Entry; defs: FieldDef[]
-}): string {
+}, logoUrl: string = LOGO_URL): string {
   const I = '#14181b', MUT = '#5a655d', LINE = '#d9ded4', GREEN = '#3aaa35'
   const v = o.entry.values
   const rows = o.defs
@@ -28,7 +31,7 @@ export function buildReportHtml(o: {
 
   return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;max-width:680px">
     <table role="presentation" width="680" cellpadding="0" cellspacing="0" style="width:680px;max-width:100%;background:#fff;border:1px solid ${LINE};border-radius:16px;overflow:hidden">
-      <tr><td style="padding:28px 32px 18px;border-bottom:4px solid ${GREEN}"><img src="${LOGO_URL}" height="44" style="height:44px;display:block" alt="Agrotop" /></td></tr>
+      <tr><td style="padding:28px 32px 18px;border-bottom:4px solid ${GREEN}"><img src="${logoUrl}" height="44" style="height:44px;display:block" alt="Agrotop" /></td></tr>
       <tr><td style="padding:26px 32px 8px">
         <div style="font-size:15px;color:${MUT}">יומן עבודה · ${esc(o.entry.work_date)}</div>
         <div style="font-size:30px;font-weight:800;color:${I};margin-top:6px">${esc(o.projectName)}</div>

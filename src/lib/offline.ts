@@ -15,7 +15,7 @@ export interface PendingEntry {
 export async function queueEntry(d: { project_id: string; values: Record<string, string>; files: File[] }): Promise<void> {
   const id = crypto.randomUUID()
   await set(id, { id, created_at: new Date().toISOString(), ...d } satisfies PendingEntry, store)
-  window.dispatchEvent(new Event('wd-queued'))
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('wd-queued'))
 }
 
 export async function pendingCount(): Promise<number> {
