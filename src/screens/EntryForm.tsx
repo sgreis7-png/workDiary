@@ -167,7 +167,7 @@ export default function EntryForm() {
           <label className="photo-drop">
             <span className="plus">＋</span>
             <small>{t('add_photo')}</small>
-            <input type="file" accept="image/*" capture="environment" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
+            <input type="file" accept="image/*" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
           </label>
         </motion.div>
 
