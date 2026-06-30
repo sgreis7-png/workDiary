@@ -3,8 +3,10 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Field, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
+import { MicButton } from '../components/MicButton'
 import { useI18n } from '../i18n'
-import { createEntry, getEntry, getEntryPhotos, updateEntry } from '../api'
+import { createEntry, getEntry, getEntryPhotos, lastEntryForProject, updateEntry } from '../api'
+import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import type { FieldDef } from '../data'
@@ -86,6 +88,26 @@ export default function EntryForm() {
     }
   }
 
+  // copy values from the project's most recent entry (recurring sites)
+  const [copyBusy, setCopyBusy] = useState(false)
+  const copyLast = async () => {
+    if (!project) { setErrors(['__project__']); window.scrollTo({ top: 0, behavior: 'smooth' }); return }
+    setCopyBusy(true)
+    try {
+      const e = await lastEntryForProject(project)
+      if (e) { const v = { ...e.values }; delete v.work_date; setValues(v) }
+    } finally { setCopyBusy(false) }
+  }
+  // autofill location from GPS
+  const [locBusy, setLocBusy] = useState(false)
+  const fillLocation = async (key: string) => {
+    setLocBusy(true)
+    try { const r = await getLocationName(); if (r) set(key, r.name) }
+    catch { /* permission denied / unavailable */ }
+    finally { setLocBusy(false) }
+  }
+  const appendText = (key: string, txt: string) => set(key, (values[key] ? values[key] + ' ' : '') + txt)
+
   if (loading) return <Loader full />
 
   const textDefs = defs.filter((f) => f.type !== 'photo')
@@ -121,6 +143,11 @@ export default function EntryForm() {
               {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
             </select>
           </Field>
+          {!editing && (
+            <Button variant="ghost" onClick={copyLast} disabled={copyBusy || !project} style={{ marginTop: 10 }}>
+              {copyBusy ? <><span className="spin" /> {t('copy_last')}</> : <>⧉ {t('copy_last')}</>}
+            </Button>
+          )}
         </motion.div>
 
         <motion.div variants={riseIn} className="form__section">{t('nav_log')}</motion.div>
@@ -133,12 +160,22 @@ export default function EntryForm() {
               <div key={f.id} className={wrap}>
                 <Field label={label(f)} hint={f.required ? <span className="req">{t('required_field')}</span> : t('optional')}>
                   {f.type === 'long_text' ? (
-                    <textarea {...common} onChange={(e) => set(f.key, e.target.value)} />
+                    <div className="input-affix">
+                      <textarea {...common} onChange={(e) => set(f.key, e.target.value)} />
+                      <MicButton onText={(txt) => appendText(f.key, txt)} />
+                    </div>
                   ) : f.type === 'select' ? (
                     <select {...common} onChange={(e) => set(f.key, e.target.value)}>
                       <option value="">—</option>
                       {f.options.map((o, i) => <option key={i} value={lang === 'he' ? o.he : o.en}>{lang === 'he' ? o.he : o.en}</option>)}
                     </select>
+                  ) : f.key === 'site_location' ? (
+                    <div className="input-affix">
+                      <input {...common} type="text" onChange={(e) => set(f.key, e.target.value)} />
+                      <button type="button" className="mic" title={t('use_gps')} onClick={() => fillLocation(f.key)} disabled={locBusy}>
+                        {locBusy ? <span className="spin" /> : '📍'}
+                      </button>
+                    </div>
                   ) : (
                     <input {...common} type={f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : f.type === 'phone' ? 'tel' : 'text'}
                       onChange={(e) => set(f.key, e.target.value)} />

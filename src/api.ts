@@ -65,6 +65,16 @@ export async function listEntries(projectId?: string): Promise<Entry[]> {
   return hydrate((data ?? []) as unknown as EntryRow[])
 }
 
+/** Most recent entry for a project — used by "copy last entry". */
+export async function lastEntryForProject(projectId: string): Promise<Entry | null> {
+  const { data, error } = await supabase.from('entries').select(ENTRY_SELECT)
+    .eq('project_id', projectId).order('work_date', { ascending: false }).limit(1)
+  if (error) throw error
+  const rows = (data ?? []) as unknown as EntryRow[]
+  if (!rows.length) return null
+  return (await hydrate(rows))[0]
+}
+
 export async function getEntry(id: string): Promise<Entry | null> {
   const { data, error } = await supabase.from('entries').select(ENTRY_SELECT).eq('id', id).maybeSingle()
   if (error) throw error

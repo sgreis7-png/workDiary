@@ -318,3 +318,14 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .prio button { border: none; background: transparent; cursor: pointer; padding: 2px 9px; color: var(--ink-3); font-size: 11px; }
 .prio button:hover { color: var(--green-deep); background: var(--green-tint); }
 .prio__n { font-family: var(--font-mono); font-weight: 700; font-size: 13px; padding: 1px 0; color: var(--ink); min-width: 18px; text-align: center; }
+
+/* ---------- input affix (mic / gps button inside a field) ---------- */
+.input-affix { position: relative; }
+.input-affix textarea, .input-affix input { padding-inline-end: 46px; }
+.mic { position: absolute; inset-inline-end: 8px; top: 8px; width: 34px; height: 34px;
+  display: inline-flex; align-items: center; justify-content: center; font-size: 15px;
+  background: #fff; border: 1px solid var(--line-strong); border-radius: 8px; cursor: pointer; }
+.mic:hover { border-color: var(--green); }
+.mic:disabled { opacity: .6; }
+.mic--on { background: var(--clay-tint); border-color: var(--clay); animation: micpulse 1s ease-in-out infinite; }
+@keyframes micpulse { 50% { box-shadow: 0 0 0 5px rgba(194,84,31,.18); } }

@@ -107,6 +107,8 @@ const STRINGS = {
   prio_medium:      { he: 'בינונית', en: 'Medium' },
   prio_high:        { he: 'גבוהה', en: 'High' },
   prio_critical:    { he: 'קריטית', en: 'Critical' },
+  copy_last:        { he: 'העתק מרשומה אחרונה', en: 'Copy last entry' },
+  use_gps:          { he: 'מיקום GPS', en: 'Use GPS location' },
   delete_entry:     { he: 'מחיקה', en: 'Delete' },
   confirm_delete_entry: { he: 'למחוק רשומה זו לצמיתות? פעולה זו אינה הפיכה.', en: 'Delete this entry permanently? This cannot be undone.' },
   copy_report:      { he: 'צור דוח למייל', en: 'Create email report' },
