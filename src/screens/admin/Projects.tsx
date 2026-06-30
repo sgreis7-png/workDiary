@@ -43,9 +43,7 @@ export default function Projects() {
   const remove = async (p: Project) => {
     if (!window.confirm(`${t('confirm_delete_project')}\n\n${p.name}`)) return
     try { await deleteProject(p.id); await Promise.all([reloadProjects(), reloadAssignments()]) }
-    catch (e) {
-      window.alert((e as Error).message === 'project_has_entries' ? t('project_has_entries') : '⚠ ' + String((e as Error).message ?? e))
-    }
+    catch (e) { window.alert('⚠ ' + String((e as Error).message ?? e)) }
   }
 
   // priority levels: 0 none .. 4 critical
