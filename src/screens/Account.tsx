@@ -17,7 +17,7 @@ export default function Account() {
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr(''); setOk(false)
-    if (pw.length < 6) return setErr(t('err_pw_short'))
+    if (pw.length < 8) return setErr(t('err_pw_short'))
     if (pw !== pw2) return setErr(t('err_pw_match'))
     setBusy(true)
     try {

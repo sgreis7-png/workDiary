@@ -23,7 +23,7 @@ export default function Login() {
     e.preventDefault()
     setErr('')
     if (mode === 'register') {
-      if (pw.length < 6) return setErr(t('err_pw_short'))
+      if (pw.length < 8) return setErr(t('err_pw_short'))
       if (pw !== pw2) return setErr(t('err_pw_match'))
     }
     setBusy(true)

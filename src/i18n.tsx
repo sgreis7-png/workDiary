@@ -81,7 +81,7 @@ const STRINGS = {
   err_not_invited: { he: 'הדוא״ל לא מורשה. פנה למנהל המערכת.', en: 'Email not authorized. Contact your admin.' },
   err_already_reg: { he: 'הדוא״ל כבר רשום — היכנס עם הסיסמה.', en: 'Email already registered — sign in instead.' },
   err_pw_match:    { he: 'הסיסמאות אינן תואמות', en: 'Passwords do not match' },
-  err_pw_short:    { he: 'סיסמה קצרה מדי (6 תווים לפחות)', en: 'Password too short (min 6 chars)' },
+  err_pw_short:    { he: 'סיסמה קצרה מדי (8 תווים לפחות)', en: 'Password too short (min 8 chars)' },
   err_must_reg:    { he: 'משתמש לא רשום — בצע הרשמה בפעם הראשונה.', en: 'Not registered yet — register first.' },
   err_bad_login:   { he: 'דוא״ל או סיסמה שגויים', en: 'Wrong email or password' },
   err_disabled:    { he: 'החשבון מושבת. פנה למנהל המערכת.', en: 'Account disabled. Contact your admin.' },

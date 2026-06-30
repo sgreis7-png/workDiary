@@ -11,7 +11,7 @@ Deno.serve(async (req) => {
   try {
     const { email, password } = await req.json()
     if (!email || !password) return json({ error: 'err_bad_login' }, 400)
-    if (String(password).length < 6) return json({ error: 'err_pw_short' }, 400)
+    if (String(password).length < 8) return json({ error: 'err_pw_short' }, 400)
 
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
