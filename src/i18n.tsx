@@ -115,6 +115,7 @@ const STRINGS = {
   proj_end:         { he: 'תאריך סיום', en: 'End date' },
   proj_staff:       { he: 'צוות', en: 'Staff' },
   proj_notes:       { he: 'הערות', en: 'Notes' },
+  assign_staff:     { he: 'שיוך עובדים', en: 'Assign staff' },
   my_priority:      { he: 'העדפה שלי', en: 'My priority' },
   company_priority: { he: 'עדיפות חברה', en: 'Company priority' },
   prio_none:        { he: 'ללא', en: 'None' },

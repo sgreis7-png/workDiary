@@ -356,3 +356,10 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
   .export-entry { page-break-after: always; margin-bottom: 0; }
   .export-entry:last-child { page-break-after: auto; }
 }
+
+/* ---------- staff picker ---------- */
+.staff-pick { display: flex; flex-wrap: wrap; gap: 8px; }
+.staff-chip { padding: 7px 13px; border-radius: 99px; border: 1px solid var(--line-strong);
+  font-size: 14px; cursor: pointer; user-select: none; transition: all .15s var(--ease); background: #fff; }
+.staff-chip:hover { border-color: var(--green); }
+.staff-chip.on { background: var(--green-deep); color: #fff; border-color: var(--green-deep); }

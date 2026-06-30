@@ -187,9 +187,27 @@ export async function setMyPriority(project_id: string, priority: number): Promi
     .upsert({ user_id: u.user!.id, project_id, priority }, { onConflict: 'user_id,project_id' })
   if (error) throw error
 }
-export async function createProject(p: ProjectInput): Promise<void> {
-  const { error } = await supabase.from('projects').insert(cleanProject(p))
+export async function createProject(p: ProjectInput): Promise<string> {
+  const { data, error } = await supabase.from('projects').insert(cleanProject(p)).select('id').single()
   if (error) throw error
+  return data.id as string
+}
+
+// project ↔ worker assignments (optional, admin-managed)
+export async function fetchAssignments(): Promise<Record<string, string[]>> {
+  const { data, error } = await supabase.from('project_assignments').select('project_id,user_id')
+  if (error) throw error
+  const m: Record<string, string[]> = {}
+  for (const r of data as { project_id: string; user_id: string }[]) (m[r.project_id] ||= []).push(r.user_id)
+  return m
+}
+export async function setProjectStaff(projectId: string, userIds: string[]): Promise<void> {
+  await supabase.from('project_assignments').delete().eq('project_id', projectId)
+  if (userIds.length) {
+    const { error } = await supabase.from('project_assignments')
+      .insert(userIds.map((user_id) => ({ project_id: projectId, user_id })))
+    if (error) throw error
+  }
 }
 export async function updateProject(id: string, p: ProjectInput): Promise<void> {
   const { error } = await supabase.from('projects').update(cleanProject(p)).eq('id', id)

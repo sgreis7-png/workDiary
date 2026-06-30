@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, Field, stagger, riseIn } from '../../components/ui'
 import { useI18n } from '../../i18n'
-import { createProject, setProjectActive, updateProject } from '../../api'
+import { createProject, setProjectActive, setProjectStaff, updateProject } from '../../api'
 import { useStore } from '../../store'
 import { useAuth } from '../../auth'
 import type { Project, ProjectInput } from '../../data'
@@ -15,7 +15,7 @@ const empty: ProjectInput = {
 export default function Projects() {
   const { t } = useI18n()
   const { isAdmin } = useAuth()
-  const { projects, myPriorities, setUserPriority, reloadProjects } = useStore()
+  const { projects, myPriorities, setUserPriority, reloadProjects, assignments, userMap, userName, reloadAssignments } = useStore()
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
 
   const toggle = async (id: string, active: boolean) => { await setProjectActive(id, !active); await reloadProjects() }
@@ -56,6 +56,11 @@ export default function Projects() {
               {(p.start_date || p.end_date) && <Tag tone="muted">🗓 {p.start_date || '…'} → {p.end_date || '…'}</Tag>}
               {p.staff && <Tag tone="muted">👥 {p.staff}</Tag>}
             </div>
+            {(assignments[p.id]?.length ?? 0) > 0 && (
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 8 }}>
+                {assignments[p.id].map((uid) => <Tag key={uid} tone="green">👤 {userName(uid)}</Tag>)}
+              </div>
+            )}
             {p.notes && <p style={{ marginTop: 10, color: 'var(--ink-2)', fontSize: 14 }}>{p.notes}</p>}
 
             {/* personal priority — every user sets their own here */}
@@ -77,7 +82,7 @@ export default function Projects() {
             initial={editing === 'new' ? empty : editing}
             isNew={editing === 'new'}
             onClose={() => setEditing(null)}
-            onSaved={async () => { await reloadProjects(); setEditing(null) }}
+            onSaved={async () => { await Promise.all([reloadProjects(), reloadAssignments()]); setEditing(null) }}
           />
         )}
       </AnimatePresence>
@@ -88,16 +93,18 @@ export default function Projects() {
     initial: ProjectInput; isNew: boolean; onClose: () => void; onSaved: () => void
   }) {
     const [form, setForm] = useState<ProjectInput>({ ...initial })
+    const [staffIds, setStaffIds] = useState<string[]>(isNew ? [] : (assignments[(initial as Project).id] ?? []))
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState('')
     const set = (k: keyof ProjectInput, v: string | boolean | number | null) => setForm((f) => ({ ...f, [k]: v }))
+    const toggleStaff = (uid: string) => setStaffIds((s) => s.includes(uid) ? s.filter((x) => x !== uid) : [...s, uid])
 
     const save = async () => {
       if (!form.name.trim()) { setErr(t('project_name')); return }
       setBusy(true); setErr('')
       try {
-        if (isNew) await createProject(form)
-        else await updateProject((initial as Project).id, form)
+        const id = isNew ? await createProject(form) : ((await updateProject((initial as Project).id, form)), (initial as Project).id)
+        await setProjectStaff(id, staffIds)
         onSaved()
       } catch (e) { setErr(String((e as Error).message ?? e)); setBusy(false) }
     }
@@ -128,6 +135,17 @@ export default function Projects() {
             </div>
             <Field label={t('proj_notes')}>
               <textarea className="input" value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />
+            </Field>
+            <Field label={`${t('assign_staff')} (${t('optional')})`}>
+              <div className="staff-pick">
+                {Object.entries(userMap).length === 0 && <span className="count mono">—</span>}
+                {Object.entries(userMap).map(([uid, name]) => (
+                  <label key={uid} className={`staff-chip ${staffIds.includes(uid) ? 'on' : ''}`}>
+                    <input type="checkbox" checked={staffIds.includes(uid)} onChange={() => toggleStaff(uid)} hidden />
+                    {name}
+                  </label>
+                ))}
+              </div>
             </Field>
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink-3)' }}>
               <input type="checkbox" checked={form.active} onChange={(e) => set('active', e.target.checked)} /> {t('active')}

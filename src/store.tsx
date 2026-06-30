@@ -2,7 +2,7 @@
 // and refreshed by admin screens. Keeps the synchronous projectName/color/userName
 // helpers the screens rely on, backed by live data.
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, ReactNode } from 'react'
-import { fetchFieldDefs, fetchMyPriorities, fetchProjects, fetchUserMap, setMyPriority } from './api'
+import { fetchAssignments, fetchFieldDefs, fetchMyPriorities, fetchProjects, fetchUserMap, setMyPriority } from './api'
 import { colorForIndex, FieldDef, Project } from './data'
 import { useAuth } from './auth'
 
@@ -11,6 +11,7 @@ interface Store {
   fieldDefs: FieldDef[]
   userMap: Record<string, string>
   myPriorities: Record<string, number>
+  assignments: Record<string, string[]> // project_id -> user_id[]
   ready: boolean
   projectName: (id: string) => string
   projectColor: (id: string) => string
@@ -19,6 +20,7 @@ interface Store {
   setUserPriority: (projectId: string, priority: number) => Promise<void>
   reloadProjects: () => Promise<void>
   reloadFields: () => Promise<void>
+  reloadAssignments: () => Promise<void>
 }
 
 const Ctx = createContext<Store>(null as unknown as Store)
@@ -30,18 +32,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [fieldDefs, setFieldDefs] = useState<FieldDef[]>([])
   const [userMap, setUserMap] = useState<Record<string, string>>({})
   const [myPriorities, setMyPriorities] = useState<Record<string, number>>({})
+  const [assignments, setAssignments] = useState<Record<string, string[]>>({})
   const [ready, setReady] = useState(false)
 
   const reloadProjects = useCallback(async () => setRawProjects(await fetchProjects()), [])
   const reloadFields = useCallback(async () => setFieldDefs(await fetchFieldDefs()), [])
+  const reloadAssignments = useCallback(async () => setAssignments(await fetchAssignments()), [])
 
   useEffect(() => {
     if (!user) { setReady(false); return }
     let alive = true
     ;(async () => {
-      const [p, f, u, pri] = await Promise.all([fetchProjects(), fetchFieldDefs(), fetchUserMap(), fetchMyPriorities()])
+      const [p, f, u, pri, asg] = await Promise.all([fetchProjects(), fetchFieldDefs(), fetchUserMap(), fetchMyPriorities(), fetchAssignments()])
       if (!alive) return
-      setRawProjects(p); setFieldDefs(f); setUserMap(u); setMyPriorities(pri); setReady(true)
+      setRawProjects(p); setFieldDefs(f); setUserMap(u); setMyPriorities(pri); setAssignments(asg); setReady(true)
     })().catch((e) => console.error('store load failed', e))
     return () => { alive = false }
   }, [user])
@@ -68,8 +72,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      projects, fieldDefs, userMap, myPriorities, ready,
-      projectName, projectColor, userName, effectivePriority, setUserPriority, reloadProjects, reloadFields,
+      projects, fieldDefs, userMap, myPriorities, assignments, ready,
+      projectName, projectColor, userName, effectivePriority, setUserPriority, reloadProjects, reloadFields, reloadAssignments,
     }}>
       {children}
     </Ctx.Provider>
