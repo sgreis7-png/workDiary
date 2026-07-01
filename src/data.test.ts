@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { colorForIndex, entryMatchesText, groupByDate, PROJECT_COLORS } from './data'
+import { colorForIndex, entryMatchesText, groupByDate, PROJECT_COLORS, deptIdOf, hasMalfunction, deptLabel, MALFUNCTION_DEPT_KEY } from './data'
 
 describe('colorForIndex', () => {
   it('maps each index to its palette color', () => {
@@ -43,5 +43,27 @@ describe('groupByDate', () => {
   })
   it('returns an empty object for no items', () => {
     expect(groupByDate([])).toEqual({})
+  })
+})
+
+describe('malfunction helpers', () => {
+  it('deptIdOf maps he, en, id, blank, unknown', () => {
+    expect(deptIdOf('הנדסה')).toBe('engineering')
+    expect(deptIdOf('Engineering')).toBe('engineering')
+    expect(deptIdOf('engineering')).toBe('engineering')
+    expect(deptIdOf('  RECHESH? ')).toBe('none') // unknown → none
+    expect(deptIdOf('רכש')).toBe('purchasing')
+    expect(deptIdOf('')).toBe('none')
+    expect(deptIdOf(undefined)).toBe('none')
+    expect(deptIdOf('אין')).toBe('none')
+  })
+  it('hasMalfunction is true only for a real dept', () => {
+    expect(hasMalfunction({ [MALFUNCTION_DEPT_KEY]: 'אין' })).toBe(false)
+    expect(hasMalfunction({})).toBe(false)
+    expect(hasMalfunction({ [MALFUNCTION_DEPT_KEY]: 'קבלנים' })).toBe(true)
+  })
+  it('deptLabel returns localized label', () => {
+    expect(deptLabel('finance', 'he')).toBe('כספים')
+    expect(deptLabel('finance', 'en')).toBe('Finance')
   })
 })

@@ -33,7 +33,7 @@ export interface Entry {
 export interface DistList { id: string; name: string; recipients: Recipient[] }
 export interface Recipient { id: string; email: string; display_name?: string | null }
 
-export interface SearchFilters { projectId?: string; userId?: string; from?: string; to?: string; text?: string }
+export interface SearchFilters { projectId?: string; userId?: string; from?: string; to?: string; text?: string; malfunction?: string }
 
 // stable color per project, by its position in the active list
 export const PROJECT_COLORS = ['#3aaa35', '#c2541f', '#277d23', '#d8a01a', '#6c747a', '#1c5a1a', '#a8431a']
@@ -52,4 +52,42 @@ export function groupByDate<T extends { work_date: string }>(items: T[]): Record
   const map: Record<string, T[]> = {}
   for (const it of items) (map[it.work_date] ||= []).push(it)
   return map
+}
+
+// ---------- malfunction (בלת"מ) ----------
+export const MALFUNCTION_DEPT_KEY = 'malfunction_dept'
+export const MALFUNCTION_TEXT_KEY = 'malfunction'
+
+export interface MalfunctionDept { id: string; he: string; en: string }
+export const MALFUNCTION_DEPTS: MalfunctionDept[] = [
+  { id: 'none',                he: 'אין',              en: 'None' },
+  { id: 'logistics_warehouse', he: 'לוגיסטיקה ומחסן', en: 'Logistics & warehouse' },
+  { id: 'contractors',         he: 'קבלנים',           en: 'Contractors' },
+  { id: 'customers',           he: 'לקוחות',           en: 'Customers' },
+  { id: 'engineering',         he: 'הנדסה',            en: 'Engineering' },
+  { id: 'purchasing',          he: 'רכש',              en: 'Purchasing' },
+  { id: 'finance',             he: 'כספים',            en: 'Finance' },
+  { id: 'other',               he: 'אחר',              en: 'Other' },
+]
+
+/** Map a stored dept value (he OR en OR canonical id, any case; blank) to a canonical id.
+ *  Unknown / blank → 'none' (fail-safe: never counts as a malfunction unless clearly one). */
+export function deptIdOf(value: string | undefined | null): string {
+  const v = String(value ?? '').trim().toLowerCase()
+  if (!v) return 'none'
+  const hit = MALFUNCTION_DEPTS.find(
+    (d) => d.id === v || d.he.toLowerCase() === v || d.en.toLowerCase() === v,
+  )
+  return hit ? hit.id : 'none'
+}
+
+/** True when the entry records a real malfunction (dept id ≠ 'none'). */
+export function hasMalfunction(values: Record<string, string>): boolean {
+  return deptIdOf(values?.[MALFUNCTION_DEPT_KEY]) !== 'none'
+}
+
+/** Localized label for a canonical dept id. */
+export function deptLabel(id: string, lang: 'he' | 'en'): string {
+  const d = MALFUNCTION_DEPTS.find((x) => x.id === id)
+  return d ? d[lang] : id
 }
