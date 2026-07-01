@@ -82,6 +82,10 @@ const STRINGS = {
   to_date:        { he: 'עד תאריך', en: 'To' },
   free_text:      { he: 'טקסט חופשי', en: 'Free text' },
   results_n:      { he: 'תוצאות', en: 'results' },
+  malf_filter:    { he: 'בלת"מ', en: 'Malfunction' },
+  malf_all:       { he: 'הכל', en: 'All' },
+  malf_any:       { he: 'עם בלת"מ בלבד', en: 'Only malfunctions' },
+  malf_none:      { he: 'ללא בלת"מ', en: 'No malfunction' },
 
   date:           { he: 'תאריך', en: 'Date' },
   role:           { he: 'תפקיד', en: 'Role' },

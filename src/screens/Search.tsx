@@ -6,32 +6,34 @@ import { useI18n } from '../i18n'
 import { searchEntries } from '../api'
 import { useStore } from '../store'
 import type { Entry } from '../data'
+import { MALFUNCTION_DEPTS, MALFUNCTION_DEPT_KEY, deptIdOf, deptLabel, hasMalfunction } from '../data'
 
 export default function Search() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const nav = useNavigate()
   const { projects, projectName } = useStore()
   const [projectId, setProjectId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [text, setText] = useState('')
+  const [malfunction, setMalfunction] = useState('')
   const [results, setResults] = useState<Entry[] | null>(null)
   const [busy, setBusy] = useState(false)
 
   // Live search: runs as criteria change; clears the moment all criteria are empty.
   useEffect(() => {
-    const hasCriteria = Boolean(text.trim() || projectId || from || to)
+    const hasCriteria = Boolean(text.trim() || projectId || from || to || malfunction)
     if (!hasCriteria) { setResults(null); setBusy(false); return }
     setBusy(true)
     let alive = true
     const handle = setTimeout(() => {
-      searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined })
+      searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined, malfunction: malfunction || undefined })
         .then((r) => { if (alive) setResults(r) })
         .catch(() => { if (alive) setResults([]) })
         .finally(() => { if (alive) setBusy(false) })
     }, 300)
     return () => { alive = false; clearTimeout(handle) }
-  }, [projectId, from, to, text])
+  }, [projectId, from, to, text, malfunction])
 
   return (
     <div className="page">
@@ -54,6 +56,16 @@ export default function Search() {
             {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
+        <Field label={t('malf_filter')}>
+          <select className="input" value={malfunction} onChange={(e) => setMalfunction(e.target.value)}>
+            <option value="">{t('malf_all')}</option>
+            <option value="any">{t('malf_any')}</option>
+            <option value="none">{t('malf_none')}</option>
+            {MALFUNCTION_DEPTS.filter((d) => d.id !== 'none').map((d) => (
+              <option key={d.id} value={d.id}>{lang === 'he' ? d.he : d.en}</option>
+            ))}
+          </select>
+        </Field>
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
         <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
@@ -70,6 +82,9 @@ export default function Search() {
                   <div style={{ color: 'var(--ink-2)', fontSize: 14, marginTop: 2 }}>{e.values.daily_content}</div>
                 </div>
                 <WeatherChip value={e.values.weather} />
+                {hasMalfunction(e.values) && (
+                  <Tag tone="clay">בלת"מ · {deptLabel(deptIdOf(e.values[MALFUNCTION_DEPT_KEY]), lang)}</Tag>
+                )}
                 {e.last_sent_at && <Tag tone="green">✓</Tag>}
               </motion.div>
             ))}

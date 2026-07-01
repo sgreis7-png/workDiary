@@ -1,7 +1,7 @@
 // All Supabase data access. Function names mirror the old mock helpers so screens
 // read the same — only now they're async and hit the real database.
 import { supabase } from './lib/supabase'
-import { entryMatchesText } from './data'
+import { entryMatchesText, hasMalfunction, deptIdOf, MALFUNCTION_DEPT_KEY } from './data'
 import type { AppUser, DistList, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
 
 // ---------- reference data ----------
@@ -172,6 +172,11 @@ export async function searchEntries(f: SearchFilters): Promise<Entry[]> {
   if (error) throw error
   let entries = await hydrate((data ?? []) as unknown as EntryRow[])
   if (f.text) entries = entries.filter((e) => entryMatchesText(e.values, f.text!))
+  if (f.malfunction) {
+    if (f.malfunction === 'any') entries = entries.filter((e) => hasMalfunction(e.values))
+    else if (f.malfunction === 'none') entries = entries.filter((e) => !hasMalfunction(e.values))
+    else entries = entries.filter((e) => deptIdOf(e.values[MALFUNCTION_DEPT_KEY]) === f.malfunction)
+  }
   return entries
 }
 
