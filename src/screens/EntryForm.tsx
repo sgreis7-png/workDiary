@@ -177,9 +177,11 @@ export default function EntryForm() {
             const invalid = errors.includes(f.key)
             const common = { className: 'input', value: values[f.key] ?? '', style: invalid ? { borderColor: 'var(--clay)' } : undefined }
             const wrap = f.type === 'long_text' ? 'span-2' : ''
+            // malfunction description becomes required once a real department (≠ none) is chosen
+            const condReq = f.key === MALFUNCTION_TEXT_KEY && deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none'
             return (
               <div key={f.id} className={wrap}>
-                <Field label={label(f)} hint={f.required ? <span className="req">{t('required_field')}</span> : t('optional')}>
+                <Field label={label(f)} hint={(f.required || condReq) ? <span className="req">{t('required_field')}</span> : t('optional')}>
                   {f.type === 'long_text' ? (
                     <div className="input-affix">
                       <textarea {...common} onChange={(e) => set(f.key, e.target.value)} />
