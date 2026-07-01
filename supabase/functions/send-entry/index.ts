@@ -101,8 +101,11 @@ function renderHtml(o: {
 }): string {
   const I = '#14181b', MUT = '#6c747a', LINE = '#e4e8e1', GREEN = '#3aaa35', BG = '#f4f1ea'
 
+  const NONE_DEPT = new Set(['', 'none', 'אין'])
+  const noMalf = NONE_DEPT.has(String(o.values['malfunction_dept'] ?? '').trim().toLowerCase())
+  const skipMalf = (key: string) => noMalf && (key === 'malfunction_dept' || key === 'malfunction')
   const rows = o.defs
-    .filter((f) => f.type !== 'photo' && String(o.values[f.key] ?? '').trim())
+    .filter((f) => f.type !== 'photo' && String(o.values[f.key] ?? '').trim() && !skipMalf(f.key))
     .map((f, i) => `<tr style="background:${i % 2 ? '#fafbf9' : '#ffffff'}">
       <td style="padding:12px 16px;color:${MUT};font-weight:700;white-space:nowrap;vertical-align:top;width:38%;border-bottom:1px solid ${LINE}">${esc(f.label_he)}</td>
       <td style="padding:12px 16px;color:${I};vertical-align:top;border-bottom:1px solid ${LINE}">${esc(o.values[f.key]).replace(/\n/g, '<br>')}</td>
