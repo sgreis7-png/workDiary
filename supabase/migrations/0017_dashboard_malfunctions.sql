@@ -8,6 +8,8 @@ returns json language sql stable security definer set search_path = public as $$
     'this_month', (select count(*) from entries where work_date >= date_trunc('month', current_date)::date),
     'total_photos', (select count(*) from entry_photos),
     'unsent', (select count(*) from entries where last_sent_at is null),
+    -- Intentional: literal none-set ('', 'none', 'אין') mirrors the edge function's inline
+    -- NONE_DEPT set in supabase/functions/send-entry/index.ts (Deno can't import deptIdOf).
     'malfunctions_this_month', (select count(*) from entries
         where work_date >= date_trunc('month', current_date)::date
           and coalesce(lower(btrim(values->>'malfunction_dept')), '') not in ('', 'none', 'אין')),

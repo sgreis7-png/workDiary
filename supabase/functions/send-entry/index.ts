@@ -101,6 +101,7 @@ function renderHtml(o: {
 }): string {
   const I = '#14181b', MUT = '#6c747a', LINE = '#e4e8e1', GREEN = '#3aaa35', BG = '#f4f1ea'
 
+  // Intentional: literal none-set (Deno can't import deptIdOf). Keep in sync with SQL dashboard_stats none-set.
   const NONE_DEPT = new Set(['', 'none', 'אין'])
   const noMalf = NONE_DEPT.has(String(o.values['malfunction_dept'] ?? '').trim().toLowerCase())
   const skipMalf = (key: string) => noMalf && (key === 'malfunction_dept' || key === 'malfunction')

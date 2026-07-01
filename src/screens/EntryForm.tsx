@@ -44,7 +44,8 @@ export default function EntryForm() {
       if (!alive) return
       if (!e) { nav('/'); return }
       if (e.created_by !== user?.id && !isAdmin) { nav(`/entry/${id}`); return } // not owner/admin
-      setProject(e.project_id); setValues(e.values)
+      setProject(e.project_id)
+      setValues({ [MALFUNCTION_DEPT_KEY]: deptLabel('none', lang), ...e.values })
       const ph = await getEntryPhotos(id)
       if (alive) { setPhotos(ph.map((p) => ({ url: p.url, path: p.path }))); setLoading(false) }
     })().catch(() => { if (alive) { setSaveErr('load failed'); setLoading(false) } })

@@ -142,7 +142,9 @@ export default function Malfunctions() {
                 <div className="grow">
                   <b>{projectName(e.project_id)}</b>{' '}
                   <Tag tone="clay">{deptLabel(deptIdOf(e.values[MALFUNCTION_DEPT_KEY]), lang)}</Tag>
-                  <div style={{ color: 'var(--ink-2)', fontSize: 14, marginTop: 2 }}>{e.values[MALFUNCTION_TEXT_KEY]}</div>
+                  {e.values[MALFUNCTION_TEXT_KEY] && (
+                    <div style={{ color: 'var(--ink-2)', fontSize: 14, marginTop: 2 }}>{e.values[MALFUNCTION_TEXT_KEY]}</div>
+                  )}
                 </div>
               </div>
             ))}

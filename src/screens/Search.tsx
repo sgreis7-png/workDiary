@@ -83,7 +83,7 @@ export default function Search() {
                 </div>
                 <WeatherChip value={e.values.weather} />
                 {hasMalfunction(e.values) && (
-                  <Tag tone="clay">בלת"מ · {deptLabel(deptIdOf(e.values[MALFUNCTION_DEPT_KEY]), lang)}</Tag>
+                  <Tag tone="clay">{t('malf_filter')} · {deptLabel(deptIdOf(e.values[MALFUNCTION_DEPT_KEY]), lang)}</Tag>
                 )}
                 {e.last_sent_at && <Tag tone="green">✓</Tag>}
               </motion.div>
