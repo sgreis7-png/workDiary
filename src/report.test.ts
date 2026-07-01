@@ -55,16 +55,27 @@ describe('malfunction rendering', () => {
     { id: '5', key: 'malfunction', label_he: 'בלת"מ', label_en: 'Malfunction', type: 'long_text', required: false, options: [], sort_order: 87, active: true },
   ]
   it('hides both malfunction fields when dept is none', () => {
-    const e: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'אין', malfunction: '' } }
+    const e: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'אין', malfunction: 'טקסט שצריך להיעלם' } }
     const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs: mfDefs }, 'https://logo.png')
-    // labels contain a literal `"`, which buildReportHtml's esc() renders as &quot;
+    // label contains a literal `"`, which buildReportHtml's esc() renders as &quot;
     expect(html).not.toContain('מחלקת בלת&quot;מ')
-    expect(html).not.toContain('בלת&quot;מ')
+    expect(html).not.toContain('טקסט שצריך להיעלם')
   })
   it('shows malfunction block when a real dept is set', () => {
     const e: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'הנדסה', malfunction: 'צינור נשבר' } }
     const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs: mfDefs }, 'https://logo.png')
     expect(html).toContain('מחלקת בלת&quot;מ')
     expect(html).toContain('צינור נשבר')
+  })
+  it('buildReportText hides malfunction fields when dept is none, shows them for a real dept', () => {
+    const noneEntry: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'אין', malfunction: 'טקסט שצריך להיעלם' } }
+    const noneText = buildReportText({ projectName: 'p', authorName: 'a', entry: noneEntry, defs: mfDefs })
+    expect(noneText).not.toContain('טקסט שצריך להיעלם')
+    expect(noneText).not.toContain('מחלקת בלת"מ')
+
+    const realEntry: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'הנדסה', malfunction: 'צינור נשבר' } }
+    const realText = buildReportText({ projectName: 'p', authorName: 'a', entry: realEntry, defs: mfDefs })
+    expect(realText).toContain('צינור נשבר')
+    expect(realText).toContain('מחלקת בלת"מ')
   })
 })
