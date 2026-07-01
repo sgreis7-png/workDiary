@@ -11,7 +11,9 @@ import {
 } from '../data'
 import type { Entry } from '../data'
 
-export default function Malfunctions() {
+// Malfunction (בלת"מ) analytics — rendered as a section inside the Dashboard (סקירה),
+// not a standalone screen. Self-contained: own filters + client-side aggregation.
+export default function MalfunctionsSection() {
   const { t, lang } = useI18n()
   const nav = useNavigate()
   const { projects, projectName, projectColor } = useStore()
@@ -57,17 +59,14 @@ export default function Malfunctions() {
   }, [entries])
 
   return (
-    <div className="page">
-      <div className="page__head">
-        <div>
-          <div className="kicker">{t('app_sub')}</div>
-          <h1 className="page-title">{t('nav_malfunctions')}</h1>
-        </div>
+    <motion.div variants={riseIn} className="panel" id="malfunctions" style={{ padding: 22, display: 'grid', gap: 16 }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 12, flexWrap: 'wrap' }}>
+        <h3 style={{ margin: 0 }}>⚠ {t('nav_malfunctions')}</h3>
         {busy ? <span className="count mono"><span className="spin" /></span>
           : <span className="count mono">{stats.total} {t('malf_count')}</span>}
       </div>
 
-      <div className="search-bar">
+      <div className="search-bar" style={{ marginTop: 0 }}>
         <Field label={t('project')}>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
@@ -78,7 +77,7 @@ export default function Malfunctions() {
         <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
 
-      <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 16, marginTop: 16 }}>
+      <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 16 }}>
         <motion.div variants={riseIn} className="stat-grid">
           <div className="panel stat"><div className="stat__value">{stats.total}</div><div className="stat__label">{t('malf_total')}</div></div>
         </motion.div>
@@ -151,6 +150,6 @@ export default function Malfunctions() {
           </div>
         </motion.div>
       </motion.div>
-    </div>
+    </motion.div>
   )
 }

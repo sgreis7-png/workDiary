@@ -6,6 +6,7 @@ import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
 import { fetchDashboardStats, type DashboardStats } from '../api'
 import { useStore } from '../store'
+import MalfunctionsSection from './Malfunctions'
 
 const STALE_DAYS = 7
 const dayKey = (d: Date) => d.toISOString().slice(0, 10)
@@ -59,7 +60,7 @@ export default function Dashboard() {
           <Stat label={t('dash_week')} value={stats.thisWeek} />
           <Stat label={t('dash_active_projects')} value={stats.activeProjects} />
           <Stat label={t('dash_photos')} value={stats.totalPhotos} />
-          <Stat label={t('dash_malfunctions')} value={stats.malfunctionsMonth} tone={stats.malfunctionsMonth ? 'clay' : 'green'} clickable onClick={() => nav('/malfunctions')} />
+          <Stat label={t('dash_malfunctions')} value={stats.malfunctionsMonth} tone={stats.malfunctionsMonth ? 'clay' : 'green'} clickable onClick={() => document.getElementById('malfunctions')?.scrollIntoView({ behavior: 'smooth' })} />
           <Stat label={t('dash_unsent')} value={stats.unsent} tone={stats.unsent ? 'clay' : 'green'} clickable onClick={() => nav('/export')} />
           <Stat label={t('dash_needs_update')} value={stats.stale.length} tone={stats.stale.length ? 'clay' : 'green'} />
         </motion.div>
@@ -122,6 +123,9 @@ export default function Dashboard() {
             </div>
           </motion.div>
         </div>
+
+        {/* malfunctions (בלת"מ) analytics */}
+        <MalfunctionsSection />
       </motion.div>
     </div>
   )

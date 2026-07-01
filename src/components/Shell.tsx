@@ -56,7 +56,6 @@ export function Shell() {
       <nav className="nav" onClick={() => setOpen(false)}>
         <NavItem to="/" end icon="▤" label={t('nav_log')} />
         <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />
-        <NavItem to="/malfunctions" icon="⚠" label={t('nav_malfunctions')} />
         <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />
         <NavItem to="/new" icon="✛" label={t('nav_new')} />
         <NavItem to="/search" icon="⌕" label={t('nav_search')} />
