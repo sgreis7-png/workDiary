@@ -47,3 +47,24 @@ describe('buildReportText', () => {
     expect(text).toContain('כפר יובל')
   })
 })
+
+describe('malfunction rendering', () => {
+  const mfDefs: FieldDef[] = [
+    ...defs,
+    { id: '4', key: 'malfunction_dept', label_he: 'מחלקת בלת"מ', label_en: 'Malfunction dept.', type: 'select', required: true, options: [], sort_order: 86, active: true },
+    { id: '5', key: 'malfunction', label_he: 'בלת"מ', label_en: 'Malfunction', type: 'long_text', required: false, options: [], sort_order: 87, active: true },
+  ]
+  it('hides both malfunction fields when dept is none', () => {
+    const e: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'אין', malfunction: '' } }
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs: mfDefs }, 'https://logo.png')
+    // labels contain a literal `"`, which buildReportHtml's esc() renders as &quot;
+    expect(html).not.toContain('מחלקת בלת&quot;מ')
+    expect(html).not.toContain('בלת&quot;מ')
+  })
+  it('shows malfunction block when a real dept is set', () => {
+    const e: Entry = { ...entry, values: { ...entry.values, malfunction_dept: 'הנדסה', malfunction: 'צינור נשבר' } }
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs: mfDefs }, 'https://logo.png')
+    expect(html).toContain('מחלקת בלת&quot;מ')
+    expect(html).toContain('צינור נשבר')
+  })
+})

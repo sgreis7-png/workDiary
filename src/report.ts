@@ -2,6 +2,7 @@
 // "Open in Outlook" copy-paste flow (no email provider needed; the user sends it
 // from their own mail client).
 import type { Entry, FieldDef } from './data'
+import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY } from './data'
 
 const SUPA = import.meta.env.VITE_SUPABASE_URL as string
 export const LOGO_URL = `${SUPA}/storage/v1/object/public/brand/logo.png`
@@ -17,8 +18,10 @@ export function buildReportHtml(o: {
 }, logoUrl: string = LOGO_URL): string {
   const I = '#14181b', MUT = '#5a655d', LINE = '#d9ded4', GREEN = '#3aaa35'
   const v = o.entry.values
+  const skipMalf = (key: string) =>
+    deptIdOf(v[MALFUNCTION_DEPT_KEY]) === 'none' && (key === MALFUNCTION_DEPT_KEY || key === MALFUNCTION_TEXT_KEY)
   const rows = o.defs
-    .filter((f) => f.type !== 'photo' && String(v[f.key] ?? '').trim())
+    .filter((f) => f.type !== 'photo' && String(v[f.key] ?? '').trim() && !skipMalf(f.key))
     .map((f, i) => `<tr style="background:${i % 2 ? '#f6f8f4' : '#ffffff'}">
       <td style="padding:14px 18px;color:${MUT};font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">${esc(f.label_he)}</td>
       <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(v[f.key]).replace(/\n/g, '<br>')}</td></tr>`).join('')
@@ -47,9 +50,12 @@ export function buildReportHtml(o: {
 /** Plain-text fallback (for clients that ignore HTML, and the mailto body). */
 export function buildReportText(o: { projectName: string; authorName: string; entry: Entry; defs: FieldDef[] }): string {
   const v = o.entry.values
+  const skipMalf = (key: string) =>
+    deptIdOf(v[MALFUNCTION_DEPT_KEY]) === 'none' && (key === MALFUNCTION_DEPT_KEY || key === MALFUNCTION_TEXT_KEY)
   const lines = [`יומן עבודה — ${o.projectName} — ${o.entry.work_date}`, `מנהל עבודה: ${o.authorName}`, '']
   for (const f of o.defs) {
     if (f.type === 'photo') continue
+    if (skipMalf(f.key)) continue
     const val = String(v[f.key] ?? '').trim()
     if (val) lines.push(`${f.label_he}: ${val}`)
   }
