@@ -35,6 +35,7 @@ export default function Dashboard() {
     return {
       total: raw.total, thisWeek: raw.this_week, thisMonth: raw.this_month ?? 0,
       totalPhotos: raw.total_photos ?? 0, unsent: raw.unsent ?? 0,
+      malfunctionsMonth: raw.malfunctions_this_month ?? 0,
       activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, byWeather: raw.by_weather, workers,
     }
   }, [raw, projects])
@@ -58,6 +59,7 @@ export default function Dashboard() {
           <Stat label={t('dash_week')} value={stats.thisWeek} />
           <Stat label={t('dash_active_projects')} value={stats.activeProjects} />
           <Stat label={t('dash_photos')} value={stats.totalPhotos} />
+          <Stat label={t('dash_malfunctions')} value={stats.malfunctionsMonth} tone={stats.malfunctionsMonth ? 'clay' : 'green'} clickable onClick={() => nav('/malfunctions')} />
           <Stat label={t('dash_unsent')} value={stats.unsent} tone={stats.unsent ? 'clay' : 'green'} clickable onClick={() => nav('/export')} />
           <Stat label={t('dash_needs_update')} value={stats.stale.length} tone={stats.stale.length ? 'clay' : 'green'} />
         </motion.div>

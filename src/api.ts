@@ -151,6 +151,7 @@ export async function deleteEntry(id: string): Promise<void> {
 export interface DashboardStats {
   total: number; this_week: number
   this_month?: number; total_photos?: number; unsent?: number
+  malfunctions_this_month?: number
   by_project: Record<string, number>
   latest_by_project: Record<string, string>
   by_worker: Record<string, number>

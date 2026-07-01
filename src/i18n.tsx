@@ -12,6 +12,7 @@ const STRINGS = {
   dash_week:      { he: 'השבוע', en: 'This week' },
   dash_month:     { he: 'החודש', en: 'This month' },
   dash_photos:    { he: 'תמונות שטח', en: 'Field photos' },
+  dash_malfunctions: { he: 'בלת"מ החודש', en: 'Malfunctions this month' },
   dash_unsent:    { he: 'דוחות שלא נשלחו', en: 'Unsent reports' },
   dash_active_projects: { he: 'פרויקטים פעילים', en: 'Active projects' },
   dash_needs_update: { he: 'דורשים עדכון', en: 'Need update' },
