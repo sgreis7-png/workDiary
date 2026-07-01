@@ -10,6 +10,7 @@ import { queueEntry } from '../lib/offline'
 import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
+import { MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, deptIdOf, deptLabel } from '../data'
 import type { FieldDef } from '../data'
 
 // new photo (file) or an existing one (storage path)
@@ -24,7 +25,9 @@ export default function EntryForm() {
   const { user, isAdmin } = useAuth()
   const defs = fieldDefs.filter((f) => f.active).sort((a, b) => a.sort_order - b.sort_order)
   const [project, setProject] = useState('')
-  const [values, setValues] = useState<Record<string, string>>({})
+  const [values, setValues] = useState<Record<string, string>>(
+    editing ? {} : { [MALFUNCTION_DEPT_KEY]: deptLabel('none', lang) },
+  )
   const [photos, setPhotos] = useState<Photo[]>([])
   const [removedPaths, setRemovedPaths] = useState<string[]>([])
   const [errors, setErrors] = useState<string[]>([])
@@ -69,6 +72,10 @@ export default function EntryForm() {
       if (!f.required) continue
       if (f.type === 'photo') { if (photos.length < 1) errs.push('__photos__'); continue }
       if (!(values[f.key] ?? '').trim()) errs.push(f.key)
+    }
+    // Malfunction description is required only when a real department is selected.
+    if (deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && !(values[MALFUNCTION_TEXT_KEY] ?? '').trim()) {
+      errs.push(MALFUNCTION_TEXT_KEY)
     }
     setErrors(errs)
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
