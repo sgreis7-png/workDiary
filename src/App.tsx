@@ -15,6 +15,7 @@ import Account from './screens/Account'
 import ReportView from './screens/ReportView'
 import Dashboard from './screens/Dashboard'
 import ExportView from './screens/ExportView'
+import Malfunctions from './screens/Malfunctions'
 import Projects from './screens/admin/Projects'
 import FormBuilder from './screens/admin/FormBuilder'
 import Users from './screens/admin/Users'
@@ -48,6 +49,7 @@ export default function App() {
         <Route path="account" element={<Account />} />
         <Route path="projects" element={<Projects />} />
         <Route path="export" element={<ExportView />} />
+        <Route path="malfunctions" element={<Malfunctions />} />
         <Route path="admin/fields" element={<RequireAdmin><FormBuilder /></RequireAdmin>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
       </Route>

@@ -34,6 +34,12 @@ const STRINGS = {
   nav_users:      { he: 'משתמשים והרשאות', en: 'Users & permissions' },
   nav_admin:      { he: 'ניהול', en: 'Admin' },
   nav_export:     { he: 'ייצוא דוחות', en: 'Export' },
+  nav_malfunctions: { he: 'בלת"מ', en: 'Malfunctions' },
+  malf_count:       { he: 'בלת"מ', en: 'malfunctions' },
+  malf_total:       { he: 'סה״כ בלת"מ בטווח', en: 'Total in range' },
+  malf_by_dept:     { he: 'בלת"מ לפי מחלקה', en: 'By department' },
+  malf_by_project:  { he: 'בלת"מ לפי פרויקט', en: 'By project' },
+  malf_over_time:   { he: 'בלת"מ לאורך זמן', en: 'Over time' },
 
   login_title:    { he: 'כניסה למערכת', en: 'Sign in' },
   login_sub:      { he: 'מידע עסקי מאובטח — לעובדי אגרוטופ בלבד', en: 'Secured business data — Agrotop staff only' },
