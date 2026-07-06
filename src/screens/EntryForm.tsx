@@ -7,6 +7,7 @@ import { MicButton } from '../components/MicButton'
 import { useI18n } from '../i18n'
 import { createEntry, getEntry, getEntryPhotos, lastEntryForProject, updateEntry } from '../api'
 import { queueEntry } from '../lib/offline'
+import { clearDraft, loadDraft, saveDraft } from '../lib/draft'
 import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
@@ -34,8 +35,28 @@ export default function EntryForm() {
   const [busy, setBusy] = useState(false)
   const [saveErr, setSaveErr] = useState('')
   const [loading, setLoading] = useState(editing)
+  // Draft persistence: phones kill the page while the camera app is open, wiping
+  // React state. The draft lives in IndexedDB until the entry is saved.
+  const draftKey = id ?? 'new'
+  const [restored, setRestored] = useState(false)
 
-  // load the entry when editing
+  // restore a pending draft (new entry)
+  useEffect(() => {
+    if (editing) return
+    let alive = true
+    ;(async () => {
+      const d = await loadDraft('new')
+      if (!alive) return
+      if (d) {
+        setProject(d.project_id)
+        setValues((v) => ({ ...v, ...d.values }))
+        setPhotos(d.files.map((f) => ({ file: f, url: URL.createObjectURL(f) })))
+      }
+    })().catch(() => {}).finally(() => { if (alive) setRestored(true) })
+    return () => { alive = false }
+  }, [editing])
+
+  // load the entry when editing (draft, if any, wins — it's newer user work)
   useEffect(() => {
     if (!id) return
     let alive = true
@@ -44,13 +65,37 @@ export default function EntryForm() {
       if (!alive) return
       if (!e) { nav('/'); return }
       if (e.created_by !== user?.id && !isAdmin) { nav(`/entry/${id}`); return } // not owner/admin
-      setProject(e.project_id)
-      setValues({ [MALFUNCTION_DEPT_KEY]: deptLabel('none', lang), ...e.values })
+      const d = await loadDraft(id).catch(() => null)
+      if (!alive) return
+      setProject(d?.project_id || e.project_id)
+      setValues({ [MALFUNCTION_DEPT_KEY]: deptLabel('none', lang), ...e.values, ...d?.values })
+      setRemovedPaths(d?.removed_paths ?? [])
       const ph = await getEntryPhotos(id)
-      if (alive) { setPhotos(ph.map((p) => ({ url: p.url, path: p.path }))); setLoading(false) }
-    })().catch(() => { if (alive) { setSaveErr('load failed'); setLoading(false) } })
+      if (alive) {
+        const kept = ph.filter((p) => !(d?.removed_paths ?? []).includes(p.path))
+        setPhotos([
+          ...kept.map((p) => ({ url: p.url, path: p.path })),
+          ...(d?.files ?? []).map((f) => ({ file: f, url: URL.createObjectURL(f) })),
+        ])
+        setLoading(false); setRestored(true)
+      }
+    })().catch(() => { if (alive) { setSaveErr('load failed'); setLoading(false); setRestored(true) } })
     return () => { alive = false }
   }, [id, user, isAdmin, nav])
+
+  // persist the draft on every change (debounced) once the initial restore is done
+  useEffect(() => {
+    if (!restored || busy) return
+    const t = setTimeout(() => {
+      void saveDraft(draftKey, {
+        project_id: project,
+        values,
+        files: photos.filter((p) => p.file).map((p) => p.file!),
+        removed_paths: removedPaths,
+      }).catch(() => {})
+    }, 400)
+    return () => clearTimeout(t)
+  }, [restored, busy, draftKey, project, values, photos, removedPaths])
 
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }))
@@ -85,19 +130,26 @@ export default function EntryForm() {
     try {
       if (editing && id) {
         await updateEntry(id, project, values, newFiles, removedPaths)
+        await clearDraft(draftKey).catch(() => {})
         nav(`/entry/${id}`)
       } else if (!navigator.onLine) {
         // offline: queue locally, sync when back online
         await queueEntry({ project_id: project, values, files: newFiles })
+        await clearDraft(draftKey).catch(() => {})
         nav('/')
       } else {
         await createEntry(project, values, newFiles)
+        await clearDraft(draftKey).catch(() => {})
         nav('/')
       }
     } catch (e) {
       // network failure while creating → queue it instead of losing the work
       if (!editing && !navigator.onLine) {
-        try { await queueEntry({ project_id: project, values, files: newFiles }); nav('/'); return } catch { /* fall through */ }
+        try {
+          await queueEntry({ project_id: project, values, files: newFiles })
+          await clearDraft(draftKey).catch(() => {})
+          nav('/'); return
+        } catch { /* fall through */ }
       }
       setSaveErr(String((e as Error).message ?? e))
       setBusy(false)
