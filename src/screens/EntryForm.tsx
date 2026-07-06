@@ -277,9 +277,14 @@ export default function EntryForm() {
             ))}
           </AnimatePresence>
           <label className="photo-drop">
+            <span className="plus">📷</span>
+            <small>{t('take_photo')}</small>
+            <input type="file" accept="image/*" capture="environment" hidden onChange={(e) => { addPhotos(e.target.files); e.currentTarget.value = '' }} />
+          </label>
+          <label className="photo-drop">
             <span className="plus">＋</span>
             <small>{t('add_photo')}</small>
-            <input type="file" accept="image/*" multiple hidden onChange={(e) => addPhotos(e.target.files)} />
+            <input type="file" accept="image/*" multiple hidden onChange={(e) => { addPhotos(e.target.files); e.currentTarget.value = '' }} />
           </label>
         </motion.div>
 
