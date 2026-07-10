@@ -44,7 +44,13 @@ export function colorForIndex(i: number): string {
 /** Case-insensitive substring match across all field values of an entry. */
 export function entryMatchesText(values: Record<string, string>, text: string): boolean {
   if (!text) return true
-  return Object.values(values).join(' ').toLowerCase().includes(text.toLowerCase())
+  // report-table values are JSON strings — match their cell contents, not the JSON syntax
+  const flat = Object.values(values).map((v) => {
+    if (typeof v !== 'string' || !v.startsWith('[')) return v
+    try { return (JSON.parse(v) as Record<string, unknown>[]).map((r) => Object.values(r ?? {}).join(' ')).join(' ') }
+    catch { return v }
+  })
+  return flat.join(' ').toLowerCase().includes(text.toLowerCase())
 }
 
 /** Group entries (or anything with work_date) by their date string. */

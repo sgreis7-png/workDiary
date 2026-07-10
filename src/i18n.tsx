@@ -168,6 +168,18 @@ const STRINGS = {
   confirm_delete_user: { he: 'למחוק משתמש זה לצמיתות? פעולה זו אינה הפיכה.', en: 'Delete this user permanently? This cannot be undone.' },
   account:          { he: 'החשבון שלי', en: 'My account' },
 
+  progress_report:{ he: 'דו״ח התקדמות', en: 'Progress report' },
+  house_pct:      { he: 'סה״כ התקדמות — מבנה', en: 'House total' },
+  col_task:       { he: 'משימה מכנית', en: 'Mechanical task' },
+  col_pct:        { he: 'אחוז ביצוע', en: 'Percentage completed' },
+  col_remarks:    { he: 'הערות', en: 'Remarks' },
+  add_row:        { he: 'הוספת שורה', en: 'Add row' },
+  missing_material:{ he: 'חומר חסר', en: 'Missing material' },
+  col_code:       { he: 'מק״ט', en: 'Code number' },
+  col_desc:       { he: 'תיאור', en: 'Description' },
+  col_amount:     { he: 'כמות', en: 'Amount' },
+  col_reason:     { he: 'סיבה', en: 'Reason' },
+
   today:          { he: 'היום', en: 'Today' },
   entries_on_day: { he: 'רשומות ביום זה', en: 'entries this day' },
   delete_list:    { he: 'מחיקת רשימה', en: 'Delete list' },

@@ -112,6 +112,42 @@ function renderHtml(o: {
       <td style="padding:12px 16px;color:${I};vertical-align:top;border-bottom:1px solid ${LINE}">${esc(o.values[f.key]).replace(/\n/g, '<br>')}</td>
     </tr>`).join('')
 
+  // Progress-report + missing-material tables (JSON strings inside values).
+  // Intentional duplication of src/lib/reportTables.ts — Deno can't import it.
+  const REASONS: Record<string, string> = {
+    '1': 'ניזוק באתר', '2': 'נגנב באתר',
+    '3': 'הפרש בין רשימת האריזה לכמות בארגז', '4': 'לא סופק מספיק',
+  }
+  const parseArr = (raw: unknown): Record<string, unknown>[] => {
+    if (typeof raw !== 'string' || !raw) return []
+    try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
+  }
+  const progress = parseArr(o.values['progress_table'])
+    .map((r) => ({ task: String(r?.task ?? ''), pct: Math.min(100, Math.max(0, Math.round(Number(r?.pct) || 0))), remarks: String(r?.remarks ?? '') }))
+    .filter((r) => r.task.trim())
+  const housePct = String(o.values['progress_house_pct'] ?? '').trim()
+  const missing = parseArr(o.values['missing_material'])
+    .map((r) => ({ code: String(r?.code ?? ''), desc: String(r?.desc ?? ''), amount: String(r?.amount ?? ''), reason: String(r?.reason ?? '') }))
+    .filter((r) => (r.code + r.desc + r.amount).trim() || r.reason)
+  const th = (s: string, w = '') =>
+    `<td style="padding:9px 12px;background:#f0f4ee;color:${I};font-weight:800;font-size:13px;border-bottom:1px solid ${LINE};${w}">${s}</td>`
+  const td = (s: string) =>
+    `<td style="padding:9px 12px;color:${I};font-size:14px;vertical-align:middle;border-bottom:1px solid ${LINE}">${s}</td>`
+  const bar = (pct: number) =>
+    `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:${LINE};border-radius:6px;height:9px;min-width:70px"><div style="width:${pct}%;background:${GREEN};height:9px;border-radius:6px"></div></div><b style="font-size:12px">${pct}%</b></div>`
+  const progressHtml = progress.length ? `
+    <div style="font-weight:800;color:${I};margin:22px 0 8px">דו״ח התקדמות${housePct ? ` · <span style="color:${GREEN}">מבנה ${esc(housePct)}%</span>` : ''}</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:10px;overflow:hidden">
+      <tr>${th('משימה מכנית', 'width:30%')}${th('אחוז ביצוע', 'width:32%')}${th('הערות')}</tr>
+      ${progress.map((r, i) => `<tr style="background:${i % 2 ? '#fafbf9' : '#ffffff'}">${td(esc(r.task))}${td(bar(r.pct))}${td(esc(r.remarks))}</tr>`).join('')}
+    </table>` : ''
+  const missingHtml = missing.length ? `
+    <div style="font-weight:800;color:${I};margin:22px 0 8px">חומר חסר</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:10px;overflow:hidden">
+      <tr>${th('מק״ט')}${th('תיאור')}${th('כמות')}${th('סיבה')}</tr>
+      ${missing.map((r, i) => `<tr style="background:${i % 2 ? '#fafbf9' : '#ffffff'}">${td(esc(r.code))}${td(esc(r.desc))}${td(esc(r.amount))}${td(esc(REASONS[r.reason] ?? ''))}</tr>`).join('')}
+    </table>` : ''
+
   const photos = o.photoUrls.length ? `
     <div style="margin-top:24px">
       <div style="font-weight:800;color:${I};margin-bottom:10px">תמונות מהשטח</div>
@@ -138,7 +174,7 @@ function renderHtml(o: {
           <!-- details -->
           <tr><td style="padding:14px 28px 4px">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:10px;overflow:hidden">${rows}</table>
-            ${photos}
+            ${progressHtml}${missingHtml}${photos}
           </td></tr>
           <!-- footer -->
           <tr><td style="padding:22px 28px 26px">

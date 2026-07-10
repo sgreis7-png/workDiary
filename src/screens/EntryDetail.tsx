@@ -9,6 +9,7 @@ import { getEntry, deleteEntry } from '../api'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import type { Entry, FieldDef } from '../data'
+import { HOUSE_PCT_KEY, MISSING_KEY, PROGRESS_KEY, filledMissing, parseMissing, parseProgress, reasonLabel } from '../lib/reportTables'
 
 export default function EntryDetail() {
   const { id } = useParams()
@@ -37,6 +38,9 @@ export default function EntryDetail() {
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const defs = fieldDefs.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
   const canManage = entry.created_by === user?.id || isAdmin
+  const progress = entry.values[PROGRESS_KEY] ? parseProgress(entry.values[PROGRESS_KEY], lang).filter((r) => r.task.trim()) : []
+  const missing = filledMissing(parseMissing(entry.values[MISSING_KEY]))
+  const housePct = entry.values[HOUSE_PCT_KEY]
 
   return (
     <div className="page">
@@ -62,6 +66,43 @@ export default function EntryDetail() {
               </motion.div>
             ))}
           </dl>
+
+          {(progress.length > 0 || housePct) && (
+            <motion.div variants={riseIn}>
+              <div className="detail__subhead">
+                {t('progress_report')}
+                {housePct ? <span className="detail__subhead-val">{t('house_pct')}: {housePct}%</span> : null}
+              </div>
+              <div className="vtable">
+                <div className="vtable__row vtable__row--head vtable__row--progress">
+                  <span>{t('col_task')}</span><span>{t('col_pct')}</span><span>{t('col_remarks')}</span>
+                </div>
+                {progress.map((r, i) => (
+                  <div key={i} className="vtable__row vtable__row--progress">
+                    <span>{r.task}</span>
+                    <span className="vbar"><span className="vbar__track"><span className="vbar__fill" style={{ width: `${r.pct}%` }} /></span><b>{r.pct}%</b></span>
+                    <span>{r.remarks}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {missing.length > 0 && (
+            <motion.div variants={riseIn}>
+              <div className="detail__subhead">{t('missing_material')}</div>
+              <div className="vtable">
+                <div className="vtable__row vtable__row--head vtable__row--missing">
+                  <span>{t('col_code')}</span><span>{t('col_desc')}</span><span>{t('col_amount')}</span><span>{t('col_reason')}</span>
+                </div>
+                {missing.map((r, i) => (
+                  <div key={i} className="vtable__row vtable__row--missing">
+                    <span>{r.code}</span><span>{r.desc}</span><span>{r.amount}</span><span>{reasonLabel(r.reason, lang)}</span>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
+          )}
         </motion.div>
 
         <div className="detail__aside">
