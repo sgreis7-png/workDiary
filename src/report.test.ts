@@ -48,6 +48,49 @@ describe('buildReportText', () => {
   })
 })
 
+describe('progress-report + missing-material rendering', () => {
+  const tables = {
+    progress_table: JSON.stringify([
+      { task: 'End set rear', pct: 80, remarks: 'Missing material BD' },
+      { task: 'System', pct: 100, remarks: '' },
+    ]),
+    progress_house_pct: '70',
+    missing_material: JSON.stringify([
+      { code: '91-00-1234', desc: 'Egg belt', amount: '2', reason: '4' },
+      { code: '', desc: '', amount: '', reason: '' }, // untouched row → dropped
+    ]),
+  }
+  const e: Entry = { ...entry, values: { ...entry.values, ...tables } }
+  const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs }, 'https://logo.png')
+  const text = buildReportText({ projectName: 'p', authorName: 'a', entry: e, defs })
+
+  it('renders the progress table with house total and bars in HTML', () => {
+    expect(html).toContain('דו״ח התקדמות')
+    expect(html).toContain('מבנה 70%')
+    expect(html).toContain('End set rear')
+    expect(html).toContain('width:80%')
+    expect(html).toContain('Missing material BD')
+  })
+  it('renders filled missing-material rows with reason text, drops untouched rows', () => {
+    expect(html).toContain('חומר חסר')
+    expect(html).toContain('91-00-1234')
+    expect(html).toContain('Egg belt')
+    expect(html).toContain('לא סופק מספיק')
+    expect((html.match(/91-00-1234/g) ?? []).length).toBe(1)
+  })
+  it('includes both tables in the plain-text version', () => {
+    expect(text).toContain('דו״ח התקדמות — מבנה 70%')
+    expect(text).toContain('End set rear: 80% — Missing material BD')
+    expect(text).toContain('חומר חסר')
+    expect(text).toContain('91-00-1234 · Egg belt · 2 · לא סופק מספיק')
+  })
+  it('omits both sections when the entry has no table data (old entries)', () => {
+    const plain = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs }, 'https://logo.png')
+    expect(plain).not.toContain('דו״ח התקדמות')
+    expect(plain).not.toContain('חומר חסר')
+  })
+})
+
 describe('malfunction rendering', () => {
   const mfDefs: FieldDef[] = [
     ...defs,
