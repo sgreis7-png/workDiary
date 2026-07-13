@@ -276,13 +276,6 @@ html[dir='ltr'] select.input { background-position: right 11px center, right 16p
 .secure-note { display: flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 11px; letter-spacing: .08em;
   color: var(--ink-3); margin-top: 20px; }
 
-/* ============ recipients ============ */
-.recipient { display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-mono); font-size: 12px;
-  padding: 5px 6px 5px 11px; border-radius: 99px; border: 1px solid var(--line); background: #fff; color: var(--ink-2); }
-.recipient__x { width: 20px; height: 20px; border-radius: 50%; border: none; background: var(--paper-2); color: var(--ink-3);
-  font-size: 11px; line-height: 1; cursor: pointer; transition: all .15s var(--ease); flex: none; }
-.recipient__x:hover { background: var(--clay); color: #fff; }
-
 /* ============ calendar ============ */
 .cal-nav { display: flex; align-items: center; gap: 8px; }
 .cal-nav .btn { padding: 8px 14px; font-size: 18px; line-height: 1; }

@@ -2,7 +2,7 @@
 // read the same — only now they're async and hit the real database.
 import { supabase } from './lib/supabase'
 import { entryMatchesText, hasMalfunction, deptIdOf, MALFUNCTION_DEPT_KEY } from './data'
-import type { AppUser, DistList, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
+import type { AppUser, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
 
 // ---------- reference data ----------
 
@@ -336,35 +336,6 @@ export async function deleteUser(email: string): Promise<void> {
 /** Current user changes their own password. */
 export async function changeMyPassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
-  if (error) throw error
-}
-
-// ---------- distribution lists ----------
-
-export async function fetchLists(): Promise<DistList[]> {
-  const { data, error } = await supabase
-    .from('distribution_lists')
-    .select('id,name,list_recipients(id,email,display_name)')
-    .order('created_at')
-  if (error) throw error
-  return (data as { id: string; name: string; list_recipients: { id: string; email: string; display_name: string | null }[] | null }[])
-    .map((l) => ({ id: l.id, name: l.name, recipients: l.list_recipients ?? [] }))
-}
-export async function createList(name: string): Promise<void> {
-  const { data: u } = await supabase.auth.getUser()
-  const { error } = await supabase.from('distribution_lists').insert({ name, owner: u.user!.id })
-  if (error) throw error
-}
-export async function deleteList(id: string): Promise<void> {
-  const { error } = await supabase.from('distribution_lists').delete().eq('id', id)
-  if (error) throw error
-}
-export async function addRecipient(list_id: string, email: string): Promise<void> {
-  const { error } = await supabase.from('list_recipients').insert({ list_id, email })
-  if (error) throw error
-}
-export async function removeRecipient(id: string): Promise<void> {
-  const { error } = await supabase.from('list_recipients').delete().eq('id', id)
   if (error) throw error
 }
 

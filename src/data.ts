@@ -30,9 +30,6 @@ export interface Entry {
   photos: string[] // signed URLs for display
 }
 
-export interface DistList { id: string; name: string; recipients: Recipient[] }
-export interface Recipient { id: string; email: string; display_name?: string | null }
-
 export interface SearchFilters { projectId?: string; userId?: string; from?: string; to?: string; text?: string; malfunction?: string }
 
 // stable color per project, by its position in the active list

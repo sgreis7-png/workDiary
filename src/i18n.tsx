@@ -28,7 +28,6 @@ const STRINGS = {
   nav_calendar:   { he: 'לוח שנה', en: 'Calendar' },
   nav_new:        { he: 'רשומה חדשה', en: 'New entry' },
   nav_search:     { he: 'חיפוש', en: 'Search' },
-  nav_lists:      { he: 'רשימות תפוצה', en: 'Distribution' },
   nav_projects:   { he: 'פרויקטים', en: 'Projects' },
   nav_fields:     { he: 'בונה הטופס', en: 'Form builder' },
   nav_users:      { he: 'משתמשים והרשאות', en: 'Users & permissions' },
@@ -104,7 +103,6 @@ const STRINGS = {
   inactive:       { he: 'לא פעיל', en: 'Inactive' },
   invite_user:    { he: 'הזמנת משתמש', en: 'Invite user' },
   permissions:    { he: 'הרשאות', en: 'Permissions' },
-  send_to:        { he: 'נמענים', en: 'Recipients' },
   individuals:    { he: 'כתובות בודדות', en: 'Individual addresses' },
   sent:           { he: 'נשלח ✓', en: 'Sent ✓' },
   sign_out:       { he: 'יציאה', en: 'Sign out' },
@@ -182,9 +180,6 @@ const STRINGS = {
 
   today:          { he: 'היום', en: 'Today' },
   entries_on_day: { he: 'רשומות ביום זה', en: 'entries this day' },
-  delete_list:    { he: 'מחיקת רשימה', en: 'Delete list' },
-  add_recipient:  { he: 'הוספת נמען', en: 'Add recipient' },
-  no_recipients:  { he: 'אין נמענים', en: 'No recipients yet' },
 } as const
 
 export const MONTHS: Record<Lang, string[]> = {

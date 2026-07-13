@@ -10,7 +10,6 @@ import Calendar from './screens/Calendar'
 import EntryForm from './screens/EntryForm'
 import EntryDetail from './screens/EntryDetail'
 import Search from './screens/Search'
-import Lists from './screens/Lists'
 import Account from './screens/Account'
 import ReportView from './screens/ReportView'
 import Dashboard from './screens/Dashboard'
@@ -44,7 +43,6 @@ export default function App() {
         <Route path="edit/:id" element={<EntryForm />} />
         <Route path="entry/:id" element={<EntryDetail />} />
         <Route path="search" element={<Search />} />
-        <Route path="lists" element={<Lists />} />
         <Route path="account" element={<Account />} />
         <Route path="projects" element={<Projects />} />
         <Route path="export" element={<ExportView />} />
