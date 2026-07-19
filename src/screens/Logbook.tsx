@@ -50,7 +50,7 @@ export default function Logbook() {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <select className="input" style={{ width: 'auto', minWidth: 200 }} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <span className="count mono">{entries.length} {t('entries')}</span>
         </div>

@@ -21,7 +21,7 @@ export default function Coops() {
     fetchAllCoops().then(setCoops).catch((e) => setErr(String(e.message ?? e)))
   }, [])
 
-  const active = projects // כמו בניהול עבודה — כל הפרויקטים, לא רק פעילים
+  const active = useMemo(() => projects.filter((p) => p.active), [projects])
   const shown = useMemo(
     () => (coops ?? []).filter((c) => !projectId || c.project_id === projectId),
     [coops, projectId],

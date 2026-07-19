@@ -24,7 +24,7 @@ export default function DefectSearch() {
     loadGateDefs().then(setDefs)
   }, [])
 
-  const active = projects // כמו בניהול עבודה — כל הפרויקטים, לא רק פעילים
+  const active = useMemo(() => projects.filter((p) => p.active), [projects])
 
   const results = useMemo(() => {
     if (!defects) return []

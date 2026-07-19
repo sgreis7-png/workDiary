@@ -35,7 +35,7 @@ export default function ExportView() {
         <Field label={t('project')}>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
         <Field label={t('user')}>
