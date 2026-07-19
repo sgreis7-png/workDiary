@@ -700,13 +700,14 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
 
 .bubble-row { display: flex; align-items: flex-end; gap: 8px; margin-bottom: 10px; }
 .bubble-row--mine { flex-direction: row-reverse; }
-.bubble { position: relative; max-width: min(72%, 520px); background: var(--panel); border: 1px solid var(--line);
-  border-radius: 16px; border-end-start-radius: 4px; padding: 9px 13px 20px; box-shadow: var(--shadow-1); }
+.bubble { max-width: min(72%, 520px); background: var(--panel); border: 1px solid var(--line);
+  border-radius: 16px; border-end-start-radius: 4px; padding: 9px 13px 6px; box-shadow: var(--shadow-1); direction: rtl; }
 .bubble--mine { background: var(--green-tint); border-color: rgba(58,170,53,.3);
   border-end-start-radius: 16px; border-end-end-radius: 4px; }
 .bubble--unacked { border-inline-start: 3px solid var(--clay); }
-.bubble p { font-size: 15.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; }
-.bubble__time { position: absolute; bottom: 4px; inset-inline-end: 11px; font-size: 10.5px; color: var(--ink-faint); direction: ltr; }
+.bubble p { font-size: 15.5px; line-height: 1.5; white-space: pre-wrap; word-break: break-word; text-align: start; unicode-bidi: plaintext; }
+.bubble__time { display: flex; justify-content: flex-end; gap: 3px; margin-top: 3px;
+  font-size: 10.5px; color: var(--ink-faint); direction: ltr; }
 .bubble__tick { color: var(--ink-faint); }
 .bubble__tick--ok { color: var(--green-deep); }
 .bubble__ack { margin-top: 8px; padding: 7px 13px; font-size: 13.5px; }

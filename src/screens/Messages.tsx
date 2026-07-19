@@ -168,7 +168,7 @@ export default function Messages() {
                     <div key={m.id}>
                       {newDay && <div className="chat__day"><span>{fmtDay(m.created_at)}</span></div>}
                       <div className={`bubble-row ${mine ? 'bubble-row--mine' : ''}`}>
-                        {!mine && <ChatAvatar meta={meta} name={m.from_name ?? m.from_email} size={32} />}
+                        <ChatAvatar meta={meta} name={mine ? (user?.name ?? '') : (m.from_name ?? m.from_email)} size={32} />
                         <div className={`bubble ${mine ? 'bubble--mine' : ''} ${!mine && !m.ack_at ? 'bubble--unacked' : ''}`}>
                           <p>{m.body}</p>
                           <span className="bubble__time mono">
