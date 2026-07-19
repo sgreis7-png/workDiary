@@ -780,3 +780,6 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
 .user-menu__panel button:hover { background: var(--paper); }
 .user-menu__sep { height: 1px; background: var(--line); margin: 5px 8px; }
 .user-menu__danger { color: var(--clay) !important; }
+.sidebar__top { display: flex; align-items: stretch; gap: 8px; }
+.sidebar__top .user-menu { flex: 1; min-width: 0; }
+.sidebar__top .notif__bell { height: auto; width: 46px; border-radius: var(--r-lg); }

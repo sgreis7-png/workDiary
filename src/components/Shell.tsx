@@ -115,7 +115,10 @@ export function Shell() {
         <div className="sub">{t('app_title')} · {t('app_sub')}</div>
       </div>
 
-      <UserMenu avatarUrl={avatarUrl} onAbout={() => setAboutOpen(true)} />
+      <div className="sidebar__top">
+        <UserMenu avatarUrl={avatarUrl} onAbout={() => setAboutOpen(true)} />
+        <NotificationsBell />
+      </div>
 
       <nav className="nav" onClick={() => setOpen(false)}>
         {defectsMode ? (
@@ -153,10 +156,7 @@ export function Shell() {
       </nav>
 
       <div className="sidebar__foot">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <NotificationsBell />
-          {syncBadge}
-        </div>
+        {syncBadge}
         <LangToggle />
       </div>
     </aside>
