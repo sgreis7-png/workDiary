@@ -15,6 +15,7 @@ import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { usePerms } from '../../lib/usePerms'
 import { useDT, gateShortName } from '../../defects/i18n'
+import { sendPush } from '../../lib/push'
 import { autoNaItems, type CoopConfig } from '../../defects/rules'
 import { ProjectOpenTab } from './ProjectOpenTab'
 import { StatusSummaryTab } from './StatusSummaryTab'
@@ -171,6 +172,7 @@ export default function CoopView() {
           if (patch.assignee_email !== user.email.toLowerCase()) {
             const d = bundle?.defects.find((x) => x.id === id_)
             notifyUser(patch.assignee_email, 'הוקצה לך ליקוי', `לול ${bundle?.coop.name ?? ''} · ${d?.description ?? ''}`, `/defects/coop/${bundle?.coop.id}`)
+            sendPush([patch.assignee_email], 'הוקצה לך ליקוי', `לול ${bundle?.coop.name ?? ''} · ${d?.description ?? ''}`, `/defects/coop/${bundle?.coop.id}`)
           }
         }
       }

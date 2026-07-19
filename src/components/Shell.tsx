@@ -12,6 +12,7 @@ import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
 import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
 import { getMode } from '../defects/mode'
+import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
@@ -23,6 +24,8 @@ function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; o
   const [theme, setThemeState] = useState<Theme>(getTheme())
   const flipTheme = () => { const t = theme === 'dark' ? 'light' : 'dark'; setTheme(t); setThemeState(t) }
   const close = () => setOpen(false)
+
+  const [pushState, setPushState] = useState(typeof Notification !== 'undefined' ? Notification.permission : 'denied')
 
   useEffect(() => {
     if (!open) return
@@ -49,6 +52,11 @@ function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; o
         <div className="user-menu__panel" role="menu">
           <button role="menuitem" onClick={() => { close(); nav('/account') }}>{dt('menu_account')}</button>
           <button role="menuitem" onClick={() => { flipTheme() }}>{theme === 'dark' ? dt('menu_light') : dt('menu_dark')}</button>
+          {pushSupported() && pushState !== 'granted' && (
+            <button role="menuitem" onClick={async () => { if (user) setPushState(await enablePush(user.email)) }}>
+              🔔 {dt('menu_push')}
+            </button>
+          )}
           <button role="menuitem" onClick={() => { close(); onAbout() }}>{dt('menu_about')}</button>
           <div className="user-menu__sep" />
           <button role="menuitem" className="user-menu__danger" onClick={() => { close(); signOut(); nav('/login') }}>{dt('menu_signout')}</button>
@@ -120,6 +128,7 @@ export function Shell() {
     const t = setInterval(poll, 30_000)
     window.addEventListener('messages-changed', poll)
     fetchProfileMetas().then((m) => setAvatarUrl(m[user.email.toLowerCase()]?.avatar_url ?? null)).catch(() => {})
+    ensurePush(user.email)
     return () => { clearInterval(t); window.removeEventListener('messages-changed', poll) }
   }, [user?.email])
 

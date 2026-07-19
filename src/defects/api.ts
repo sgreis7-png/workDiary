@@ -2,6 +2,7 @@
 // Mirrors src/api.ts conventions: thin async wrappers, throw on error.
 import { supabase } from '../lib/supabase'
 import type { GateKey, ItemStatus, Severity, DefectStatus, CoopType, Responsible, SignatureRole } from './model'
+import { cachePut, cacheGet, queueOp, isNetworkError, replayOutbox, type DefectOp } from './offline'
 
 export interface Coop {
   id: string; project_id: string; name: string
@@ -56,9 +57,16 @@ export async function fetchCoops(projectId: string): Promise<Coop[]> {
 }
 
 export async function fetchAllCoops(): Promise<Coop[]> {
-  const { data, error } = await supabase.from('coops').select(COOP_COLS).order('created_at')
-  if (error) throw error
-  return data as Coop[]
+  try {
+    const { data, error } = await supabase.from('coops').select(COOP_COLS).order('created_at')
+    if (error) throw error
+    cachePut('coops', data)
+    return data as Coop[]
+  } catch (e) {
+    const cached = await cacheGet<Coop[]>('coops')
+    if (cached && isNetworkError(e)) return cached
+    throw e
+  }
 }
 
 export async function createCoop(projectId: string, name: string): Promise<Coop> {
@@ -71,8 +79,13 @@ export async function createCoop(projectId: string, name: string): Promise<Coop>
 }
 
 export async function updateCoop(id: string, patch: Partial<Omit<Coop, 'id' | 'created_at' | 'created_by'>>): Promise<void> {
-  const { error } = await supabase.from('coops').update(patch).eq('id', id)
-  if (error) throw error
+  try {
+    const { error } = await supabase.from('coops').update(patch).eq('id', id)
+    if (error) throw error
+  } catch (e) {
+    if (isNetworkError(e)) { await queueOp({ kind: 'coop_patch', id, patch: patch as Record<string, unknown> }); return }
+    throw e
+  }
 }
 
 export async function deleteCoop(id: string): Promise<void> {
@@ -83,6 +96,18 @@ export async function deleteCoop(id: string): Promise<void> {
 // ---------- full bundle ----------
 
 export async function fetchCoopBundle(coopId: string): Promise<CoopBundle> {
+  try {
+    const bundle = await fetchCoopBundleRemote(coopId)
+    cachePut(`bundle:${coopId}`, bundle)
+    return bundle
+  } catch (e) {
+    const cached = await cacheGet<CoopBundle>(`bundle:${coopId}`)
+    if (cached && isNetworkError(e)) return cached
+    throw e
+  }
+}
+
+async function fetchCoopBundleRemote(coopId: string): Promise<CoopBundle> {
   const [coopQ, respQ, itemsQ, defectsQ, sigQ, concQ] = await Promise.all([
     supabase.from('coops').select(COOP_COLS).eq('id', coopId).single(),
     supabase.from('coop_responsibilities').select('*').eq('coop_id', coopId),
@@ -115,34 +140,64 @@ async function hydrateSignatureUrls(sigs: GateSignature[]): Promise<GateSignatur
 // ---------- responsibilities / checklist ----------
 
 export async function saveResponsibility(row: CoopResponsibility): Promise<void> {
-  const { error } = await supabase.from('coop_responsibilities')
-    .upsert(row, { onConflict: 'coop_id,domain_key' })
-  if (error) throw error
+  try {
+    const { error } = await supabase.from('coop_responsibilities')
+      .upsert(row, { onConflict: 'coop_id,domain_key' })
+    if (error) throw error
+  } catch (e) {
+    if (isNetworkError(e)) { await queueOp({ kind: 'resp', row: row as unknown as Record<string, unknown> }); return }
+    throw e
+  }
 }
 
 export async function upsertChecklistItem(row: Omit<ChecklistItem, 'auto_na_reason'> & { auto_na_reason?: string | null }): Promise<void> {
-  const { error } = await supabase.from('coop_checklist_items')
-    .upsert({ ...row, updated_at: new Date().toISOString() }, { onConflict: 'coop_id,gate,item_no' })
-  if (error) throw error
+  const payload = { ...row, updated_at: new Date().toISOString() }
+  try {
+    const { error } = await supabase.from('coop_checklist_items')
+      .upsert(payload, { onConflict: 'coop_id,gate,item_no' })
+    if (error) throw error
+  } catch (e) {
+    if (isNetworkError(e)) { await queueOp({ kind: 'item', row: payload }); return }
+    throw e
+  }
 }
 
 // ---------- defects ----------
 
 export async function createDefect(coopId: string, init: Partial<Defect>): Promise<Defect> {
-  const { data: maxRow, error: maxErr } = await supabase.from('coop_defects')
-    .select('seq').eq('coop_id', coopId).order('seq', { ascending: false }).limit(1).maybeSingle()
-  if (maxErr) throw maxErr
-  const seq = (maxRow?.seq ?? 0) + 1
-  const { data, error } = await supabase.from('coop_defects')
-    .insert({ coop_id: coopId, seq, gate: init.gate, item_no: init.item_no ?? null, description: init.description ?? null, severity: init.severity ?? null, assignee: init.assignee ?? null, due_date: init.due_date ?? null, status: init.status ?? 'open', closed_on: init.closed_on ?? null, closure_note: init.closure_note ?? null })
-    .select('*').single()
-  if (error) throw error
-  return data as Defect
+  const base = {
+    coop_id: coopId, gate: init.gate, item_no: init.item_no ?? null, description: init.description ?? null,
+    severity: init.severity ?? null, assignee: init.assignee ?? null, assignee_email: init.assignee_email ?? null,
+    due_date: init.due_date ?? null, status: init.status ?? 'open', closed_on: init.closed_on ?? null,
+    closure_note: init.closure_note ?? null,
+  }
+  try {
+    const { data: maxRow, error: maxErr } = await supabase.from('coop_defects')
+      .select('seq').eq('coop_id', coopId).order('seq', { ascending: false }).limit(1).maybeSingle()
+    if (maxErr) throw maxErr
+    const seq = (maxRow?.seq ?? 0) + 1
+    const { data, error } = await supabase.from('coop_defects')
+      .insert({ ...base, seq }).select('*').single()
+    if (error) throw error
+    return data as Defect
+  } catch (e) {
+    if (isNetworkError(e)) {
+      const row = { ...base, id: crypto.randomUUID(), seq: Math.floor(Date.now() / 1000) % 100000 }
+      await queueOp({ kind: 'defect_create', row })
+      return { ...row, created_at: new Date().toISOString() } as unknown as Defect
+    }
+    throw e
+  }
 }
 
 export async function updateDefect(id: string, patch: Partial<Defect>): Promise<void> {
-  const { error } = await supabase.from('coop_defects').update(patch).eq('id', id)
-  if (error) throw error
+  try {
+    const { error } = await supabase.from('coop_defects').update(patch).eq('id', id)
+    if (error) throw error
+  } catch (e) {
+    if (isNetworkError(e)) { await queueOp({ kind: 'defect_patch', id, patch: patch as Record<string, unknown> }); return }
+    throw e
+  }
 }
 
 export async function deleteDefect(id: string): Promise<void> {
@@ -281,4 +336,36 @@ export async function notifyUser(recipientEmail: string, title: string, body: st
   await supabase.from('notifications')
     .insert({ recipient_email: recipientEmail.toLowerCase(), title, body, link })
     .then(() => {})
+}
+
+
+// ---------- offline outbox replay ----------
+
+async function applyOp(op: DefectOp): Promise<void> {
+  if (op.kind === 'item') {
+    const { error } = await supabase.from('coop_checklist_items').upsert(op.row, { onConflict: 'coop_id,gate,item_no' })
+    if (error) throw error
+  } else if (op.kind === 'resp') {
+    const { error } = await supabase.from('coop_responsibilities').upsert(op.row, { onConflict: 'coop_id,domain_key' })
+    if (error) throw error
+  } else if (op.kind === 'coop_patch') {
+    const { error } = await supabase.from('coops').update(op.patch).eq('id', op.id)
+    if (error) throw error
+  } else if (op.kind === 'defect_patch') {
+    const { error } = await supabase.from('coop_defects').update(op.patch).eq('id', op.id)
+    if (error) throw error
+  } else if (op.kind === 'defect_create') {
+    // seq may collide with rows created meanwhile - bump until it fits
+    for (let attempt = 0; attempt < 5; attempt++) {
+      const { error } = await supabase.from('coop_defects').insert({ ...op.row, seq: Number(op.row.seq) + attempt })
+      if (!error) return
+      if (!String(error.message).includes('duplicate')) throw error
+    }
+    throw new Error('defect_create seq conflict')
+  }
+}
+
+/** Replays defect-module writes queued while offline. Returns replayed count. */
+export function syncDefectsOutbox(): Promise<number> {
+  return replayOutbox(applyOp)
 }

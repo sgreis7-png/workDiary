@@ -6,6 +6,7 @@ import { useI18n } from '../i18n'
 import { fetchUsers } from '../api'
 import { fetchTasks, createTask, updateTask, deleteTask, type WorkTask } from '../lib/tasks'
 import { notifyUser } from '../defects/api'
+import { sendPush } from '../lib/push'
 import type { AppUser } from '../data'
 
 const T = {
@@ -67,6 +68,7 @@ export default function Tasks() {
       })
       if (task.assignee_email && task.assignee_email !== me) {
         notifyUser(task.assignee_email, t('assigned_notif'), task.title + (task.due_date ? ` · ${t('due')} ${new Date(task.due_date).toLocaleDateString('he-IL')}` : ''), '/tasks')
+        sendPush([task.assignee_email], t('assigned_notif'), task.title, '/tasks')
       }
       setTitle(''); setDue(''); setAssignee(''); reload()
     } catch (e) { setErr(String((e as Error).message ?? e)) }

@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { createEntry } from '../api'
 import { pendingCount, syncQueue } from './offline'
+import { outboxCount } from '../defects/offline'
+import { syncDefectsOutbox } from '../defects/api'
 
 // Tracks online status + pending offline entries, and flushes the queue when a
 // connection returns (or on mount / when a new draft is queued).
@@ -8,9 +10,9 @@ export function useOfflineSync() {
   const [online, setOnline] = useState(typeof navigator !== 'undefined' ? navigator.onLine : true)
   const [pending, setPending] = useState(0)
 
-  const refresh = useCallback(async () => setPending(await pendingCount()), [])
+  const refresh = useCallback(async () => setPending(await pendingCount() + await outboxCount()), [])
   const sync = useCallback(async () => {
-    if (navigator.onLine) await syncQueue(createEntry)
+    if (navigator.onLine) { await syncQueue(createEntry); await syncDefectsOutbox() }
     await refresh()
   }, [refresh])
 

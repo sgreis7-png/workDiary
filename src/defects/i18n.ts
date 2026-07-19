@@ -22,6 +22,7 @@ const D = {
   menu_account:      { he: '👤 החשבון שלי — פרופיל וסיסמה', en: '👤 My account — profile & password' },
   menu_light:        { he: '☀ מעבר למצב בהיר', en: '☀ Switch to light mode' },
   menu_dark:         { he: '☾ מעבר למצב כהה', en: '☾ Switch to dark mode' },
+  menu_push:         { he: 'הפעלת התראות בנייד', en: 'Enable push notifications' },
   menu_about:        { he: 'ⓘ על התוכנה', en: 'ⓘ About' },
   menu_signout:      { he: '⇥ התנתקות', en: '⇥ Sign out' },
   toast_new_msg:     { he: 'הודעה חדשה מ', en: 'New message from ' },

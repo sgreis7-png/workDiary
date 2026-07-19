@@ -11,6 +11,7 @@ import {
 } from '../lib/messages'
 import type { AppUser } from '../data'
 import { useDT } from '../defects/i18n'
+import { sendPush } from '../lib/push'
 
 type GroupMsg = UserMessage & { group_id: string }
 
@@ -137,8 +138,14 @@ export default function Messages() {
     if (!user || !activeConv || !body.trim() || busy) return
     setBusy(true); setErr('')
     try {
-      if (activeConv.isGroup) await sendGroupMessage({ email: user.email, name: user.name }, activeConv.group!.id, body.trim())
-      else await sendUserMessage({ email: user.email, name: user.name }, activeConv.email!, body.trim())
+      const text = body.trim()
+      if (activeConv.isGroup) {
+        await sendGroupMessage({ email: user.email, name: user.name }, activeConv.group!.id, text)
+        sendPush(activeConv.group!.members.filter((em) => em !== me), `${user.name} · ${activeConv.title}`, text, '/messages')
+      } else {
+        await sendUserMessage({ email: user.email, name: user.name }, activeConv.email!, text)
+        sendPush([activeConv.email!], user.name, text, '/messages')
+      }
       setBody(''); reload()
     } catch (e) { setErr(String((e as Error).message ?? e)) }
     finally { setBusy(false); inputRef.current?.focus() }
