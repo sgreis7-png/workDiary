@@ -43,9 +43,11 @@ export interface GateSummary {
   notDoneNos: number[]
 }
 
+type GateDefsLike = Record<GateKey, { items: { no: number }[] }>
+
 /** ריכוז סטטוס row — same arithmetic as the sheet's COUNTIF formulas. */
-export function gateSummary(gate: GateKey, items: ChecklistItemState[]): GateSummary {
-  const total = GATES[gate].items.length
+export function gateSummary(gate: GateKey, items: ChecklistItemState[], defs: GateDefsLike = GATES): GateSummary {
+  const total = defs[gate].items.length
   const mine = items.filter((i) => i.gate === gate)
   const count = (s: ItemStatus) => mine.filter((i) => i.status === s).length
   const done = count('done'), notDone = count('not_done'), na = count('na')
@@ -66,10 +68,11 @@ export function canSignGate(
   items: ChecklistItemState[],
   defects: DefectState[],
   concessions: ConcessionState[],
+  gateDefs: GateDefsLike = GATES,
 ): Verdict {
   const reasons: string[] = []
   const byNo = new Map(items.filter((i) => i.gate === gate).map((i) => [i.itemNo, i.status]))
-  const defs = GATES[gate].items
+  const defs = gateDefs[gate].items
 
   if (gate === 'pre_pour') {
     // עצירת חובה — כל הסעיפים "בוצע", אין ויתורים ואין "לא רלוונטי" שעוקף

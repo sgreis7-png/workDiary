@@ -20,6 +20,8 @@ import Users from './screens/admin/Users'
 import ModeSelect from './screens/ModeSelect'
 import Coops from './screens/defects/Coops'
 import CoopView from './screens/defects/CoopView'
+import CoopReport from './screens/defects/CoopReport'
+import DefectFormBuilder from './screens/admin/DefectFormBuilder'
 import { getMode } from './defects/mode'
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -51,6 +53,7 @@ export default function App() {
         <Route index element={<Home />} />
         <Route path="defects" element={<Coops />} />
         <Route path="defects/coop/:id" element={<CoopView />} />
+        <Route path="defects/coop/:id/report" element={<CoopReport />} />
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="calendar" element={<Calendar />} />
         <Route path="new" element={<EntryForm />} />
@@ -61,6 +64,7 @@ export default function App() {
         <Route path="projects" element={<Projects />} />
         <Route path="export" element={<ExportView />} />
         <Route path="admin/fields" element={<RequireAdmin><FormBuilder /></RequireAdmin>} />
+        <Route path="admin/defect-items" element={<RequireAdmin><DefectFormBuilder /></RequireAdmin>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

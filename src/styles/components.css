@@ -618,3 +618,38 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
   border-top: 1px solid var(--line); padding-top: 16px; }
 .about__foot .mono { font-size: 11.5px; color: var(--ink-faint); letter-spacing: .08em; }
 @media (max-width: 560px) { .about__grid { grid-template-columns: 1fr; } }
+
+/* ============ coop report ============ */
+.report-toolbar__btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.report-frame { background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r-lg);
+  overflow: hidden; box-shadow: var(--shadow-1); }
+.report-frame > html, .report-frame body { all: revert; }
+.alert--ok { background: var(--green-tint); color: var(--green-dark); }
+@media print {
+  .sidebar, .mobile-bar, .report-toolbar, .alert { display: none !important; }
+  .shell { display: block; }
+  .main { padding: 0; max-width: none; }
+  .report-frame { border: none; box-shadow: none; border-radius: 0; }
+  body { background: #fff !important; }
+  body::after { display: none; }
+}
+
+/* ============ defects search ============ */
+.coop-search { display: grid; grid-template-columns: 2fr 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+.search-results { margin-bottom: 26px; background: var(--panel); border: 1px solid var(--panel-edge);
+  border-radius: var(--r-lg); padding: 18px; }
+.search-results__title { font-size: 18px; margin-bottom: 4px; }
+@media (max-width: 720px) { .coop-search { grid-template-columns: 1fr; } }
+
+/* ============ defect form builder ============ */
+.fb-list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+.fb-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 12px; align-items: start;
+  padding: 10px; border: 1px solid var(--line); border-radius: var(--r-lg); background: var(--paper); }
+.fb-row--off { opacity: .55; }
+.fb-row--custom { border-style: dashed; border-color: rgba(58,170,53,.4); }
+.fb-row__no { font-weight: 700; color: var(--ink-3); padding-top: 12px; text-align: center; }
+.fb-row__text { min-height: 0; }
+.fb-row__ops { display: flex; flex-direction: column; gap: 8px; align-items: stretch; min-width: 96px; }
+.fb-add { display: flex; gap: 10px; margin-top: 18px; }
+.fb-add .input { flex: 1; }
+@media (max-width: 700px) { .fb-row { grid-template-columns: 26px 1fr; } .fb-row__ops { grid-column: 1 / -1; flex-direction: row; } }

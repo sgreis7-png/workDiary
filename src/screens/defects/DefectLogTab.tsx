@@ -1,9 +1,10 @@
 import { useState } from 'react'
 import {
-  GATES, GATE_ORDER, SEVERITY_LABELS, DEFECT_STATUS_LABELS, defectItemLabel,
+  GATES, GATE_ORDER, SEVERITY_LABELS, DEFECT_STATUS_LABELS,
   DEFECT_LOG_TITLE, DEFECT_LOG_GOLDEN_RULE,
   type GateKey, type Severity, type DefectStatus,
 } from '../../defects/model'
+import { itemLabel, type GateDefs } from '../../defects/defs'
 import type { Defect } from '../../defects/api'
 
 function TextCell({ value, onCommit, placeholder }: { value: string | null; onCommit: (v: string) => void; placeholder?: string }) {
@@ -17,8 +18,9 @@ function TextCell({ value, onCommit, placeholder }: { value: string | null; onCo
   )
 }
 
-export function DefectLogTab({ defects, onAdd, onPatch, onRemove }: {
+export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }: {
   defects: Defect[]
+  defs?: GateDefs
   onAdd: (gate: GateKey) => void
   onPatch: (id: string, patch: Partial<Defect>) => void
   onRemove: (id: string) => void
@@ -65,8 +67,8 @@ export function DefectLogTab({ defects, onAdd, onPatch, onRemove }: {
                       onChange={(e) => onPatch(d.id, { item_no: e.target.value ? Number(e.target.value) : null })}
                     >
                       <option value="">—</option>
-                      {GATES[d.gate].items.map((it) => (
-                        <option key={it.no} value={it.no}>{defectItemLabel(d.gate, it.no)}</option>
+                      {defs[d.gate].items.map((it) => (
+                        <option key={it.no} value={it.no}>{itemLabel(defs, d.gate, it.no)}</option>
                       ))}
                     </select>
                   </td>

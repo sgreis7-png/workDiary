@@ -52,7 +52,7 @@ export function Shell() {
   const [aboutOpen, setAboutOpen] = useState(false)
   const loc = useLocation()
   const nav = useNavigate()
-  const defectsMode = loc.pathname.startsWith('/defects')
+  const defectsMode = loc.pathname.startsWith('/defects') || loc.pathname.startsWith('/admin/defect-items')
 
   const syncBadge = (!online || pending > 0) ? (
     <div className={`sync-badge ${!online ? 'sync-badge--off' : 'sync-badge--pending'}`}>
@@ -69,7 +69,10 @@ export function Shell() {
 
       <nav className="nav" onClick={() => setOpen(false)}>
         {defectsMode ? (
-          <NavItem to="/defects" icon="🛡" label="לולים — תפיסת סיום שלב" />
+          <>
+            <NavItem to="/defects" icon="🛡" label="לולים — תפיסת סיום שלב" />
+            {isAdmin && <NavItem to="/admin/defect-items" icon="⚙" label="בונה טופס ליקויים" />}
+          </>
         ) : (
           <>
             <NavItem to="/" end icon="▤" label={t('nav_log')} />

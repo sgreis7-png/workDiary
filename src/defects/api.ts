@@ -184,3 +184,35 @@ export async function createConcession(
   })
   if (error) throw error
 }
+
+// ---------- report email ----------
+
+export async function sendCoopReport(coopId: string, emails: string[], subject: string, html: string, text: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('send-coop-report', {
+    body: { coop_id: coopId, emails, subject, html, text },
+  })
+  if (error) {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
+    const body = await ctx?.json?.().catch(() => null)
+    throw new Error(body?.error ?? error.message)
+  }
+  const d = data as { error?: string } | null
+  if (d?.error) throw new Error(d.error)
+}
+
+// ---------- search ----------
+
+export interface DefectSearchRow extends Defect { coop_name: string; project_id: string }
+
+/** Defects joined with their coop, for the search screen. Text filtering is client-side
+ *  (Hebrew substring across description/assignee/notes/item text). */
+export async function fetchDefectsForSearch(): Promise<DefectSearchRow[]> {
+  const { data, error } = await supabase
+    .from('coop_defects')
+    .select('*, coops!inner(name, project_id)')
+    .order('created_at', { ascending: false })
+  if (error) throw error
+  return (data as (Defect & { coops: { name: string; project_id: string } })[]).map((d) => ({
+    ...d, coop_name: d.coops.name, project_id: d.coops.project_id,
+  }))
+}

@@ -8,6 +8,7 @@ import {
   type CoopBundle, type ChecklistItem, type Coop, type CoopResponsibility, type Defect,
 } from '../../defects/api'
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
+import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { autoNaItems, type CoopConfig } from '../../defects/rules'
 import { ProjectOpenTab } from './ProjectOpenTab'
 import { StatusSummaryTab } from './StatusSummaryTab'
@@ -37,11 +38,13 @@ export default function CoopView() {
   const nav = useNavigate()
   const { projectName } = useStore()
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
+  const [defs, setDefs] = useState<GateDefs>(GATES)
   const [tab, setTab] = useState<TabKey>('project_open')
   const [err, setErr] = useState('')
 
   useEffect(() => {
     fetchCoopBundle(id).then(setBundle).catch((e) => setErr(String(e.message ?? e)))
+    loadGateDefs().then(setDefs)
   }, [id])
 
   const fail = useCallback((e: unknown) => setErr(String((e as Error).message ?? e)), [])
@@ -202,7 +205,10 @@ export default function CoopView() {
           <div className="kicker">{projectName(bundle.coop.project_id)} · תפיסת סיום שלב</div>
           <h1 className="page-title">{bundle.coop.name}</h1>
         </div>
-        <button className="btn btn--ghost" onClick={() => nav('/defects')}>→ כל הלולים</button>
+        <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
+          <button className="btn btn--primary" onClick={() => nav(`/defects/coop/${bundle.coop.id}/report`)}>⭳ דוח / ייצוא</button>
+          <button className="btn btn--ghost" onClick={() => nav('/defects')}>→ כל הלולים</button>
+        </div>
       </div>
 
       {err && <div className="alert">{err}</div>}
@@ -230,11 +236,12 @@ export default function CoopView() {
         />
       )}
       {tab === 'summary' && (
-        <StatusSummaryTab items={bundle.items} onGoGate={(g) => setTab(g)} />
+        <StatusSummaryTab items={bundle.items} defs={defs} onGoGate={(g) => setTab(g)} />
       )}
       {GATE_ORDER.includes(tab as GateKey) && (
         <GateTab
-          gate={GATES[tab as GateKey]}
+          gate={defs[tab as GateKey]}
+          defs={defs}
           bundle={bundle}
           onItem={(no, patch) => patchItem(tab as GateKey, no, patch)}
           onSign={(role, name, png) => doSign(tab as GateKey, role, name, png)}
@@ -246,6 +253,7 @@ export default function CoopView() {
       {tab === 'defect_log' && (
         <DefectLogTab
           defects={bundle.defects}
+          defs={defs}
           onAdd={addDefect} onPatch={patchDefect} onRemove={removeDefect}
         />
       )}

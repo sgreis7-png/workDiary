@@ -4,6 +4,7 @@ import {
   type GateDef, type ItemStatus, type Severity, type SignatureRole,
 } from '../../defects/model'
 import { canSignGate, isGate6Unlocked, severityRequired, type ChecklistItemState } from '../../defects/rules'
+import type { GateDefs } from '../../defects/defs'
 import type { CoopBundle, ChecklistItem } from '../../defects/api'
 import { SignaturePad } from './SignaturePad'
 import { ConcessionDialog } from './ConcessionDialog'
@@ -21,8 +22,9 @@ function TextCell({ value, onCommit, placeholder, disabled }: {
   )
 }
 
-export function GateTab({ gate, bundle, onItem, onSign, onUnsign, onConcession, onGoDefects }: {
+export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConcession, onGoDefects }: {
   gate: GateDef
+  defs: GateDefs
   bundle: CoopBundle
   onItem: (itemNo: number, patch: Partial<ChecklistItem>) => void
   onSign: (role: SignatureRole, name: string, png: Blob) => void
@@ -37,7 +39,7 @@ export function GateTab({ gate, bundle, onItem, onSign, onUnsign, onConcession, 
 
   const concessionIds = useMemo(() => bundle.concessions.map((c) => ({ defectId: c.defect_id })), [bundle.concessions])
   const defectState = bundle.defects.map((d) => ({ id: d.id, gate: d.gate, itemNo: d.item_no, severity: d.severity, status: d.status }))
-  const signVerdict = canSignGate(gate.key, state, defectState, concessionIds)
+  const signVerdict = canSignGate(gate.key, state, defectState, concessionIds, defs)
   const gate6Lock = gate.key === 'gate6'
     ? isGate6Unlocked(bundle.signatures.map((s) => ({ gate: s.gate, role: s.role })), defectState)
     : { ok: true, reasons: [] }

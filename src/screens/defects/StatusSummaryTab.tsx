@@ -1,9 +1,11 @@
 import { GATES, GATE_ORDER, type GateKey, STATUS_SUMMARY_TITLE, STATUS_SUMMARY_FOOTNOTE } from '../../defects/model'
 import { gateSummary, type ChecklistItemState } from '../../defects/rules'
+import type { GateDefs } from '../../defects/defs'
 import type { ChecklistItem } from '../../defects/api'
 
-export function StatusSummaryTab({ items, onGoGate }: {
+export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
   items: ChecklistItem[]
+  defs?: GateDefs
   onGoGate: (gate: GateKey) => void
 }) {
   const state: ChecklistItemState[] = items.map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
@@ -20,7 +22,7 @@ export function StatusSummaryTab({ items, onGoGate }: {
           </thead>
           <tbody>
             {GATE_ORDER.map((g) => {
-              const s = gateSummary(g, state)
+              const s = gateSummary(g, state, defs)
               return (
                 <tr key={g}>
                   <td>
