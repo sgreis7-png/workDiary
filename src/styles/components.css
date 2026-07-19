@@ -490,8 +490,9 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
   background: var(--clay); color: #fff; border-radius: 99px; font-size: 11px; font-weight: 700; font-family: var(--font-mono);
   display: inline-flex; align-items: center; justify-content: center; }
 .notif__backdrop { position: fixed; inset: 0; z-index: 70; }
-.notif__panel { position: absolute; bottom: 48px; inset-inline-start: 0; z-index: 71; width: 300px; max-width: 86vw;
-  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-2); overflow: hidden; max-height: 60vh; overflow-y: auto; }
+.notif__panel { position: absolute; top: calc(100% + 8px); inset-inline-start: 0; z-index: 71; width: 300px; max-width: 86vw;
+  background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--shadow-2);
+  max-height: min(60vh, 480px); overflow-y: auto; overscroll-behavior: contain; }
 /* On phones, anchoring to the 38px bell pushes the 300px panel off-screen.
    Pin it to the viewport instead so it always fits within the margins. */
 .mobile-bar .notif__panel { position: fixed; top: 58px; left: 12px; right: 12px; bottom: auto;

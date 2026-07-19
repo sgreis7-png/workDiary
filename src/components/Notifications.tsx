@@ -18,7 +18,9 @@ export function NotificationsBell() {
     return () => { window.removeEventListener('focus', load); clearInterval(id) }
   }, [load])
 
-  const unread = items.filter((i) => !i.read).length
+  // הפאנל מציג רק התראות שטרם נקראו — מה שנקרא נעלם
+  const unreadItems = items.filter((i) => !i.read)
+  const unread = unreadItems.length
   const openItem = async (n: AppNotification) => {
     if (!n.read) { await markNotificationRead(n.id); load() }
     if (n.link) { nav(n.link); setOpen(false) }
@@ -39,8 +41,8 @@ export function NotificationsBell() {
                 <b>{t('notifications')}</b>
                 {unread > 0 && <button className="btn btn--quiet" onClick={allRead}>{t('mark_all_read')}</button>}
               </div>
-              {items.length === 0 && <div className="notif__empty">{t('no_notifications')}</div>}
-              {items.map((n) => (
+              {unreadItems.length === 0 && <div className="notif__empty">{t('no_notifications')}</div>}
+              {unreadItems.map((n) => (
                 <button key={n.id} className={`notif__item ${n.read ? '' : 'unread'}`} onClick={() => openItem(n)}>
                   <b>{n.title}</b>
                   {n.body && <span>{n.body}</span>}
