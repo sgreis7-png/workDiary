@@ -24,7 +24,7 @@
   --rule:         rgba(20, 24, 27, 0.06);
 
   /* ---- type ---- */
-  --font-display: 'Frank Ruhl Libre', 'Times New Roman', serif;
+  --font-display: 'Heebo', 'Assistant', system-ui, sans-serif;
   --font-body:    'Assistant', system-ui, sans-serif;
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
