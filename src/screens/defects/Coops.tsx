@@ -14,6 +14,7 @@ export default function Coops() {
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [projectId, setProjectId] = useState('')
   const [newName, setNewName] = useState('')
+  const [newProjectId, setNewProjectId] = useState('')
   const [creating, setCreating] = useState(false)
   const [err, setErr] = useState('')
   // חיפוש ליקויים: חופשי + פרויקט + לול
@@ -57,10 +58,11 @@ export default function Coops() {
   const searching = q.trim().length > 0 || qCoop !== ''
 
   async function onCreate() {
-    if (!projectId || !newName.trim() || creating) return
+    const pid = newProjectId || projectId
+    if (!pid || !newName.trim() || creating) return
     setCreating(true); setErr('')
     try {
-      const coop = await createCoop(projectId, newName.trim())
+      const coop = await createCoop(pid, newName.trim())
       nav(`/defects/coop/${coop.id}`)
     } catch (e) {
       setErr(String((e as Error).message ?? e)); setCreating(false)
@@ -130,19 +132,20 @@ export default function Coops() {
       )}
 
       {canEdit('defects') && (
-        <>
-          <div className="coop-new">
-            <input
-              className="input" placeholder="שם / מספר לול חדש…" value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && onCreate()}
-            />
-            <button className="btn btn--primary" disabled={!projectId || !newName.trim() || creating} onClick={onCreate}>
-              ✛ לול חדש
-            </button>
-          </div>
-          {!projectId && <p className="coop-hint">ליצירת לול חדש — בחרו קודם פרויקט (למעלה).</p>}
-        </>
+        <div className="coop-new">
+          <select className="input" value={newProjectId || projectId} onChange={(e) => setNewProjectId(e.target.value)}>
+            <option value="">לאיזה פרויקט?</option>
+            {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          <input
+            className="input" placeholder="שם / מספר לול חדש…" value={newName}
+            onChange={(e) => setNewName(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && onCreate()}
+          />
+          <button className="btn btn--primary" disabled={!(newProjectId || projectId) || !newName.trim() || creating} onClick={onCreate}>
+            {creating ? 'יוצר…' : '✛ לול חדש'}
+          </button>
+        </div>
       )}
 
       {shown.length === 0 ? (

@@ -11,6 +11,7 @@ import { AboutDialog } from './AboutDialog'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
 import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
+import { getMode } from '../defects/mode'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
 function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; onAbout: () => void; compact?: boolean }) {
@@ -92,7 +93,12 @@ export function Shell() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
-  const defectsMode = loc.pathname.startsWith('/defects') || loc.pathname.startsWith('/admin/defect-items')
+  // Mode-neutral routes (messages, account) keep the stored mode's nav instead of
+  // snapping back to work mode.
+  const path = loc.pathname
+  const neutral = path.startsWith('/messages') || path.startsWith('/account')
+  const defectsMode = path.startsWith('/defects') || path.startsWith('/admin/defect-items')
+    || (neutral && getMode() === 'defects')
   const { can, canEdit } = usePerms()
 
   useEffect(() => {
