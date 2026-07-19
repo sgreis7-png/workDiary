@@ -9,15 +9,13 @@ import {
 } from '../../defects/api'
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
 import { autoNaItems, type CoopConfig } from '../../defects/rules'
-import { GuidelinesTab } from './GuidelinesTab'
 import { ProjectOpenTab } from './ProjectOpenTab'
 import { StatusSummaryTab } from './StatusSummaryTab'
 import { GateTab } from './GateTab'
 import { DefectLogTab } from './DefectLogTab'
 
-type TabKey = 'guidelines' | 'project_open' | 'summary' | GateKey | 'defect_log'
+type TabKey = 'project_open' | 'summary' | GateKey | 'defect_log'
 const TABS: { key: TabKey; label: string }[] = [
-  { key: 'guidelines', label: 'הנחיות' },
   { key: 'project_open', label: 'פתיחת פרויקט' },
   { key: 'summary', label: 'ריכוז סטטוס' },
   ...GATE_ORDER.map((g) => ({ key: g as TabKey, label: GATES[g].shortName })),
@@ -39,7 +37,7 @@ export default function CoopView() {
   const nav = useNavigate()
   const { projectName } = useStore()
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
-  const [tab, setTab] = useState<TabKey>('guidelines')
+  const [tab, setTab] = useState<TabKey>('project_open')
   const [err, setErr] = useState('')
 
   useEffect(() => {
@@ -224,7 +222,6 @@ export default function CoopView() {
         ))}
       </div>
 
-      {tab === 'guidelines' && <GuidelinesTab />}
       {tab === 'project_open' && (
         <ProjectOpenTab
           coop={bundle.coop} responsibilities={bundle.responsibilities}
