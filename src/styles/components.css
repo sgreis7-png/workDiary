@@ -739,3 +739,20 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
   .chat__pane { display: flex; }
   .chat__back { display: inline-flex; }
 }
+
+/* group chat */
+.chat__new-group { width: 100%; justify-content: center; }
+.chat-avatar--group { display: inline-flex; align-items: center; justify-content: center; border-radius: 50%;
+  background: linear-gradient(135deg, var(--green-tint), var(--paper-2)); font-size: 20px; flex: none; border: 1px solid var(--line); }
+.chat-contact__count { color: var(--ink-3); font-weight: 500; }
+.chat__members { font-size: 12px; color: var(--ink-3); max-width: 420px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.bubble__sender { font-size: 12.5px; font-weight: 700; color: var(--green-deep); margin-bottom: 2px; }
+.group-pick { display: flex; flex-direction: column; gap: 4px; max-height: 260px; overflow-y: auto;
+  border: 1px solid var(--line); border-radius: var(--r); padding: 6px; }
+.group-pick__row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: var(--r);
+  cursor: pointer; font-weight: 600; }
+.group-pick__row:hover { background: var(--paper); }
+.group-pick__row.on { background: var(--green-tint); }
+.group-pick__row input { accent-color: var(--green); width: 17px; height: 17px; }
+.chat__tools { display: flex; flex-direction: column; gap: 6px; padding: 4px; }
+.chat__search { padding: 9px 12px; font-size: 14.5px; border-radius: 10px; }

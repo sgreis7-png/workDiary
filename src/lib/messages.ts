@@ -73,3 +73,74 @@ export async function uploadMyAvatar(userId: string, png: Blob): Promise<string>
   const { data } = await supabase.storage.from('photos').createSignedUrls([path], 3600)
   return data?.[0]?.signedUrl ?? ''
 }
+
+// ---------- group chats ----------
+
+export interface ChatGroup { id: string; name: string; created_by: string; members: string[] }
+export interface MessageAck { message_id: string; email: string; ack_at: string }
+
+export async function fetchMyGroups(): Promise<ChatGroup[]> {
+  const { data: groups, error } = await supabase.from('chat_groups').select('id,name,created_by')
+  if (error) throw error
+  if (!groups?.length) return []
+  const { data: members, error: mErr } = await supabase.from('chat_group_members')
+    .select('group_id,email').in('group_id', groups.map((g) => g.id))
+  if (mErr) throw mErr
+  return (groups as { id: string; name: string; created_by: string }[]).map((g) => ({
+    ...g, members: (members as { group_id: string; email: string }[]).filter((m) => m.group_id === g.id).map((m) => m.email.toLowerCase()),
+  }))
+}
+
+export async function createGroup(name: string, creatorEmail: string, memberEmails: string[]): Promise<string> {
+  const { data, error } = await supabase.from('chat_groups')
+    .insert({ name, created_by: creatorEmail.toLowerCase() }).select('id').single()
+  if (error) throw error
+  const id = (data as { id: string }).id
+  const rows = [...new Set([creatorEmail, ...memberEmails].map((e) => e.toLowerCase()))]
+    .map((email) => ({ group_id: id, email }))
+  const { error: mErr } = await supabase.from('chat_group_members').insert(rows)
+  if (mErr) throw mErr
+  return id
+}
+
+export async function sendGroupMessage(from: { email: string; name: string }, groupId: string, body: string): Promise<void> {
+  const { error } = await supabase.from('user_messages')
+    .insert({ from_email: from.email.toLowerCase(), from_name: from.name, to_email: null, group_id: groupId, body })
+  if (error) throw error
+}
+
+export async function fetchAcks(): Promise<MessageAck[]> {
+  const { data, error } = await supabase.from('message_acks').select('*')
+  if (error) throw error
+  return data as MessageAck[]
+}
+
+export async function ackGroupMessage(messageId: string, myEmail: string): Promise<void> {
+  const { error } = await supabase.from('message_acks')
+    .upsert({ message_id: messageId, email: myEmail.toLowerCase() }, { onConflict: 'message_id,email' })
+  if (error) throw error
+}
+
+/** All messages visible to me (DMs + my groups), split. */
+export async function fetchAllChat(myEmail: string): Promise<{ dms: UserMessage[]; groupMsgs: (UserMessage & { group_id: string })[] }> {
+  const { data, error } = await supabase.from('user_messages')
+    .select('*').order('created_at', { ascending: false }).limit(500)
+  if (error) throw error
+  const all = data as (UserMessage & { group_id: string | null })[]
+  return {
+    dms: all.filter((m) => !m.group_id),
+    groupMsgs: all.filter((m) => m.group_id) as (UserMessage & { group_id: string })[],
+  }
+}
+
+/** Unacked badge: DMs awaiting my ack + group messages I haven't acked. */
+export async function countUnackedAll(myEmail: string): Promise<number> {
+  const me = myEmail.toLowerCase()
+  try {
+    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(me), fetchAcks()])
+    const myAcks = new Set(acks.filter((a) => a.email.toLowerCase() === me).map((a) => a.message_id))
+    const dmCount = dms.filter((m) => m.to_email?.toLowerCase() === me && !m.ack_at).length
+    const gCount = groupMsgs.filter((m) => m.from_email.toLowerCase() !== me && !myAcks.has(m.id)).length
+    return dmCount + gCount
+  } catch { return 0 }
+}

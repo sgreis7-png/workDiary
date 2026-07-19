@@ -10,7 +10,7 @@ import { NotificationsBell } from './Notifications'
 import { AboutDialog } from './AboutDialog'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
-import { countUnacked, fetchProfileMetas } from '../lib/messages'
+import { countUnackedAll, fetchProfileMetas } from '../lib/messages'
 
 function ThemeToggle() {
   const [theme, set] = useState<Theme>(getTheme())
@@ -61,7 +61,7 @@ export function Shell() {
 
   useEffect(() => {
     if (!user?.email) return
-    const poll = () => countUnacked(user.email).then(setUnacked)
+    const poll = () => countUnackedAll(user.email).then(setUnacked)
     poll()
     const t = setInterval(poll, 60_000)
     window.addEventListener('messages-changed', poll)
