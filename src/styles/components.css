@@ -785,3 +785,15 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
 .sidebar__top { display: flex; align-items: stretch; gap: 8px; }
 .sidebar__top .user-menu { flex: 1; min-width: 0; }
 .sidebar__top .notif__bell { height: auto; width: 46px; border-radius: var(--r-lg); }
+
+/* new-message toast (anchored beside the sidebar, near the messages tab) */
+.msg-toast { position: fixed; top: 18px; inset-inline-start: 280px; z-index: 90;
+  display: flex; align-items: center; gap: 12px; max-width: 340px; padding: 13px 16px;
+  background: var(--panel); border: 1px solid var(--green); border-inline-start: 5px solid var(--green);
+  border-radius: var(--r-lg); box-shadow: var(--shadow-2); cursor: pointer; font: inherit; text-align: start; }
+.msg-toast__icon { display: inline-flex; align-items: center; justify-content: center; width: 38px; height: 38px;
+  border-radius: 50%; background: var(--green-tint); color: var(--green-deep); font-size: 18px; flex: none; }
+.msg-toast__body { display: flex; flex-direction: column; min-width: 0; }
+.msg-toast__body b { font-size: 14.5px; }
+.msg-toast__body small { color: var(--ink-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+@media (max-width: 920px) { .msg-toast { inset-inline: 12px; top: 64px; max-width: none; } }

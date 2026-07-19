@@ -144,3 +144,17 @@ export async function countUnackedAll(myEmail: string): Promise<number> {
     return dmCount + gCount
   } catch { return 0 }
 }
+
+/** Unacked count + newest unacked incoming message (for the toast). */
+export async function chatUnackedStatus(myEmail: string): Promise<{ count: number; latest: UserMessage | null }> {
+  const me = myEmail.toLowerCase()
+  try {
+    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(me), fetchAcks()])
+    const myAcks = new Set(acks.filter((a) => a.email.toLowerCase() === me).map((a) => a.message_id))
+    const unacked = [
+      ...dms.filter((m) => m.to_email?.toLowerCase() === me && !m.ack_at),
+      ...groupMsgs.filter((m) => m.from_email.toLowerCase() !== me && !myAcks.has(m.id)),
+    ].sort((a, b) => +new Date(b.created_at) - +new Date(a.created_at))
+    return { count: unacked.length, latest: unacked[0] ?? null }
+  } catch { return { count: 0, latest: null } }
+}

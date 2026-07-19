@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
 import { Logo } from './Logo'
@@ -10,7 +10,7 @@ import { NotificationsBell } from './Notifications'
 import { AboutDialog } from './AboutDialog'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
-import { countUnackedAll, fetchProfileMetas } from '../lib/messages'
+import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
 function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; onAbout: () => void; compact?: boolean }) {
@@ -87,6 +87,9 @@ export function Shell() {
   const [aboutOpen, setAboutOpen] = useState(false)
   const [unacked, setUnacked] = useState(0)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [msgToast, setMsgToast] = useState<UserMessage | null>(null)
+  const prevUnacked = useRef(-1)
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
   const defectsMode = loc.pathname.startsWith('/defects') || loc.pathname.startsWith('/admin/defect-items')
@@ -94,9 +97,18 @@ export function Shell() {
 
   useEffect(() => {
     if (!user?.email) return
-    const poll = () => countUnackedAll(user.email).then(setUnacked)
+    const poll = () => chatUnackedStatus(user.email).then(({ count, latest }) => {
+      setUnacked(count)
+      // toast on a NEW incoming message (count rose; skip the very first poll)
+      if (prevUnacked.current >= 0 && count > prevUnacked.current && latest) {
+        setMsgToast(latest)
+        if (toastTimer.current) clearTimeout(toastTimer.current)
+        toastTimer.current = setTimeout(() => setMsgToast(null), 7000)
+      }
+      prevUnacked.current = count
+    })
     poll()
-    const t = setInterval(poll, 60_000)
+    const t = setInterval(poll, 30_000)
     window.addEventListener('messages-changed', poll)
     fetchProfileMetas().then((m) => setAvatarUrl(m[user.email.toLowerCase()]?.avatar_url ?? null)).catch(() => {})
     return () => { clearInterval(t); window.removeEventListener('messages-changed', poll) }
@@ -189,6 +201,23 @@ export function Shell() {
         </main>
       </div>
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      <AnimatePresence>
+        {msgToast && (
+          <motion.button
+            className="msg-toast"
+            initial={{ opacity: 0, y: -16, scale: .96 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10 }}
+            onClick={() => { setMsgToast(null); nav('/messages') }}
+          >
+            <span className="msg-toast__icon" aria-hidden>✉</span>
+            <span className="msg-toast__body">
+              <b>הודעה חדשה מ{msgToast.from_name ?? msgToast.from_email}</b>
+              <small>{msgToast.body.slice(0, 60)}</small>
+            </span>
+          </motion.button>
+        )}
+      </AnimatePresence>
     </div>
   )
 }
