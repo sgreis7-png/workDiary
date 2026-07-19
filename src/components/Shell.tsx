@@ -39,6 +39,7 @@ export function Shell() {
   const [open, setOpen] = useState(false)
   const loc = useLocation()
   const nav = useNavigate()
+  const defectsMode = loc.pathname.startsWith('/defects')
 
   const syncBadge = (!online || pending > 0) ? (
     <div className={`sync-badge ${!online ? 'sync-badge--off' : 'sync-badge--pending'}`}>
@@ -54,20 +55,30 @@ export function Shell() {
       </div>
 
       <nav className="nav" onClick={() => setOpen(false)}>
-        <NavItem to="/" end icon="▤" label={t('nav_log')} />
-        <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />
-        <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />
-        <NavItem to="/new" icon="✛" label={t('nav_new')} />
-        <NavItem to="/search" icon="⌕" label={t('nav_search')} />
-        <NavItem to="/projects" icon="◆" label={t('nav_projects')} />
-        <NavItem to="/export" icon="⭳" label={t('nav_export')} />
-        {isAdmin && (
+        {defectsMode ? (
+          <NavItem to="/defects" icon="🛡" label="לולים — תפיסת סיום שלב" />
+        ) : (
+          <>
+            <NavItem to="/" end icon="▤" label={t('nav_log')} />
+            <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />
+            <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />
+            <NavItem to="/new" icon="✛" label={t('nav_new')} />
+            <NavItem to="/search" icon="⌕" label={t('nav_search')} />
+            <NavItem to="/projects" icon="◆" label={t('nav_projects')} />
+            <NavItem to="/export" icon="⭳" label={t('nav_export')} />
+          </>
+        )}
+        {isAdmin && !defectsMode && (
           <>
             <div className="nav__heading">{t('nav_admin')}</div>
             <NavItem to="/admin/fields" icon="⚙" label={t('nav_fields')} />
             <NavItem to="/admin/users" icon="◎" label={t('nav_users')} />
           </>
         )}
+        <button className="nav__item nav__switch" onClick={() => nav('/mode')}>
+          <span className="ic" aria-hidden>⇄</span>
+          {defectsMode ? 'מעבר לניהול עבודה' : 'מעבר לניהול ליקויים'}
+        </button>
       </nav>
 
       <div className="sidebar__foot">
