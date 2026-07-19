@@ -6,6 +6,72 @@ import { useI18n } from '../../i18n'
 import { deleteUser, fetchUsers, inviteUser, setUserActive, setUserRole } from '../../api'
 import { useAuth } from '../../auth'
 import type { AppUser, Role } from '../../data'
+import {
+  PERM_AREAS, fetchPermOverridesFor, setPermOverride, clearPermOverride,
+  type PermArea, type PermLevel,
+} from '../../lib/perms'
+
+const LEVEL_LABELS: { value: PermLevel | 'default'; label: string }[] = [
+  { value: 'default', label: 'ברירת מחדל' },
+  { value: 'none', label: 'אין גישה' },
+  { value: 'view', label: 'צפייה בלבד' },
+  { value: 'edit', label: 'צפייה ועריכה' },
+]
+
+/** הרשאות פר-משתמש: שורה לכל אזור, בחירה גוברת על ברירת המחדל של התפקיד. */
+function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => void }) {
+  const [overrides, setOverrides] = useState<Record<string, PermLevel> | null>(null)
+  const [err, setErr] = useState('')
+
+  useEffect(() => {
+    fetchPermOverridesFor(user.email).then(setOverrides).catch((e) => setErr(String(e.message ?? e)))
+  }, [user.email])
+
+  async function change(area: PermArea, value: PermLevel | 'default') {
+    setErr('')
+    try {
+      if (value === 'default') {
+        await clearPermOverride(user.email, area)
+        setOverrides((p) => { const n = { ...(p ?? {}) }; delete n[area]; return n })
+      } else {
+        await setPermOverride(user.email, area, value)
+        setOverrides((p) => ({ ...(p ?? {}), [area]: value }))
+      }
+    } catch (e) { setErr(String((e as Error).message ?? e)) }
+  }
+
+  return (
+    <div className="modal-backdrop" onClick={onClose}>
+      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
+        <h2>הרשאות גישה — {user.name}</h2>
+        <p className="coop-intro" style={{ margin: '8px 0 14px' }}>
+          {user.role === 'admin'
+            ? 'משתמש זה אדמין — יש לו גישה מלאה לכל האזורים; ההגדרות כאן ישפיעו רק אם יורד לתפקיד עובד.'
+            : 'בחירה כאן גוברת על ברירת המחדל של תפקיד "עובד". "ברירת מחדל" מחזירה למצב הרגיל.'}
+        </p>
+        {err && <div className="alert">{err}</div>}
+        {!overrides ? <Loader label="טוען…" /> : (
+          <div className="perm-grid">
+            {PERM_AREAS.map((a) => (
+              <div key={a.key} className="perm-row">
+                <span className="perm-row__label">{a.label}</span>
+                <select
+                  className="input" value={overrides[a.key] ?? 'default'}
+                  onChange={(e) => change(a.key, e.target.value as PermLevel | 'default')}
+                >
+                  {LEVEL_LABELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                </select>
+              </div>
+            ))}
+          </div>
+        )}
+        <div className="form-actions" style={{ marginTop: 18 }}>
+          <button className="btn btn--primary" onClick={onClose}>סגירה</button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 export default function Users() {
   const { t } = useI18n()
@@ -15,6 +81,7 @@ export default function Users() {
   const [email, setEmail] = useState('')
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
+  const [permsFor, setPermsFor] = useState<AppUser | null>(null)
 
   const roleLabels = { admin: t('role_admin'), member: t('role_member') }
   const reload = () => fetchUsers().then(setUsers).catch(() => setUsers([]))
@@ -66,6 +133,7 @@ export default function Users() {
                 <button className={u.role === 'admin' ? 'on' : ''} onClick={() => setRole(u.email, 'admin')}>{t('role_admin')}</button>
               </div>
 
+              <Button variant="ghost" onClick={() => setPermsFor(u)}>🔑 הרשאות</Button>
               {!u.registered ? <Tag tone="amber">⧖ {t('pending_reg')}</Tag>
                 : u.active ? <Tag tone="green">✓ {t('registered_on')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               <Button variant="ghost" onClick={() => toggleActive(u)}>{u.active ? t('inactive') : t('active')}</Button>
@@ -88,6 +156,7 @@ export default function Users() {
       </div>
 
       <p className="secure-note">🔒 {t('authorize_hint')}</p>
+      {permsFor && <PermissionsDialog user={permsFor} onClose={() => setPermsFor(null)} />}
     </div>
   )
 }

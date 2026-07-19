@@ -5,6 +5,7 @@ import './styles/global.css'
 import './styles/components.css'
 import { I18nProvider } from './i18n'
 import { AuthProvider } from './auth'
+import { PermsProvider } from './lib/usePerms'
 import { DataProvider } from './store'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { initTheme } from './lib/theme'
@@ -17,11 +18,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
     <ErrorBoundary>
       <I18nProvider>
         <AuthProvider>
+          <PermsProvider>
           <DataProvider>
             <BrowserRouter>
               <App />
             </BrowserRouter>
           </DataProvider>
+          </PermsProvider>
         </AuthProvider>
       </I18nProvider>
     </ErrorBoundary>

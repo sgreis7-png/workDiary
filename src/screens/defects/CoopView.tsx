@@ -9,6 +9,7 @@ import {
 } from '../../defects/api'
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
+import { usePerms } from '../../lib/usePerms'
 import { autoNaItems, type CoopConfig } from '../../defects/rules'
 import { ProjectOpenTab } from './ProjectOpenTab'
 import { StatusSummaryTab } from './StatusSummaryTab'
@@ -37,6 +38,8 @@ export default function CoopView() {
   const { id = '' } = useParams()
   const nav = useNavigate()
   const { projectName } = useStore()
+  const { canEdit } = usePerms()
+  const readOnly = !canEdit('defects')
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
   const [defs, setDefs] = useState<GateDefs>(GATES)
   const [tab, setTab] = useState<TabKey>('project_open')
@@ -212,6 +215,7 @@ export default function CoopView() {
       </div>
 
       {err && <div className="alert">{err}</div>}
+      {readOnly && <div className="alert" style={{ background: 'var(--paper-2)', color: 'var(--ink-2)' }}>👁 מצב צפייה בלבד — אין לך הרשאת עריכה בניהול ליקויים.</div>}
 
       <div className="coop-tabs" role="tablist">
         {TABS.map((t) => (
@@ -228,6 +232,7 @@ export default function CoopView() {
         ))}
       </div>
 
+      <fieldset disabled={readOnly} className="perm-fieldset">
       {tab === 'project_open' && (
         <ProjectOpenTab
           coop={bundle.coop} responsibilities={bundle.responsibilities}
@@ -257,6 +262,7 @@ export default function CoopView() {
           onAdd={addDefect} onPatch={patchDefect} onRemove={removeDefect}
         />
       )}
+      </fieldset>
     </div>
   )
 }

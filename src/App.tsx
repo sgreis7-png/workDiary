@@ -22,6 +22,9 @@ import Coops from './screens/defects/Coops'
 import CoopView from './screens/defects/CoopView'
 import CoopReport from './screens/defects/CoopReport'
 import DefectFormBuilder from './screens/admin/DefectFormBuilder'
+import Messages from './screens/Messages'
+import { usePerms } from './lib/usePerms'
+import type { PermArea } from './lib/perms'
 import { getMode } from './defects/mode'
 
 function RequireAuth({ children }: { children: ReactElement }) {
@@ -33,6 +36,15 @@ function RequireAuth({ children }: { children: ReactElement }) {
 function RequireAdmin({ children }: { children: ReactElement }) {
   const { isAdmin } = useAuth()
   return isAdmin ? children : <Navigate to="/" replace />
+}
+/** Area gate: `edit` demands edit level; otherwise view is enough. */
+function RequirePerm({ area, edit, children }: { area: PermArea; edit?: boolean; children: ReactElement }) {
+  const { perm, permsReady } = usePerms()
+  const { loading } = useAuth()
+  if (loading || !permsReady) return <Loader full label="טוען…" />
+  const level = perm(area)
+  const ok = edit ? level === 'edit' : level !== 'none'
+  return ok ? children : <Navigate to="/" replace />
 }
 /** Index: first visit → mode chooser; defects mode → its home; work mode → logbook. */
 function Home() {
@@ -51,20 +63,21 @@ export default function App() {
       <Route path="/mode" element={<RequireAuth><ModeSelect /></RequireAuth>} />
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Home />} />
-        <Route path="defects" element={<Coops />} />
-        <Route path="defects/coop/:id" element={<CoopView />} />
-        <Route path="defects/coop/:id/report" element={<CoopReport />} />
-        <Route path="dashboard" element={<Dashboard />} />
-        <Route path="calendar" element={<Calendar />} />
-        <Route path="new" element={<EntryForm />} />
-        <Route path="edit/:id" element={<EntryForm />} />
-        <Route path="entry/:id" element={<EntryDetail />} />
-        <Route path="search" element={<Search />} />
+        <Route path="defects" element={<RequirePerm area="defects"><Coops /></RequirePerm>} />
+        <Route path="defects/coop/:id" element={<RequirePerm area="defects"><CoopView /></RequirePerm>} />
+        <Route path="defects/coop/:id/report" element={<RequirePerm area="defects"><CoopReport /></RequirePerm>} />
+        <Route path="dashboard" element={<RequirePerm area="dashboard"><Dashboard /></RequirePerm>} />
+        <Route path="calendar" element={<RequirePerm area="calendar"><Calendar /></RequirePerm>} />
+        <Route path="new" element={<RequirePerm area="logbook" edit><EntryForm /></RequirePerm>} />
+        <Route path="edit/:id" element={<RequirePerm area="logbook" edit><EntryForm /></RequirePerm>} />
+        <Route path="entry/:id" element={<RequirePerm area="logbook"><EntryDetail /></RequirePerm>} />
+        <Route path="search" element={<RequirePerm area="search"><Search /></RequirePerm>} />
         <Route path="account" element={<Account />} />
-        <Route path="projects" element={<Projects />} />
-        <Route path="export" element={<ExportView />} />
-        <Route path="admin/fields" element={<RequireAdmin><FormBuilder /></RequireAdmin>} />
-        <Route path="admin/defect-items" element={<RequireAdmin><DefectFormBuilder /></RequireAdmin>} />
+        <Route path="messages" element={<Messages />} />
+        <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
+        <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
+        <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
+        <Route path="admin/defect-items" element={<RequirePerm area="form_builder" edit><DefectFormBuilder /></RequirePerm>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

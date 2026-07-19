@@ -5,9 +5,11 @@ import { Loader } from '../../components/Loader'
 import { fetchAllCoops, createCoop, fetchDefectsForSearch, type Coop, type DefectSearchRow } from '../../defects/api'
 import { COOP_TYPE_LABELS, GATES, SEVERITY_LABELS, DEFECT_STATUS_LABELS } from '../../defects/model'
 import { loadGateDefs, itemLabel, type GateDefs } from '../../defects/defs'
+import { usePerms } from '../../lib/usePerms'
 
 export default function Coops() {
   const { projects, projectColor, ready } = useStore()
+  const { canEdit } = usePerms()
   const nav = useNavigate()
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [projectId, setProjectId] = useState('')
@@ -127,17 +129,21 @@ export default function Coops() {
         </div>
       )}
 
-      <div className="coop-new">
-        <input
-          className="input" placeholder="שם / מספר לול חדש…" value={newName}
-          onChange={(e) => setNewName(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && onCreate()}
-        />
-        <button className="btn btn--primary" disabled={!projectId || !newName.trim() || creating} onClick={onCreate}>
-          ✛ לול חדש
-        </button>
-      </div>
-      {!projectId && <p className="coop-hint">ליצירת לול חדש — בחרו קודם פרויקט (למעלה).</p>}
+      {canEdit('defects') && (
+        <>
+          <div className="coop-new">
+            <input
+              className="input" placeholder="שם / מספר לול חדש…" value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onCreate()}
+            />
+            <button className="btn btn--primary" disabled={!projectId || !newName.trim() || creating} onClick={onCreate}>
+              ✛ לול חדש
+            </button>
+          </div>
+          {!projectId && <p className="coop-hint">ליצירת לול חדש — בחרו קודם פרויקט (למעלה).</p>}
+        </>
+      )}
 
       {shown.length === 0 ? (
         <div className="empty">אין עדיין לולים{projectId ? ' בפרויקט הזה' : ''}. פתחו לול חדש למעלה.</div>
