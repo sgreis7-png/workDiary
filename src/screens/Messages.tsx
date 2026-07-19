@@ -110,6 +110,27 @@ export default function Messages() {
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }) }, [thread.length, active])
 
+  // כמו וואטסאפ: פתיחת השיחה מסמנת "נראה" אוטומטית על כל ההודעות הנכנסות
+  useEffect(() => {
+    if (!activeConv || !me) return
+    const pending = thread.filter((m) => {
+      if (m.from_email.toLowerCase() === me) return false
+      return activeConv.isGroup ? !myAcks.has(m.id) : !m.ack_at
+    })
+    if (!pending.length) return
+    Promise.all(pending.map((m) =>
+      activeConv.isGroup ? ackGroupMessage(m.id, me) : ackMessage(m.id),
+    )).then(() => {
+      const now = new Date().toISOString()
+      if (activeConv.isGroup) {
+        setAcks((prev) => [...prev, ...pending.map((m) => ({ message_id: m.id, email: me, ack_at: now }))])
+      } else {
+        setDms((prev) => (prev ?? []).map((x) => pending.some((p) => p.id === x.id) ? { ...x, ack_at: now } : x))
+      }
+      window.dispatchEvent(new Event('messages-changed'))
+    }).catch(() => {})
+  }, [activeConv, thread, me, myAcks]) // eslint-disable-line react-hooks/exhaustive-deps
+
   async function onSend() {
     if (!user || !activeConv || !body.trim() || busy) return
     setBusy(true); setErr('')
@@ -119,19 +140,6 @@ export default function Messages() {
       setBody(''); reload()
     } catch (e) { setErr(String((e as Error).message ?? e)) }
     finally { setBusy(false); inputRef.current?.focus() }
-  }
-
-  async function onAck(m: UserMessage & { group_id?: string | null }) {
-    try {
-      if (m.group_id) {
-        await ackGroupMessage(m.id, me)
-        setAcks((prev) => [...prev, { message_id: m.id, email: me, ack_at: new Date().toISOString() }])
-      } else {
-        await ackMessage(m.id)
-        setDms((prev) => (prev ?? []).map((x) => x.id === m.id ? { ...x, ack_at: new Date().toISOString() } : x))
-      }
-      window.dispatchEvent(new Event('messages-changed'))
-    } catch (e) { setErr(String((e as Error).message ?? e)) }
   }
 
   if (dms === null) return <Loader label="טוען הודעות…" />
@@ -193,32 +201,31 @@ export default function Messages() {
 
               <div className="chat__scroll" ref={scrollRef}>
                 {thread.map((m, i) => {
-                  const gm = m as GroupMsg
                   const mine = m.from_email.toLowerCase() === me
                   const newDay = i === 0 || dayKey(thread[i - 1].created_at) !== dayKey(m.created_at)
                   const meta = metas[m.from_email.toLowerCase()]
                   const isGroup = activeConv.isGroup
-                  const needsAck = !mine && (isGroup ? !myAcks.has(m.id) : !m.ack_at)
-                  const readers = isGroup ? acks.filter((a) => a.message_id === m.id && a.email.toLowerCase() !== me) : []
+                  const readers = isGroup ? acks.filter((a) => a.message_id === m.id && a.email.toLowerCase() !== m.from_email.toLowerCase()) : []
                   const others = isGroup ? activeConv.group!.members.filter((e) => e !== m.from_email.toLowerCase()).length : 1
                   return (
                     <div key={m.id}>
                       {newDay && <div className="chat__day"><span>{fmtDay(m.created_at)}</span></div>}
                       <div className={`bubble-row ${mine ? 'bubble-row--mine' : ''}`}>
                         <ChatAvatar meta={meta} name={mine ? (user?.name ?? '') : (m.from_name ?? m.from_email)} size={42} />
-                        <div className={`bubble ${mine ? 'bubble--mine' : ''} ${needsAck ? 'bubble--unacked' : ''}`}>
+                        <div className={`bubble ${mine ? 'bubble--mine' : ''}`}>
                           {isGroup && !mine && <div className="bubble__sender">{m.from_name ?? nameOf(m.from_email)}</div>}
                           <p>{m.body}</p>
                           <span className="bubble__time mono">
                             {fmtTime(m.created_at)}
-                            {mine && !isGroup && (m.ack_at ? <span className="bubble__tick bubble__tick--ok" title={`אושר ${fmtTime(m.ack_at)}`}> ✔✔</span> : <span className="bubble__tick"> ✔</span>)}
+                            {mine && !isGroup && (m.ack_at
+                              ? <span className="bubble__tick bubble__tick--ok" title={`נראה ב-${fmtTime(m.ack_at)}`}> ✔✔ נראה</span>
+                              : <span className="bubble__tick"> ✔</span>)}
                             {mine && isGroup && (
                               readers.length >= others
-                                ? <span className="bubble__tick bubble__tick--ok" title="כולם אישרו"> ✔✔</span>
-                                : <span className="bubble__tick" title={`אישרו ${readers.length}/${others}`}> ✔ {readers.length}/{others}</span>
+                                ? <span className="bubble__tick bubble__tick--ok" title="נראה על ידי כולם"> ✔✔ נראה</span>
+                                : <span className="bubble__tick" title={`נראה ע"י ${readers.length} מתוך ${others}`}> ✔ {readers.length}/{others}</span>
                             )}
                           </span>
-                          {needsAck && <button className="btn btn--primary bubble__ack" onClick={() => onAck(gm)}>✔ ראיתי</button>}
                         </div>
                       </div>
                     </div>
