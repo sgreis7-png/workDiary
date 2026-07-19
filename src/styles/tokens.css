@@ -31,6 +31,11 @@
   --line-strong:  rgba(11, 18, 16, 0.22);
   --rule:         rgba(11, 18, 16, 0.05);
 
+  /* modern filled form fields */
+  --field:        #eef3f0;
+  --field-hover:  #e4ece7;
+  --field-focus:  #ffffff;
+
   /* ---- type ---- */
   --font-display: 'Heebo', 'Assistant', system-ui, sans-serif;
   --font-body:    'Assistant', system-ui, sans-serif;
