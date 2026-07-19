@@ -12,10 +12,12 @@ import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
 import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
 import { getMode } from '../defects/mode'
+import { useDT } from '../defects/i18n'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
 function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; onAbout: () => void; compact?: boolean }) {
   const { user, signOut } = useAuth()
+  const { dt } = useDT()
   const nav = useNavigate()
   const [open, setOpen] = useState(false)
   const [theme, setThemeState] = useState<Theme>(getTheme())
@@ -45,11 +47,11 @@ function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; o
       </button>
       {open && (
         <div className="user-menu__panel" role="menu">
-          <button role="menuitem" onClick={() => { close(); nav('/account') }}>👤 החשבון שלי — פרופיל וסיסמה</button>
-          <button role="menuitem" onClick={() => { flipTheme() }}>{theme === 'dark' ? '☀ מעבר למצב בהיר' : '☾ מעבר למצב כהה'}</button>
-          <button role="menuitem" onClick={() => { close(); onAbout() }}>ⓘ על התוכנה</button>
+          <button role="menuitem" onClick={() => { close(); nav('/account') }}>{dt('menu_account')}</button>
+          <button role="menuitem" onClick={() => { flipTheme() }}>{theme === 'dark' ? dt('menu_light') : dt('menu_dark')}</button>
+          <button role="menuitem" onClick={() => { close(); onAbout() }}>{dt('menu_about')}</button>
           <div className="user-menu__sep" />
-          <button role="menuitem" className="user-menu__danger" onClick={() => { close(); signOut(); nav('/login') }}>⇥ התנתקות</button>
+          <button role="menuitem" className="user-menu__danger" onClick={() => { close(); signOut(); nav('/login') }}>{dt('menu_signout')}</button>
         </div>
       )}
     </div>
@@ -82,6 +84,7 @@ function NavItem({ to, icon, label, end }: { to: string; icon: string; label: st
 
 export function Shell() {
   const { t } = useI18n()
+  const { dt } = useDT()
   const { user, isAdmin } = useAuth()
   const { online, pending } = useOfflineSync()
   const [open, setOpen] = useState(false)
@@ -141,9 +144,9 @@ export function Shell() {
       <nav className="nav" onClick={() => setOpen(false)}>
         {defectsMode ? (
           <>
-            {can('defects') && <NavItem to="/defects" end icon="🛡" label="לולים — תפיסת סיום שלב" />}
-            {can('defects') && <NavItem to="/defects/search" icon="⌕" label="חיפוש" />}
-            {canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label="בונה טופס ליקויים" />}
+            {can('defects') && <NavItem to="/defects" end icon="🛡" label={dt('nav_coops')} />}
+            {can('defects') && <NavItem to="/defects/search" icon="⌕" label={dt('nav_defect_search')} />}
+            {canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label={dt('nav_form_builder')} />}
           </>
         ) : (
           <>
@@ -158,7 +161,7 @@ export function Shell() {
         )}
         <NavLink to="/messages" className={({ isActive }) => `nav__item ${isActive ? 'active' : ''}`} onClick={() => window.scrollTo(0, 0)}>
           <span className="ic" aria-hidden>✉</span>
-          הודעות
+          {dt('nav_messages')}
           {unacked > 0 && <span className="coop-tab__badge" style={{ marginInlineStart: 'auto' }}>{unacked}</span>}
         </NavLink>
         {!defectsMode && (isAdmin || canEdit('form_builder')) && (
@@ -170,7 +173,7 @@ export function Shell() {
         )}
         <button className="nav__item nav__switch" onClick={() => nav('/mode')}>
           <span className="ic" aria-hidden>⇄</span>
-          {defectsMode ? 'מעבר לניהול עבודה' : 'מעבר לניהול ליקויים'}
+          {defectsMode ? dt('switch_to_work') : dt('switch_to_defects')}
         </button>
       </nav>
 
@@ -219,7 +222,7 @@ export function Shell() {
           >
             <span className="msg-toast__icon" aria-hidden>✉</span>
             <span className="msg-toast__body">
-              <b>הודעה חדשה מ{msgToast.from_name ?? msgToast.from_email}</b>
+              <b>{dt('toast_new_msg')}{msgToast.from_name ?? msgToast.from_email}</b>
               <small>{msgToast.body.slice(0, 60)}</small>
             </span>
           </motion.button>

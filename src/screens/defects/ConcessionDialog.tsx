@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { SEVERITY_LABELS, defectItemLabel } from '../../defects/model'
+import { defectItemLabel } from '../../defects/model'
+import { useDT, severityLabel } from '../../defects/i18n'
 import type { Defect } from '../../defects/api'
 import { SignaturePad } from './SignaturePad'
 
@@ -9,6 +10,7 @@ export function ConcessionDialog({ defect, onClose, onSubmit }: {
   onClose: () => void
   onSubmit: (reason: string, manager: { name: string; png: Blob }, supervisor: { name: string; png: Blob }) => void
 }) {
+  const { dt, lang } = useDT()
   const [reason, setReason] = useState('')
   const [mName, setMName] = useState('')
   const [sName, setSName] = useState('')
@@ -19,37 +21,37 @@ export function ConcessionDialog({ defect, onClose, onSubmit }: {
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal concession" onClick={(e) => e.stopPropagation()} dir="rtl">
-        <h2>טופס ויתור (Concession)</h2>
+        <h2>{dt('con_title')}</h2>
         <p className="concession__defect">
-          ליקוי #{defect.seq} · {defect.severity ? SEVERITY_LABELS[defect.severity] : ''} ·{' '}
+          {dt('con_defect')}{defect.seq} · {defect.severity ? severityLabel(lang, defect.severity) : ''} ·{' '}
           {defect.item_no ? defectItemLabel(defect.gate, defect.item_no) : defect.description ?? ''}
         </p>
         <p className="concession__note">
-          מז'ורי — רק עם טופס ויתור (Concession) בחתימה כפולה של מנהל הביצוע והמפקח.
+          {dt('con_note')}
         </p>
         <label className="field">
-          <span className="field__label">נימוק הוויתור</span>
+          <span className="field__label">{dt('con_reason')}</span>
           <textarea className="input" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
         </label>
         <div className="concession__signs">
           <div>
-            <b>מנהל ביצוע</b>
-            <input className="input" placeholder="שם מלא…" value={mName} onChange={(e) => setMName(e.target.value)} />
+            <b>{dt('con_manager')}</b>
+            <input className="input" placeholder={dt('sign_name_ph')} value={mName} onChange={(e) => setMName(e.target.value)} />
             <SignaturePad onChange={setMPng} height={90} />
           </div>
           <div>
-            <b>מפקח</b>
-            <input className="input" placeholder="שם מלא…" value={sName} onChange={(e) => setSName(e.target.value)} />
+            <b>{dt('con_supervisor')}</b>
+            <input className="input" placeholder={dt('sign_name_ph')} value={sName} onChange={(e) => setSName(e.target.value)} />
             <SignaturePad onChange={setSPng} height={90} />
           </div>
         </div>
         <div className="form-actions">
-          <button className="btn btn--ghost" onClick={onClose}>ביטול</button>
+          <button className="btn btn--ghost" onClick={onClose}>{dt('grp_cancel')}</button>
           <button
             className="btn btn--primary" disabled={!ready}
             onClick={() => ready && onSubmit(reason.trim(), { name: mName.trim(), png: mPng! }, { name: sName.trim(), png: sPng! })}
           >
-            ✍️ אישור בחתימה כפולה
+            {dt('con_submit')}
           </button>
         </div>
       </div>

@@ -5,10 +5,12 @@ import { Loader } from '../../components/Loader'
 import { fetchAllCoops, createCoop, type Coop } from '../../defects/api'
 import { COOP_TYPE_LABELS } from '../../defects/model'
 import { usePerms } from '../../lib/usePerms'
+import { useDT, coopTypeLabel } from '../../defects/i18n'
 
 export default function Coops() {
   const { projects, projectColor, ready } = useStore()
   const { canEdit } = usePerms()
+  const { dt, lang } = useDT()
   const nav = useNavigate()
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [projectId, setProjectId] = useState('')
@@ -39,46 +41,46 @@ export default function Coops() {
     }
   }
 
-  if (!ready || coops === null) return <Loader label="טוען לולים…" />
+  if (!ready || coops === null) return <Loader label={dt('coops_loading')} />
 
   return (
     <div className="page">
       <div className="page__head">
         <div>
-          <div className="kicker">תפיסת סיום שלב · Hold Points</div>
-          <h1 className="page-title">ניהול ליקויים</h1>
+          <div className="kicker">{dt('coops_kicker')}</div>
+          <h1 className="page-title">{dt('coops_title')}</h1>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <select className="input" style={{ width: 'auto', minWidth: 200 }} value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">כל הפרויקטים</option>
+            <option value="">{dt('coops_all_projects')}</option>
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <span className="count mono">{shown.length} לולים</span>
+          <span className="count mono">{shown.length} {dt('coops_count')}</span>
         </div>
       </div>
-      <p className="coop-intro">כל לול בחווה נתפס בנפרד. בוחרים פרויקט, פותחים לול, וממלאים את השערים.</p>
+      <p className="coop-intro">{dt('coops_intro')}</p>
 
       {err && <div className="alert">{err}</div>}
 
       {canEdit('defects') && (
         <div className="coop-new">
           <select className="input" value={newProjectId || projectId} onChange={(e) => setNewProjectId(e.target.value)}>
-            <option value="">לאיזה פרויקט?</option>
+            <option value="">{dt('coops_which_project')}</option>
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           <input
-            className="input" placeholder="שם / מספר לול חדש…" value={newName}
+            className="input" placeholder={dt('coops_new_ph')} value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onCreate()}
           />
           <button className="btn btn--primary" disabled={!(newProjectId || projectId) || !newName.trim() || creating} onClick={onCreate}>
-            {creating ? 'יוצר…' : '✛ לול חדש'}
+            {creating ? dt('coops_creating') : dt('coops_new')}
           </button>
         </div>
       )}
 
       {shown.length === 0 ? (
-        <div className="empty">אין עדיין לולים{projectId ? ' בפרויקט הזה' : ''}. פתחו לול חדש למעלה.</div>
+        <div className="empty">{dt('coops_empty')}</div>
       ) : (
         <div className="coop-grid">
           {shown.map((c) => {
@@ -89,7 +91,7 @@ export default function Coops() {
                 <span className="coop-card__name">{c.name}</span>
                 <span className="coop-card__meta">
                   {proj?.name ?? '—'}
-                  {c.coop_type ? ` · ${COOP_TYPE_LABELS[c.coop_type]}` : ''}
+                  {c.coop_type ? ` · ${coopTypeLabel(lang, c.coop_type)}` : ''}
                 </span>
               </button>
             )

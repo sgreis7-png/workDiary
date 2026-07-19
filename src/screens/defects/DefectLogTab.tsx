@@ -5,6 +5,7 @@ import {
   type GateKey, type Severity, type DefectStatus,
 } from '../../defects/model'
 import { itemLabel, type GateDefs } from '../../defects/defs'
+import { useDT, severityLabel, defectStatusLabel, gateShortName } from '../../defects/i18n'
 import type { Defect } from '../../defects/api'
 
 function TextCell({ value, onCommit, placeholder }: { value: string | null; onCommit: (v: string) => void; placeholder?: string }) {
@@ -25,6 +26,7 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
   onPatch: (id: string, patch: Partial<Defect>) => void
   onRemove: (id: string) => void
 }) {
+  const { dt, lang } = useDT()
   const [newGate, setNewGate] = useState<GateKey>('gate1')
   return (
     <div className="gate-panel">
@@ -32,21 +34,21 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
 
       <div className="coop-new" style={{ marginBottom: 16 }}>
         <select className="input" value={newGate} onChange={(e) => setNewGate(e.target.value as GateKey)}>
-          {GATE_ORDER.map((g) => <option key={g} value={g}>{GATES[g].shortName}</option>)}
+          {GATE_ORDER.map((g) => <option key={g} value={g}>{gateShortName(lang, g)}</option>)}
         </select>
-        <button className="btn btn--primary" onClick={() => onAdd(newGate)}>✛ שורת ליקוי</button>
+        <button className="btn btn--primary" onClick={() => onAdd(newGate)}>{dt('dl_add')}</button>
       </div>
 
       {defects.length === 0 ? (
-        <div className="empty">אין ליקויים — כל סעיף שיסומן "לא בוצע" ייפתח כאן אוטומטית.</div>
+        <div className="empty">{dt('dl_empty')}</div>
       ) : (
         <div className="gate-table-wrap">
           <table className="gate-table defect-table">
             <thead>
               <tr>
-                <th>מס'</th><th>שער</th><th>סעיף</th><th>תיאור הליקוי</th><th>חומרה</th>
-                <th>אחראי לתיקון</th><th>תאריך יעד לתיקון</th><th>סטטוס</th><th>נסגר בתאריך</th>
-                <th>הערות / אסמכתא לסגירה</th><th></th>
+                <th>{dt('dl_no')}</th><th>{dt('sum_gate')}</th><th>{dt('dl_item')}</th><th>{dt('dl_desc')}</th><th>{dt('dl_severity')}</th>
+                <th>{dt('dl_assignee')}</th><th>{dt('dl_due')}</th><th>{dt('dl_status')}</th><th>{dt('dl_closed_on')}</th>
+                <th>{dt('dl_closure')}</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -58,7 +60,7 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
                       className="input" value={d.gate}
                       onChange={(e) => onPatch(d.id, { gate: e.target.value as GateKey, item_no: null })}
                     >
-                      {GATE_ORDER.map((g) => <option key={g} value={g}>{GATES[g].shortName}</option>)}
+                      {GATE_ORDER.map((g) => <option key={g} value={g}>{gateShortName(lang, g)}</option>)}
                     </select>
                   </td>
                   <td>
@@ -80,7 +82,7 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
                     >
                       <option value="">—</option>
                       {(Object.keys(SEVERITY_LABELS) as Severity[]).map((k) => (
-                        <option key={k} value={k}>{SEVERITY_LABELS[k]}</option>
+                        <option key={k} value={k}>{severityLabel(lang, k)}</option>
                       ))}
                     </select>
                   </td>
@@ -103,7 +105,7 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
                       }}
                     >
                       {(Object.keys(DEFECT_STATUS_LABELS) as DefectStatus[]).map((k) => (
-                        <option key={k} value={k}>{DEFECT_STATUS_LABELS[k]}</option>
+                        <option key={k} value={k}>{defectStatusLabel(lang, k)}</option>
                       ))}
                     </select>
                   </td>
@@ -115,7 +117,7 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
                   </td>
                   <td><TextCell value={d.closure_note} onCommit={(v) => onPatch(d.id, { closure_note: v || null })} /></td>
                   <td>
-                    <button className="btn btn--quiet" title="מחיקה" onClick={() => onRemove(d.id)}>✕</button>
+                    <button className="btn btn--quiet" title={dt('dl_delete')} onClick={() => onRemove(d.id)}>✕</button>
                   </td>
                 </tr>
               ))}

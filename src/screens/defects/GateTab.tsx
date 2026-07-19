@@ -1,8 +1,6 @@
 import { useMemo, useState } from 'react'
-import {
-  STATUS_LABELS, SEVERITY_LABELS, SIGNATURE_ROLES,
-  type GateDef, type ItemStatus, type Severity, type SignatureRole,
-} from '../../defects/model'
+import { STATUS_LABELS, SEVERITY_LABELS, SIGNATURE_ROLES, type GateDef, type ItemStatus, type Severity, type SignatureRole } from '../../defects/model'
+import { useDT, statusLabel, severityLabel } from '../../defects/i18n'
 import { canSignGate, isGate6Unlocked, severityRequired, type ChecklistItemState } from '../../defects/rules'
 import type { GateDefs } from '../../defects/defs'
 import type { CoopBundle, ChecklistItem } from '../../defects/api'
@@ -32,6 +30,7 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
   onConcession: (defectId: string, reason: string, manager: { name: string; png: Blob }, supervisor: { name: string; png: Blob }) => void
   onGoDefects: () => void
 }) {
+  const { dt, lang } = useDT()
   const itemOf = (no: number) => bundle.items.find((i) => i.gate === gate.key && i.item_no === no)
   const state: ChecklistItemState[] = bundle.items.map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
   const gateSigs = bundle.signatures.filter((s) => s.gate === gate.key)
@@ -59,14 +58,14 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
 
       {locked && (
         <div className="alert">
-          🔒 שער 6 נעול: {gate6Lock.reasons.map((r, i) => <div key={i}>{r}</div>)}
+          {dt('gate6_locked')} {gate6Lock.reasons.map((r, i) => <div key={i}>{r}</div>)}
         </div>
       )}
 
       <div className="gate-table-wrap">
         <table className="gate-table">
           <thead>
-            <tr><th>#</th><th>הסעיף</th><th>סטטוס</th><th>חומרה (אם לא בוצע)</th><th>הערה</th><th>בוצע עם גורם חיצוני</th></tr>
+            <tr><th>#</th><th>{dt('col_item')}</th><th>{dt('col_status')}</th><th>{dt('col_severity')}</th><th>{dt('col_note')}</th><th>{dt('col_external')}</th></tr>
           </thead>
           <tbody>
             {gate.items.map((it) => {
@@ -86,9 +85,9 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
                       value={status ?? ''} disabled={frozen}
                       onChange={(e) => onItem(it.no, { status: (e.target.value || null) as ItemStatus | null })}
                     >
-                      <option value="">— טרם —</option>
+                      <option value="">{dt('status_pending')}</option>
                       {(Object.keys(STATUS_LABELS) as ItemStatus[]).map((k) => (
-                        <option key={k} value={k}>{STATUS_LABELS[k]}</option>
+                        <option key={k} value={k}>{statusLabel(lang, k)}</option>
                       ))}
                     </select>
                   </td>
@@ -99,14 +98,14 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
                       disabled={frozen || status !== 'not_done'}
                       onChange={(e) => onItem(it.no, { severity: (e.target.value || null) as Severity | null })}
                     >
-                      <option value="">{status === 'not_done' ? 'בחרו חומרה…' : '—'}</option>
+                      <option value="">{status === 'not_done' ? dt('pick_severity') : '—'}</option>
                       {(Object.keys(SEVERITY_LABELS) as Severity[]).map((k) => (
-                        <option key={k} value={k}>{SEVERITY_LABELS[k]}</option>
+                        <option key={k} value={k}>{severityLabel(lang, k)}</option>
                       ))}
                     </select>
-                    {needSeverity && <small className="cell-warn">חובה לבחור חומרה</small>}
+                    {needSeverity && <small className="cell-warn">{dt('severity_required')}</small>}
                     {status === 'not_done' && (
-                      <button className="btn btn--quiet cell-link" onClick={onGoDefects}>↩ נפתחה שורה ביומן הליקויים</button>
+                      <button className="btn btn--quiet cell-link" onClick={onGoDefects}>{dt('defect_opened_link')}</button>
                     )}
                   </td>
                   <td><TextCell value={row?.note ?? null} onCommit={(v) => onItem(it.no, { note: v || null })} disabled={frozen} /></td>
@@ -122,24 +121,25 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
 
       {majorsNeedingWaiver.length > 0 && !fullySigned && (
         <div className="alert" style={{ marginTop: 18 }}>
-          🟠 ליקוי מז'ורי פתוח דורש טופס ויתור (Concession) בחתימה כפולה לפני חתימת השער:
+          {dt('waiver_needed')}
           {majorsNeedingWaiver.map((d) => (
             <button key={d.id} className="btn btn--ghost" style={{ marginInlineStart: 8 }} onClick={() => setWaiverFor(d.id)}>
-              טופס ויתור לליקוי #{d.seq}
+              {dt('waiver_for')}{d.seq}
             </button>
           ))}
         </div>
       )}
 
       <div className="gate-signs">
-        {SIGNATURE_ROLES.map(({ key: role, label }) => {
+        {SIGNATURE_ROLES.map(({ key: role }) => {
+          const label = role === 'manager' ? dt('sig_manager') : dt('sig_supervisor')
           const sig = gateSigs.find((s) => s.role === role)
           return (
             <div key={role} className="gate-sign">
               <div className="gate-sign__label">{label}</div>
               {sig ? (
                 <div className="gate-sign__done">
-                  {sig.signature_url && <img src={sig.signature_url} alt="חתימה" />}
+                  {sig.signature_url && <img src={sig.signature_url} alt="" />}
                   <div><b>{sig.signer_name}</b><small>{new Date(sig.signed_at).toLocaleDateString('he-IL')}</small></div>
                 </div>
               ) : (
@@ -155,8 +155,8 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
       </div>
       {fullySigned && (
         <div className="gate-signed-note">
-          ✔ השער חתום ונעול לעריכה.
-          <button className="btn btn--quiet" onClick={onUnsign}>הסר חתימות לעריכה מחודשת</button>
+          {dt('gate_signed')}
+          <button className="btn btn--quiet" onClick={onUnsign}>{dt('unsign_btn')}</button>
         </div>
       )}
 
@@ -179,25 +179,26 @@ function SignBox({ disabled, reasons, onSign }: {
   reasons: string[]
   onSign: (name: string, png: Blob) => void
 }) {
+  const { dt } = useDT()
   const [name, setName] = useState('')
   const [png, setPng] = useState<Blob | null>(null)
   if (disabled) {
     return (
       <div className="gate-sign__blocked">
-        🔒 לא ניתן לחתום:
+        {dt('cant_sign')}
         <ul>{reasons.map((r, i) => <li key={i}>{r}</li>)}</ul>
       </div>
     )
   }
   return (
     <div className="gate-sign__pad">
-      <input className="input" placeholder="שם מלא…" value={name} onChange={(e) => setName(e.target.value)} />
+      <input className="input" placeholder={dt('sign_name_ph')} value={name} onChange={(e) => setName(e.target.value)} />
       <SignaturePad onChange={setPng} />
       <button
         className="btn btn--primary" disabled={!name.trim() || !png}
         onClick={() => png && onSign(name.trim(), png)}
       >
-        ✍️ חתימה
+        {dt('sign_btn')}
       </button>
     </div>
   )

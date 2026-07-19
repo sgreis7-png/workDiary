@@ -10,6 +10,7 @@ import {
   type UserMessage, type ProfileMeta, type ChatGroup, type MessageAck,
 } from '../lib/messages'
 import type { AppUser } from '../data'
+import { useDT } from '../defects/i18n'
 
 type GroupMsg = UserMessage & { group_id: string }
 
@@ -25,6 +26,7 @@ function ChatAvatar({ meta, name, size = 38 }: { meta?: ProfileMeta; name: strin
 
 export default function Messages() {
   const { user } = useAuth()
+  const { dt } = useDT()
   const me = user?.email?.toLowerCase() ?? ''
   const [dms, setDms] = useState<UserMessage[] | null>(null)
   const [groupMsgs, setGroupMsgs] = useState<GroupMsg[]>([])
@@ -142,17 +144,17 @@ export default function Messages() {
     finally { setBusy(false); inputRef.current?.focus() }
   }
 
-  if (dms === null) return <Loader label="טוען הודעות…" />
+  if (dms === null) return <Loader label={dt('loading_msgs')} />
   const totalUnacked = convs.reduce((n, c) => n + c.unacked, 0)
 
   return (
     <div className="page chat-page">
       <div className="page__head" style={{ marginBottom: 16 }}>
         <div>
-          <div className="kicker">תקשורת פנימית</div>
-          <h1 className="page-title">הודעות</h1>
+          <div className="kicker">{dt('chat_kicker')}</div>
+          <h1 className="page-title">{dt('chat_title')}</h1>
         </div>
-        {totalUnacked > 0 && <span className="count mono">{totalUnacked} ממתינות לאישור</span>}
+        {totalUnacked > 0 && <span className="count mono">{totalUnacked} {dt('chat_pending')}</span>}
       </div>
 
       {err && <div className="alert">{err}</div>}
@@ -161,20 +163,20 @@ export default function Messages() {
         <aside className={`chat__contacts ${active ? 'chat__contacts--collapsed' : ''}`}>
           <div className="chat__tools">
             <input
-              className="input chat__search" placeholder="🔍 חיפוש משתמש או קבוצה…"
+              className="input chat__search" placeholder={dt('chat_search')}
               value={contactQ} onChange={(e) => setContactQ(e.target.value)}
             />
-            <button className="btn btn--ghost chat__new-group" onClick={() => setGroupOpen(true)}>👥 קבוצה חדשה</button>
+            <button className="btn btn--ghost chat__new-group" onClick={() => setGroupOpen(true)}>{dt('chat_new_group')}</button>
           </div>
-          {shownConvs.length === 0 && <div className="empty" style={{ padding: 24 }}>לא נמצאו תוצאות.</div>}
+          {shownConvs.length === 0 && <div className="empty" style={{ padding: 24 }}>{dt('chat_no_results')}</div>}
           {shownConvs.map((c) => (
             <button key={c.key} className={`chat-contact ${active === c.key ? 'on' : ''}`} onClick={() => setActive(c.key)}>
               {c.isGroup
                 ? <span className="chat-avatar chat-avatar--group" style={{ width: 44, height: 44 }}>👥</span>
                 : <ChatAvatar meta={metas[c.email!]} name={c.title} size={44} />}
               <span className="chat-contact__meta">
-                <b>{c.title}{c.isGroup && <small className="chat-contact__count"> · {c.group!.members.length} חברים</small>}</b>
-                <small>{c.last ? `${c.last.from_email.toLowerCase() === me ? 'אני: ' : c.isGroup ? nameOf(c.last.from_email) + ': ' : ''}${c.last.body.slice(0, 36)}` : c.isGroup ? 'קבוצה חדשה' : 'התחלת שיחה…'}</small>
+                <b>{c.title}{c.isGroup && <small className="chat-contact__count"> · {c.group!.members.length} {dt('chat_members')}</small>}</b>
+                <small>{c.last ? `${c.last.from_email.toLowerCase() === me ? dt('chat_me') : c.isGroup ? nameOf(c.last.from_email) + ': ' : ''}${c.last.body.slice(0, 36)}` : c.isGroup ? dt('chat_new_group_hint') : dt('chat_start')}</small>
               </span>
               {c.unacked > 0 && <span className="coop-tab__badge">{c.unacked}</span>}
             </button>
@@ -183,7 +185,7 @@ export default function Messages() {
 
         <section className="chat__pane">
           {!activeConv ? (
-            <div className="chat__empty">בחרו שיחה או צרו קבוצה 💬</div>
+            <div className="chat__empty">{dt('chat_pick')}</div>
           ) : (
             <>
               <header className="chat__head">
@@ -218,12 +220,12 @@ export default function Messages() {
                           <span className="bubble__time mono">
                             {fmtTime(m.created_at)}
                             {mine && !isGroup && (m.ack_at
-                              ? <span className="bubble__tick bubble__tick--ok" title={`נראה ב-${fmtTime(m.ack_at)}`}> ✔✔ נראה</span>
+                              ? <span className="bubble__tick bubble__tick--ok" title={`${dt('chat_seen_at')}${fmtTime(m.ack_at)}`}> ✔✔ {dt('chat_seen')}</span>
                               : <span className="bubble__tick"> ✔</span>)}
                             {mine && isGroup && (
                               readers.length >= others
-                                ? <span className="bubble__tick bubble__tick--ok" title="נראה על ידי כולם"> ✔✔ נראה</span>
-                                : <span className="bubble__tick" title={`נראה ע"י ${readers.length} מתוך ${others}`}> ✔ {readers.length}/{others}</span>
+                                ? <span className="bubble__tick bubble__tick--ok" title={dt('chat_seen_all')}> ✔✔ {dt('chat_seen')}</span>
+                                : <span className="bubble__tick" title={`${dt('chat_seen_by')} ${readers.length} ${dt('chat_of')} ${others}`}> ✔ {readers.length}/{others}</span>
                             )}
                           </span>
                         </div>
@@ -231,7 +233,7 @@ export default function Messages() {
                     </div>
                   )
                 })}
-                {thread.length === 0 && <div className="chat__empty">אין עדיין הודעות — כתבו את הראשונה 👇</div>}
+                {thread.length === 0 && <div className="chat__empty">{dt('chat_empty_thread')}</div>}
               </div>
 
               <footer className="chat__composer">
@@ -242,7 +244,7 @@ export default function Messages() {
                   )}
                 </div>
                 <input
-                  ref={inputRef} className="input" placeholder="הודעה…"
+                  ref={inputRef} className="input" placeholder={dt('chat_placeholder')}
                   value={body} onChange={(e) => setBody(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && onSend()}
                 />
@@ -277,15 +279,16 @@ function NewGroupDialog({ users, metas, onClose, onCreate }: {
   onClose: () => void
   onCreate: (name: string, emails: string[]) => void
 }) {
+  const { dt } = useDT()
   const [name, setName] = useState('')
   const [sel, setSel] = useState<Set<string>>(new Set())
   const toggle = (em: string) => setSel((p) => { const n = new Set(p); if (n.has(em)) n.delete(em); else n.add(em); return n })
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 460 }}>
-        <h2>👥 קבוצה חדשה</h2>
+        <h2>{dt('grp_title')}</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
-          <input className="input" placeholder="שם הקבוצה… (למשל: צוות מעלה גמלא)" value={name} onChange={(e) => setName(e.target.value)} />
+          <input className="input" placeholder={dt('grp_name_ph')} value={name} onChange={(e) => setName(e.target.value)} />
           <div className="group-pick">
             {users.map((u) => {
               const em = u.email.toLowerCase()
@@ -302,9 +305,9 @@ function NewGroupDialog({ users, metas, onClose, onCreate }: {
           </div>
         </div>
         <div className="form-actions" style={{ marginTop: 16 }}>
-          <button className="btn btn--ghost" onClick={onClose}>ביטול</button>
+          <button className="btn btn--ghost" onClick={onClose}>{dt('grp_cancel')}</button>
           <button className="btn btn--primary" disabled={!name.trim() || sel.size === 0} onClick={() => onCreate(name.trim(), [...sel])}>
-            יצירת קבוצה ({sel.size})
+            {dt('grp_create')} ({sel.size})
           </button>
         </div>
       </div>

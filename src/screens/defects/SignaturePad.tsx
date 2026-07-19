@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { useDT } from '../../defects/i18n'
 
 /** Finger/mouse signature canvas. Calls onChange with a PNG blob after each stroke,
  *  null when cleared. */
@@ -6,6 +7,7 @@ export function SignaturePad({ onChange, height = 120 }: { onChange: (png: Blob 
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const drawing = useRef(false)
   const [dirty, setDirty] = useState(false)
+  const { dt } = useDT()
 
   useEffect(() => {
     const c = canvasRef.current!
@@ -63,8 +65,8 @@ export function SignaturePad({ onChange, height = 120 }: { onChange: (png: Blob 
         onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerLeave={up}
       />
       <div className="sigpad__bar">
-        <small>{dirty ? 'חתימה נקלטה' : 'חתמו כאן באצבע / בעכבר'}</small>
-        <button type="button" className="btn btn--quiet" onClick={clear}>נקה</button>
+        <small>{dirty ? dt('pad_done') : dt('pad_hint')}</small>
+        <button type="button" className="btn btn--quiet" onClick={clear}>{dt('pad_clear')}</button>
       </div>
     </div>
   )

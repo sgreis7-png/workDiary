@@ -2,26 +2,21 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Logo } from '../components/Logo'
 import { setMode } from '../defects/mode'
-
-const CARDS = [
-  {
-    mode: 'work' as const, to: '/', icon: '▤',
-    title: 'ניהול עבודה',
-    desc: 'יומן עבודה יומי — רשומות, לוח שנה, דוחות וייצוא',
-  },
-  {
-    mode: 'defects' as const, to: '/defects', icon: '🛡️',
-    title: 'ניהול ליקויים',
-    desc: 'תפיסת סיום שלב — צ׳קליסט שערים, יומן ליקויים וחתימות per־לול',
-  },
-]
+import { useDT } from '../defects/i18n'
+import { useI18n } from '../i18n'
 
 export default function ModeSelect() {
   const nav = useNavigate()
+  const { dt } = useDT()
+  const { dir } = useI18n()
+  const CARDS = [
+    { mode: 'work' as const, to: '/', icon: '▤', title: dt('mode_work'), desc: dt('mode_work_desc') },
+    { mode: 'defects' as const, to: '/defects', icon: '🛡️', title: dt('mode_defects'), desc: dt('mode_defects_desc') },
+  ]
   return (
-    <div className="mode-select" dir="rtl">
+    <div className="mode-select" dir={dir}>
       <div className="mode-select__brand"><Logo height={40} /></div>
-      <h1>מה מנהלים היום?</h1>
+      <h1>{dt('mode_q')}</h1>
       <div className="mode-select__cards">
         {CARDS.map((c, i) => (
           <motion.button

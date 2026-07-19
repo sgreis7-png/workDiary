@@ -2,12 +2,14 @@ import { GATES, GATE_ORDER, type GateKey, STATUS_SUMMARY_TITLE, STATUS_SUMMARY_F
 import { gateSummary, type ChecklistItemState } from '../../defects/rules'
 import type { GateDefs } from '../../defects/defs'
 import type { ChecklistItem } from '../../defects/api'
+import { useDT, gateShortName } from '../../defects/i18n'
 
 export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
   items: ChecklistItem[]
   defs?: GateDefs
   onGoGate: (gate: GateKey) => void
 }) {
+  const { dt, lang } = useDT()
   const state: ChecklistItemState[] = items.map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
   return (
     <div className="gate-panel">
@@ -16,8 +18,8 @@ export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
         <table className="gate-table summary-table">
           <thead>
             <tr>
-              <th>שער</th><th>בוצע</th><th>לא בוצע</th><th>לא רלוונטי</th><th>טרם</th>
-              <th>% הושלם</th><th>סעיפים שסומנו "לא בוצע" (מספרי סעיף)</th>
+              <th>{dt('sum_gate')}</th><th>{dt('sum_done')}</th><th>{dt('sum_not_done')}</th><th>{dt('sum_na')}</th><th>{dt('sum_pending')}</th>
+              <th>{dt('sum_pct')}</th><th>{dt('sum_not_done_nos')}</th>
             </tr>
           </thead>
           <tbody>
@@ -26,7 +28,7 @@ export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
               return (
                 <tr key={g}>
                   <td>
-                    <button className="summary-gate-link" onClick={() => onGoGate(g)}>{GATES[g].shortName}</button>
+                    <button className="summary-gate-link" onClick={() => onGoGate(g)}>{gateShortName(lang, g)}</button>
                   </td>
                   <td className="mono">{s.done}</td>
                   <td className={`mono ${s.notDone ? 'summary-bad' : ''}`}>{s.notDone}</td>

@@ -6,6 +6,7 @@ import {
   type CoopType, type Responsible,
 } from '../../defects/model'
 import type { Coop, CoopResponsibility } from '../../defects/api'
+import { useDT, coopTypeLabel, responsibleLabel, yesNoLabel } from '../../defects/i18n'
 
 /** Debounced-on-blur text input so each keystroke doesn't hit the DB. */
 function TextCell({ value, onCommit, placeholder }: { value: string | null; onCommit: (v: string) => void; placeholder?: string }) {
@@ -26,6 +27,7 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
   onCoop: (patch: Partial<Coop>) => void
   onResponsibility: (row: CoopResponsibility) => void
 }) {
+  const { dt, lang } = useDT()
   const resp = (key: string): CoopResponsibility =>
     responsibilities.find((r) => r.domain_key === key)
     ?? { coop_id: coop.id, domain_key: key, responsible: null, external_who: null, notes: null }
@@ -36,51 +38,51 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
         className="input" value={coop[field] ? 'yes' : 'no'}
         onChange={(e) => onCoop({ [field]: e.target.value === 'yes' } as Partial<Coop>)}
       >
-        <option value="yes">{YES_NO_LABELS.yes}</option>
-        <option value="no">{YES_NO_LABELS.no}</option>
+        <option value="yes">{yesNoLabel(lang, true)}</option>
+        <option value="no">{yesNoLabel(lang, false)}</option>
       </select>
     </Field>
   )
 
   return (
     <div className="gate-panel">
-      <h2 className="gate-panel__title">{PROJECT_OPEN_TITLE}</h2>
+      <h2 className="gate-panel__title">{dt('po_title')}</h2>
 
       <div className="form-grid">
-        <Field label="פרויקט / אתר"><input className="input" value={projectName} disabled /></Field>
-        <Field label="מספר לולים בחווה">
+        <Field label={dt('po_project')}><input className="input" value={projectName} disabled /></Field>
+        <Field label={dt('po_farm_count')}>
           <input
             className="input" type="number" min={1} value={coop.farm_coop_count ?? ''}
             onChange={(e) => onCoop({ farm_coop_count: e.target.value ? Number(e.target.value) : null })}
           />
         </Field>
-        <Field label="לול מספר (הקובץ הזה)">
+        <Field label={dt('po_house_no')}>
           <TextCell value={coop.name} onCommit={(v) => v.trim() && onCoop({ name: v.trim() })} />
         </Field>
-        <Field label="סוג לול">
+        <Field label={dt('po_type')}>
           <select
             className="input" value={coop.coop_type ?? ''}
             onChange={(e) => onCoop({ coop_type: (e.target.value || null) as CoopType | null })}
           >
             <option value="">—</option>
             {(Object.keys(COOP_TYPE_LABELS) as CoopType[]).map((k) => (
-              <option key={k} value={k}>{COOP_TYPE_LABELS[k]}</option>
+              <option key={k} value={k}>{coopTypeLabel(lang, k)}</option>
             ))}
           </select>
         </Field>
-        <Field label="ספק ציוד גידול">
+        <Field label={dt('po_supplier')}>
           <TextCell value={coop.equipment_supplier} onCommit={(v) => onCoop({ equipment_supplier: v || null })} />
         </Field>
-        {yesNo('has_heating', 'חימום (יש / אין)')}
-        {yesNo('has_cooling_pads', 'מזרוני צינון (יש / אין)')}
-        {yesNo('has_tunnel_shutter', 'תריס מאוורר מנהרה (יש / אין)')}
-        <Field label="מנהל ביצוע">
+        {yesNo('has_heating', dt('po_heating'))}
+        {yesNo('has_cooling_pads', dt('po_pads'))}
+        {yesNo('has_tunnel_shutter', dt('po_shutter'))}
+        <Field label={dt('po_manager')}>
           <TextCell value={coop.execution_manager} onCommit={(v) => onCoop({ execution_manager: v || null })} />
         </Field>
-        <Field label="מפקח שטח">
+        <Field label={dt('po_supervisor')}>
           <TextCell value={coop.field_supervisor} onCommit={(v) => onCoop({ field_supervisor: v || null })} />
         </Field>
-        <Field label="תאריך פתיחה">
+        <Field label={dt('po_open_date')}>
           <input
             className="input" type="date" value={coop.opened_on ?? ''}
             onChange={(e) => onCoop({ opened_on: e.target.value || null })}
@@ -88,11 +90,11 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
         </Field>
       </div>
 
-      <h2 className="gate-panel__title" style={{ marginTop: 34 }}>{RESP_MATRIX_TITLE}</h2>
+      <h2 className="gate-panel__title" style={{ marginTop: 34 }}>{dt('po_matrix_title')}</h2>
       <div className="gate-table-wrap">
         <table className="gate-table resp-table">
           <thead>
-            <tr><th>תחום</th><th>אחריות</th><th>גורם חיצוני (מי?)</th><th>הערות</th></tr>
+            <tr><th>{dt('po_domain')}</th><th>{dt('po_resp')}</th><th>{dt('po_external_who')}</th><th>{dt('po_notes')}</th></tr>
           </thead>
           <tbody>
             {RESP_DOMAINS.map((d) => {
@@ -107,7 +109,7 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
                     >
                       <option value="">—</option>
                       {(Object.keys(RESPONSIBLE_LABELS) as Responsible[]).map((k) => (
-                        <option key={k} value={k}>{RESPONSIBLE_LABELS[k]}</option>
+                        <option key={k} value={k}>{responsibleLabel(lang, k)}</option>
                       ))}
                     </select>
                   </td>

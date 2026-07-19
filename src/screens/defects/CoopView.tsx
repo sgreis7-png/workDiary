@@ -10,6 +10,7 @@ import {
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { usePerms } from '../../lib/usePerms'
+import { useDT, gateShortName } from '../../defects/i18n'
 import { autoNaItems, type CoopConfig } from '../../defects/rules'
 import { ProjectOpenTab } from './ProjectOpenTab'
 import { StatusSummaryTab } from './StatusSummaryTab'
@@ -17,12 +18,7 @@ import { GateTab } from './GateTab'
 import { DefectLogTab } from './DefectLogTab'
 
 type TabKey = 'project_open' | 'summary' | GateKey | 'defect_log'
-const TABS: { key: TabKey; label: string }[] = [
-  { key: 'project_open', label: 'פתיחת פרויקט' },
-  { key: 'summary', label: 'ריכוז סטטוס' },
-  ...GATE_ORDER.map((g) => ({ key: g as TabKey, label: GATES[g].shortName })),
-  { key: 'defect_log', label: 'יומן ליקויים' },
-]
+const TAB_KEYS: TabKey[] = ['project_open', 'summary', ...GATE_ORDER, 'defect_log']
 
 export function coopConfig(coop: Coop, resp: CoopResponsibility[]): CoopConfig {
   return {
@@ -39,6 +35,7 @@ export default function CoopView() {
   const nav = useNavigate()
   const { projectName } = useStore()
   const { canEdit } = usePerms()
+  const { dt, lang } = useDT()
   const readOnly = !canEdit('defects')
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
   const [defs, setDefs] = useState<GateDefs>(GATES)
@@ -199,7 +196,7 @@ export default function CoopView() {
   )
 
   if (err && !bundle) return <div className="page"><div className="alert">{err}</div></div>
-  if (!bundle || !cfg) return <Loader label="טוען לול…" />
+  if (!bundle || !cfg) return <Loader label={dt('coop_loading')} />
 
   return (
     <div className="page coop-view">
@@ -209,27 +206,33 @@ export default function CoopView() {
           <h1 className="page-title">{bundle.coop.name}</h1>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-          <button className="btn btn--primary" onClick={() => nav(`/defects/coop/${bundle.coop.id}/report`)}>⭳ דוח / ייצוא</button>
-          <button className="btn btn--ghost" onClick={() => nav('/defects')}>→ כל הלולים</button>
+          <button className="btn btn--primary" onClick={() => nav(`/defects/coop/${bundle.coop.id}/report`)}>{dt('coop_report_btn')}</button>
+          <button className="btn btn--ghost" onClick={() => nav('/defects')}>{dt('coop_back_all')}</button>
         </div>
       </div>
 
       {err && <div className="alert">{err}</div>}
-      {readOnly && <div className="alert" style={{ background: 'var(--paper-2)', color: 'var(--ink-2)' }}>👁 מצב צפייה בלבד — אין לך הרשאת עריכה בניהול ליקויים.</div>}
+      {readOnly && <div className="alert" style={{ background: 'var(--paper-2)', color: 'var(--ink-2)' }}>{dt('coop_readonly')}</div>}
 
       <div className="coop-tabs" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key} role="tab" aria-selected={tab === t.key}
-            className={`coop-tab ${tab === t.key ? 'on' : ''}`}
-            onClick={() => setTab(t.key)}
-          >
-            {t.label}
-            {t.key === 'defect_log' && bundle.defects.filter((d) => d.status === 'open').length > 0 && (
-              <span className="coop-tab__badge">{bundle.defects.filter((d) => d.status === 'open').length}</span>
-            )}
-          </button>
-        ))}
+        {TAB_KEYS.map((k) => {
+          const label = k === 'project_open' ? dt('tab_project_open')
+            : k === 'summary' ? dt('tab_summary')
+            : k === 'defect_log' ? dt('tab_defect_log')
+            : gateShortName(lang, k as GateKey)
+          return (
+            <button
+              key={k} role="tab" aria-selected={tab === k}
+              className={`coop-tab ${tab === k ? 'on' : ''}`}
+              onClick={() => setTab(k)}
+            >
+              {label}
+              {k === 'defect_log' && bundle.defects.filter((d) => d.status === 'open').length > 0 && (
+                <span className="coop-tab__badge">{bundle.defects.filter((d) => d.status === 'open').length}</span>
+              )}
+            </button>
+          )
+        })}
       </div>
 
       <fieldset disabled={readOnly} className="perm-fieldset">
