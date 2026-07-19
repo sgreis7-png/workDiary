@@ -5,6 +5,8 @@ import { Loader } from '../components/Loader'
 import { useI18n, MONTHS, WEEKDAYS } from '../i18n'
 import { listEntries } from '../api'
 import { useStore } from '../store'
+import { useAuth } from '../auth'
+import { fetchDeadlines, type Deadline } from '../lib/tasks'
 import { groupByDate } from '../data'
 import type { Entry } from '../data'
 
@@ -14,7 +16,9 @@ const ymd = (y: number, m: number, d: number) => `${y}-${pad(m + 1)}-${pad(d)}`
 export default function Calendar() {
   const { t, lang } = useI18n()
   const nav = useNavigate()
-  const { projects, projectColor, projectName, userName } = useStore()
+  const { projects, projectColor, projectName, userName, assignments } = useStore()
+  const { user, isAdmin } = useAuth()
+  const [deadlines, setDeadlines] = useState<Deadline[]>([])
   const [projectId, setProjectId] = useState('')
   const [entries, setEntries] = useState<Entry[] | null>(null)
   const now = new Date()
@@ -37,6 +41,31 @@ export default function Calendar() {
   }, [y, m])
 
   const byDate = useMemo(() => groupByDate(entries ?? []), [entries])
+
+  // deadlines (defects / tasks / project end dates) — admin sees all; others see
+  // items assigned to them or belonging to projects they're assigned to
+  useEffect(() => { fetchDeadlines().then(setDeadlines).catch(() => {}) }, [])
+  const me = user?.email?.toLowerCase()
+  const myProjects = useMemo(() => {
+    if (!user) return new Set<string>()
+    return new Set(Object.entries(assignments)
+      .filter(([, uids]) => uids.includes(user.id))
+      .map(([pid]) => pid))
+  }, [assignments, user])
+  const deadlinesByDate = useMemo(() => {
+    const map: Record<string, Deadline[]> = {}
+    for (const d of deadlines) {
+      if (d.done) continue
+      if (!isAdmin) {
+        const mine = (d.assignee_email && d.assignee_email.toLowerCase() === me)
+          || (d.project_id && myProjects.has(d.project_id))
+        if (!mine) continue
+      }
+      if (projectId && d.project_id !== projectId) continue
+      ;(map[d.date] ||= []).push(d)
+    }
+    return map
+  }, [deadlines, isAdmin, me, myProjects, projectId])
 
   const todayStr = new Date().toISOString().slice(0, 10)
   const dows = showWeekend ? [0, 1, 2, 3, 4, 5, 6] : [0, 1, 2, 3, 4]
@@ -109,6 +138,12 @@ export default function Calendar() {
                 <b>{d}</b>
               </div>
               <div className="cal-cell__chips">
+                {(deadlinesByDate[date] ?? []).map((dl, j) => (
+                  <button key={`dl${j}`} className={`cal-chip cal-chip--deadline ${dl.overdue ? 'cal-chip--overdue' : ''}`}
+                    onClick={() => nav(dl.link)} title={dl.title}>
+                    <i />{dl.kind === 'defect' ? '🛠' : dl.kind === 'task' ? '☑' : '🏁'} {dl.title}
+                  </button>
+                ))}
                 {shown.map((e) => (
                   <button key={e.id} className="cal-chip" style={{ ['--c' as string]: projectColor(e.project_id) }}
                     onClick={() => nav(`/entry/${e.id}`)} title={`${projectName(e.project_id)} · ${userName(e.created_by)}`}>

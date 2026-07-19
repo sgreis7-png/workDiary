@@ -22,6 +22,7 @@ export interface ChecklistItem {
 export interface Defect {
   id: string; coop_id: string; seq: number; gate: GateKey; item_no: number | null
   description: string | null; severity: Severity | null; assignee: string | null
+  assignee_email: string | null
   due_date: string | null; status: DefectStatus; closed_on: string | null; closure_note: string | null
 }
 export interface GateSignature {
@@ -215,4 +216,69 @@ export async function fetchDefectsForSearch(): Promise<DefectSearchRow[]> {
   return (data as (Defect & { coops: { name: string; project_id: string } })[]).map((d) => ({
     ...d, coop_name: d.coops.name, project_id: d.coops.project_id,
   }))
+}
+
+// ---------- photos ----------
+
+export interface DefectPhoto { id: string; defect_id: string; storage_path: string; url?: string }
+
+export async function fetchDefectPhotos(coopId: string): Promise<DefectPhoto[]> {
+  const { data, error } = await supabase.from('defect_photos')
+    .select('id,defect_id,storage_path, coop_defects!inner(coop_id)')
+    .eq('coop_defects.coop_id', coopId)
+  if (error) throw error
+  const rows = (data as (DefectPhoto & { coop_defects: unknown })[]).map(({ id, defect_id, storage_path }) => ({ id, defect_id, storage_path }))
+  return hydratePhotoUrls(rows)
+}
+
+async function hydratePhotoUrls<T extends { storage_path: string; url?: string }>(rows: T[]): Promise<T[]> {
+  const paths = rows.map((r) => r.storage_path)
+  if (!paths.length) return rows
+  const { data } = await supabase.storage.from('photos').createSignedUrls(paths, 3600)
+  const m: Record<string, string> = {}
+  for (const s of data ?? []) if (s.signedUrl && s.path) m[s.path] = s.signedUrl
+  return rows.map((r) => ({ ...r, url: m[r.storage_path] }))
+}
+
+export async function addDefectPhoto(defectId: string, file: Blob, uploadedBy: string): Promise<DefectPhoto> {
+  const path = `defects/${defectId}/${Date.now()}.jpg`
+  const { error: upErr } = await supabase.storage.from('photos').upload(path, file, { contentType: 'image/jpeg', upsert: true })
+  if (upErr) throw upErr
+  const { data, error } = await supabase.from('defect_photos')
+    .insert({ defect_id: defectId, storage_path: path, uploaded_by: uploadedBy })
+    .select('id,defect_id,storage_path').single()
+  if (error) throw error
+  const [row] = await hydratePhotoUrls([data as DefectPhoto])
+  return row
+}
+
+export async function deleteDefectPhoto(id: string): Promise<void> {
+  const { error } = await supabase.from('defect_photos').delete().eq('id', id)
+  if (error) throw error
+}
+
+// ---------- audit ----------
+
+export async function logAudit(actorEmail: string, action: string, entity: string, entityId: string, details?: Record<string, unknown>): Promise<void> {
+  await supabase.from('audit_log').insert({
+    actor_email: actorEmail.toLowerCase(), action, entity, entity_id: entityId, details: details ?? null,
+  }).then(() => {})
+}
+
+export interface AuditRow { id: string; actor_email: string; action: string; entity: string; entity_id: string | null; details: Record<string, unknown> | null; created_at: string }
+
+export async function fetchAuditLog(limit = 200): Promise<AuditRow[]> {
+  const { data, error } = await supabase.from('audit_log')
+    .select('*').order('created_at', { ascending: false }).limit(limit)
+  if (error) throw error
+  return data as AuditRow[]
+}
+
+// ---------- notify helper (in-app bell for assignment) ----------
+
+export async function notifyUser(recipientEmail: string, title: string, body: string, link: string): Promise<void> {
+  // insert may be blocked by RLS for non-admins — best-effort
+  await supabase.from('notifications')
+    .insert({ recipient_email: recipientEmail.toLowerCase(), title, body, link })
+    .then(() => {})
 }

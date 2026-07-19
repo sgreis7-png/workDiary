@@ -16,6 +16,7 @@ export default function Coops() {
   const [projectId, setProjectId] = useState('')
   const [newName, setNewName] = useState('')
   const [newProjectId, setNewProjectId] = useState('')
+  const [newCount, setNewCount] = useState(1)
   const [creating, setCreating] = useState(false)
   const [err, setErr] = useState('')
 
@@ -34,8 +35,15 @@ export default function Coops() {
     if (!pid || !newName.trim() || creating) return
     setCreating(true); setErr('')
     try {
-      const coop = await createCoop(pid, newName.trim())
-      nav(`/defects/coop/${coop.id}`)
+      // תבנית חווה: N לולים בבת אחת — "שם 1..N"; לול בודד שומר את השם כמו שהוא
+      const n = Math.max(1, Math.min(24, newCount))
+      let first = null
+      for (let i = 1; i <= n; i++) {
+        const coop = await createCoop(pid, n === 1 ? newName.trim() : `${newName.trim()} ${i}`)
+        if (!first) first = coop
+      }
+      nav(n === 1 ? `/defects/coop/${first!.id}` : '/defects')
+      if (n > 1) { setCreating(false); setNewName(''); fetchAllCoops().then(setCoops) }
     } catch (e) {
       setErr(String((e as Error).message ?? e)); setCreating(false)
     }
@@ -72,6 +80,11 @@ export default function Coops() {
             className="input" placeholder={dt('coops_new_ph')} value={newName}
             onChange={(e) => setNewName(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && onCreate()}
+          />
+          <input
+            className="input coop-new__count" type="number" min={1} max={24} value={newCount}
+            title={dt('coops_count_ph')}
+            onChange={(e) => setNewCount(Number(e.target.value) || 1)}
           />
           <button className="btn btn--primary" disabled={!(newProjectId || projectId) || !newName.trim() || creating} onClick={onCreate}>
             {creating ? dt('coops_creating') : dt('coops_new')}

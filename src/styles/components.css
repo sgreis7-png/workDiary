@@ -794,3 +794,53 @@ select.input { cursor: pointer; }
 .msg-toast__body b { font-size: 14.5px; }
 .msg-toast__body small { color: var(--ink-2); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 @media (max-width: 920px) { .msg-toast { inset-inline: 12px; top: 64px; max-width: none; } }
+
+/* ============ tasks / QC dashboard / defect photos ============ */
+.task-new { display: grid; grid-template-columns: 2fr 1fr 1fr auto auto; gap: 10px; margin-bottom: 20px; }
+.task-mine { display: inline-flex; align-items: center; gap: 7px; font-size: 14px; color: var(--ink-2); cursor: pointer; }
+.task-mine input { accent-color: var(--green); width: 16px; height: 16px; }
+.task-list { display: flex; flex-direction: column; gap: 10px; }
+.task { display: flex; align-items: flex-start; gap: 13px; background: var(--panel); border: 1px solid var(--panel-edge);
+  border-radius: var(--r-lg); padding: 13px 16px; }
+.task--done { opacity: .55; }
+.task--done .task__body b { text-decoration: line-through; }
+.task--overdue { border-inline-start: 4px solid var(--clay); }
+.task__check { width: 20px; height: 20px; margin-top: 2px; accent-color: var(--green); cursor: pointer; }
+.task__body { flex: 1; min-width: 0; }
+.task__body b { font-size: 16px; }
+.task__body small { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+@media (max-width: 760px) { .task-new { grid-template-columns: 1fr 1fr; } }
+
+.qc-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px; }
+.qc-stat { background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r-lg);
+  padding: 16px; display: flex; flex-direction: column; gap: 4px; }
+.qc-stat b { font-family: var(--font-display); font-size: 30px; line-height: 1; }
+.qc-stat span { color: var(--ink-3); font-size: 13.5px; }
+.qc-stat--bad { border-color: rgba(193,74,21,.5); }
+.qc-stat--bad b { color: var(--clay); }
+.qc-gates { display: flex; gap: 4px; flex-wrap: wrap; }
+.qc-gate { display: inline-flex; flex-direction: column; align-items: center; min-width: 40px; padding: 4px 6px;
+  border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--ink-3); background: var(--paper); }
+.qc-gate small { font-size: 10px; font-weight: 500; }
+.qc-gate--part { border-color: var(--amber); color: var(--ink); }
+.qc-gate--done { border-color: var(--green); background: var(--green-tint); color: var(--green-dark); }
+.qc-recurring { display: flex; flex-direction: column; gap: 8px; }
+.qc-recurring__row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border: 1px solid var(--line);
+  border-radius: var(--r); background: var(--paper); flex-wrap: wrap; }
+.qc-audit { display: flex; flex-direction: column; gap: 6px; max-height: 380px; overflow-y: auto; }
+.qc-audit__row { display: flex; align-items: center; gap: 10px; padding: 7px 10px; border-bottom: 1px solid var(--rule);
+  font-size: 14px; flex-wrap: wrap; }
+
+.defect-photos { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; min-width: 90px; }
+.defect-photo { position: relative; }
+.defect-photo img { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid var(--line); display: block; }
+.defect-photo__x { position: absolute; top: -7px; inset-inline-end: -7px; width: 18px; height: 18px; border-radius: 50%;
+  border: none; background: var(--clay); color: #fff; font-size: 10px; cursor: pointer; display: grid; place-items: center; }
+.defect-photo__add { display: grid; place-items: center; width: 44px; height: 44px; border: 1.5px dashed var(--line-strong);
+  border-radius: 8px; cursor: pointer; font-size: 17px; }
+.defect-photo__add:hover { border-color: var(--green); background: var(--green-tint); }
+.coop-new__count { max-width: 90px; }
+.cal-chip--deadline { border-inline-start: 3px solid var(--amber); }
+.cal-chip--deadline i { background: var(--amber) !important; }
+.cal-chip--overdue { border-inline-start-color: var(--clay); }
+.cal-chip--overdue i { background: var(--clay) !important; }

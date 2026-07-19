@@ -145,6 +145,7 @@ export function Shell() {
         {defectsMode ? (
           <>
             {can('defects') && <NavItem to="/defects" end icon="🛡" label={dt('nav_coops')} />}
+            {can('dashboard') && <NavItem to="/defects/dashboard" icon="◷" label={t('nav_dashboard')} />}
             {can('defects') && <NavItem to="/defects/search" icon="⌕" label={dt('nav_defect_search')} />}
             {canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label={dt('nav_form_builder')} />}
           </>
@@ -157,6 +158,7 @@ export function Shell() {
             {can('search') && <NavItem to="/search" icon="⌕" label={t('nav_search')} />}
             {can('projects') && <NavItem to="/projects" icon="◆" label={t('nav_projects')} />}
             {can('export') && <NavItem to="/export" icon="⭳" label={t('nav_export')} />}
+            <NavItem to="/tasks" icon="☑" label={dt('nav_tasks')} />
           </>
         )}
         <NavLink to="/messages" className={({ isActive }) => `nav__item ${isActive ? 'active' : ''}`} onClick={() => window.scrollTo(0, 0)}>

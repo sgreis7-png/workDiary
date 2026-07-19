@@ -6,7 +6,8 @@ import {
 } from '../../defects/model'
 import { itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, severityLabel, defectStatusLabel, gateShortName } from '../../defects/i18n'
-import type { Defect } from '../../defects/api'
+import type { Defect, DefectPhoto } from '../../defects/api'
+import type { AppUser } from '../../data'
 
 function TextCell({ value, onCommit, placeholder }: { value: string | null; onCommit: (v: string) => void; placeholder?: string }) {
   const [v, setV] = useState(value ?? '')
@@ -19,12 +20,16 @@ function TextCell({ value, onCommit, placeholder }: { value: string | null; onCo
   )
 }
 
-export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }: {
+export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], onAdd, onPatch, onRemove, onAddPhoto, onRemovePhoto }: {
   defects: Defect[]
   defs?: GateDefs
+  users?: AppUser[]
+  photos?: DefectPhoto[]
   onAdd: (gate: GateKey) => void
   onPatch: (id: string, patch: Partial<Defect>) => void
   onRemove: (id: string) => void
+  onAddPhoto?: (defectId: string, file: File) => void
+  onRemovePhoto?: (photoId: string) => void
 }) {
   const { dt, lang } = useDT()
   const [newGate, setNewGate] = useState<GateKey>('gate1')
@@ -48,7 +53,7 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
               <tr>
                 <th>{dt('dl_no')}</th><th>{dt('sum_gate')}</th><th>{dt('dl_item')}</th><th>{dt('dl_desc')}</th><th>{dt('dl_severity')}</th>
                 <th>{dt('dl_assignee')}</th><th>{dt('dl_due')}</th><th>{dt('dl_status')}</th><th>{dt('dl_closed_on')}</th>
-                <th>{dt('dl_closure')}</th><th></th>
+                <th>{dt('dl_closure')}</th><th>📷</th><th></th>
               </tr>
             </thead>
             <tbody>
@@ -86,7 +91,19 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
                       ))}
                     </select>
                   </td>
-                  <td><TextCell value={d.assignee} onCommit={(v) => onPatch(d.id, { assignee: v || null })} /></td>
+                  <td>
+                    <select
+                      className="input" value={d.assignee_email ?? ''}
+                      onChange={(e) => {
+                        const em = e.target.value || null
+                        const u = users.find((x) => x.email.toLowerCase() === em)
+                        onPatch(d.id, { assignee_email: em, assignee: u?.name ?? null })
+                      }}
+                    >
+                      <option value="">—</option>
+                      {users.map((u) => <option key={u.email} value={u.email.toLowerCase()}>{u.name}</option>)}
+                    </select>
+                  </td>
                   <td>
                     <input
                       className="input" type="date" value={d.due_date ?? ''}
@@ -116,6 +133,23 @@ export function DefectLogTab({ defects, defs = GATES, onAdd, onPatch, onRemove }
                     />
                   </td>
                   <td><TextCell value={d.closure_note} onCommit={(v) => onPatch(d.id, { closure_note: v || null })} /></td>
+                  <td>
+                    <div className="defect-photos">
+                      {photos.filter((p) => p.defect_id === d.id).map((p) => (
+                        <span key={p.id} className="defect-photo">
+                          {p.url && <a href={p.url} target="_blank" rel="noreferrer"><img src={p.url} alt="" /></a>}
+                          {onRemovePhoto && <button className="defect-photo__x" onClick={() => onRemovePhoto(p.id)}>✕</button>}
+                        </span>
+                      ))}
+                      {onAddPhoto && (
+                        <label className="defect-photo__add" title="📷">
+                          📷
+                          <input type="file" accept="image/*" capture="environment" hidden
+                            onChange={(e) => { const f = e.target.files?.[0]; if (f) onAddPhoto(d.id, f); e.target.value = '' }} />
+                        </label>
+                      )}
+                    </div>
+                  </td>
                   <td>
                     <button className="btn btn--quiet" title={dt('dl_delete')} onClick={() => onRemove(d.id)}>✕</button>
                   </td>

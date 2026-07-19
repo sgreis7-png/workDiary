@@ -151,6 +151,10 @@ const D = {
   con_manager:       { he: 'מנהל ביצוע', en: 'Execution manager' },
   con_supervisor:    { he: 'מפקח', en: 'Supervisor' },
   con_submit:        { he: '✍️ אישור בחתימה כפולה', en: '✍️ Approve with double signature' },
+  nav_tasks:         { he: 'משימות', en: 'Tasks' },
+  qc_project:        { he: 'פרויקט', en: 'Project' },
+  coops_count_ph:    { he: 'כמה לולים? (1)', en: 'How many? (1)' },
+
   // project-open tab
   po_title:          { he: 'פתיחת פרויקט — ממלאים פעם אחת', en: 'Project setup — filled once' },
   po_matrix_title:   { he: 'מטריצת אחריות — מי אחראי על מה בפרויקט הזה', en: 'Responsibility matrix — who owns what in this project' },

@@ -5,8 +5,12 @@ import { useStore } from '../../store'
 import {
   fetchCoopBundle, updateCoop, saveResponsibility, upsertChecklistItem,
   createDefect, updateDefect, deleteDefect, signGate, removeGateSignatures, createConcession,
-  type CoopBundle, type ChecklistItem, type Coop, type CoopResponsibility, type Defect,
+  fetchDefectPhotos, addDefectPhoto, deleteDefectPhoto, logAudit, notifyUser,
+  type CoopBundle, type ChecklistItem, type Coop, type CoopResponsibility, type Defect, type DefectPhoto,
 } from '../../defects/api'
+import { fetchUsers } from '../../api'
+import { useAuth } from '../../auth'
+import type { AppUser } from '../../data'
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { usePerms } from '../../lib/usePerms'
@@ -36,7 +40,10 @@ export default function CoopView() {
   const { projectName } = useStore()
   const { canEdit } = usePerms()
   const { dt, lang } = useDT()
+  const { user } = useAuth()
   const readOnly = !canEdit('defects')
+  const [users, setUsers] = useState<AppUser[]>([])
+  const [photos, setPhotos] = useState<DefectPhoto[]>([])
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
   const [defs, setDefs] = useState<GateDefs>(GATES)
   const [tab, setTab] = useState<TabKey>('project_open')
@@ -45,6 +52,8 @@ export default function CoopView() {
   useEffect(() => {
     fetchCoopBundle(id).then(setBundle).catch((e) => setErr(String(e.message ?? e)))
     loadGateDefs().then(setDefs)
+    fetchDefectPhotos(id).then(setPhotos).catch(() => {})
+    fetchUsers().then((us) => setUsers(us.filter((u) => u.active && u.registered))).catch(() => setUsers([]))
   }, [id])
 
   const fail = useCallback((e: unknown) => setErr(String((e as Error).message ?? e)), [])
@@ -153,8 +162,20 @@ export default function CoopView() {
 
   const patchDefect = useCallback(async (id_: string, patch: Partial<Defect>) => {
     setBundle((b) => b && { ...b, defects: b.defects.map((d) => d.id === id_ ? { ...d, ...patch } : d) })
-    try { await updateDefect(id_, patch) } catch (e) { fail(e) }
-  }, [fail])
+    try {
+      await updateDefect(id_, patch)
+      if (user) {
+        if (patch.status) logAudit(user.email, `defect_${patch.status}`, 'defect', id_, { coop: bundle?.coop.name })
+        if (patch.assignee_email) {
+          logAudit(user.email, 'defect_assigned', 'defect', id_, { to: patch.assignee_email })
+          if (patch.assignee_email !== user.email.toLowerCase()) {
+            const d = bundle?.defects.find((x) => x.id === id_)
+            notifyUser(patch.assignee_email, 'הוקצה לך ליקוי', `לול ${bundle?.coop.name ?? ''} · ${d?.description ?? ''}`, `/defects/coop/${bundle?.coop.id}`)
+          }
+        }
+      }
+    } catch (e) { fail(e) }
+  }, [fail, user, bundle])
 
   const removeDefect = useCallback(async (id_: string) => {
     setBundle((b) => b && { ...b, defects: b.defects.filter((d) => d.id !== id_) })
@@ -165,6 +186,7 @@ export default function CoopView() {
     if (!bundle) return
     try {
       await signGate(bundle.coop.id, gate, role, name, png)
+      if (user) logAudit(user.email, 'gate_signed', 'gate', `${bundle.coop.id}/${gate}`, { role, name, coop: bundle.coop.name })
       const b2 = await fetchCoopBundle(id) // re-fetch for signed URL
       setBundle(b2)
     } catch (e) { fail(e) }
@@ -174,6 +196,7 @@ export default function CoopView() {
     if (!bundle) return
     try {
       await removeGateSignatures(bundle.coop.id, gate)
+      if (user) logAudit(user.email, 'gate_unsigned', 'gate', `${bundle.coop.id}/${gate}`, { coop: bundle.coop.name })
       setBundle((b) => b && { ...b, signatures: b.signatures.filter((s) => s.gate !== gate) })
     } catch (e) { fail(e) }
   }, [bundle]) // eslint-disable-line react-hooks/exhaustive-deps
@@ -262,7 +285,20 @@ export default function CoopView() {
         <DefectLogTab
           defects={bundle.defects}
           defs={defs}
+          users={users}
+          photos={photos}
           onAdd={addDefect} onPatch={patchDefect} onRemove={removeDefect}
+          onAddPhoto={async (defectId, file) => {
+            if (!user) return
+            try {
+              const p = await addDefectPhoto(defectId, file, user.email)
+              setPhotos((prev) => [...prev, p])
+            } catch (e) { fail(e) }
+          }}
+          onRemovePhoto={async (photoId) => {
+            setPhotos((prev) => prev.filter((p) => p.id !== photoId))
+            try { await deleteDefectPhoto(photoId) } catch (e) { fail(e) }
+          }}
         />
       )}
       </fieldset>
