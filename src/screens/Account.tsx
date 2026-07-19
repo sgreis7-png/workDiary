@@ -1,9 +1,22 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
-import { Button, Field } from '../components/ui'
+import { Button, Field, Avatar } from '../components/ui'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { changeMyPassword } from '../api'
+import { fetchProfileMetas, uploadMyAvatar } from '../lib/messages'
+
+/** Downscale any picked image to a square 256px PNG blob. */
+async function toAvatarPng(file: File): Promise<Blob> {
+  const img = await createImageBitmap(file)
+  const size = 256
+  const canvas = document.createElement('canvas')
+  canvas.width = size; canvas.height = size
+  const ctx = canvas.getContext('2d')!
+  const s = Math.min(img.width, img.height)
+  ctx.drawImage(img, (img.width - s) / 2, (img.height - s) / 2, s, s, 0, 0, size, size)
+  return new Promise((res, rej) => canvas.toBlob((b) => b ? res(b) : rej(new Error('canvas')), 'image/png'))
+}
 
 export default function Account() {
   const { t } = useI18n()
@@ -13,6 +26,25 @@ export default function Account() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [ok, setOk] = useState(false)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
+  const [avatarBusy, setAvatarBusy] = useState(false)
+  const fileRef = useRef<HTMLInputElement>(null)
+
+  useEffect(() => {
+    if (!user?.email) return
+    fetchProfileMetas().then((m) => setAvatarUrl(m[user.email.toLowerCase()]?.avatar_url ?? null)).catch(() => {})
+  }, [user?.email])
+
+  async function onPickAvatar(f: File | undefined) {
+    if (!f || !user || avatarBusy) return
+    setAvatarBusy(true); setErr('')
+    try {
+      const png = await toAvatarPng(f)
+      const url = await uploadMyAvatar(user.id, png)
+      setAvatarUrl(url)
+    } catch (e) { setErr(String((e as Error).message ?? e)) }
+    finally { setAvatarBusy(false) }
+  }
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -37,8 +69,23 @@ export default function Account() {
         </div>
       </div>
 
+      <div className="panel" style={{ maxWidth: 460, padding: 24, marginBottom: 20 }}>
+        <div className="avatar-edit">
+          {avatarUrl
+            ? <img className="avatar-edit__img" src={avatarUrl} alt="תמונת פרופיל" />
+            : <Avatar name={user?.name ?? '?'} size={72} />}
+          <div>
+            <b>{user?.name}</b>
+            <div><small className="mono">{user?.email}</small></div>
+            <button className="btn btn--ghost" style={{ marginTop: 10 }} disabled={avatarBusy} onClick={() => fileRef.current?.click()}>
+              {avatarBusy ? 'מעלה…' : avatarUrl ? '📷 החלפת תמונת פרופיל' : '📷 הוספת תמונת פרופיל'}
+            </button>
+            <input ref={fileRef} type="file" accept="image/*" hidden onChange={(e) => onPickAvatar(e.target.files?.[0])} />
+          </div>
+        </div>
+      </div>
+
       <div className="panel" style={{ maxWidth: 460, padding: 24 }}>
-        <p className="sub" style={{ color: 'var(--ink-3)', marginBottom: 18 }}>{user?.email}</p>
         <form onSubmit={submit} style={{ display: 'grid', gap: 14 }}>
           <Field label={t('set_password')}>
             <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />

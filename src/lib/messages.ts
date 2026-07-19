@@ -42,3 +42,34 @@ export async function ackMessage(id: string): Promise<void> {
     .update({ ack_at: new Date().toISOString() }).eq('id', id)
   if (error) throw error
 }
+
+// ---------- profiles (avatars for chat) ----------
+
+export interface ProfileMeta { id: string; name: string; email: string | null; avatar_path: string | null; avatar_url?: string }
+
+/** All profiles with signed avatar URLs, keyed by lowercase email. */
+export async function fetchProfileMetas(): Promise<Record<string, ProfileMeta>> {
+  const { data, error } = await supabase.from('profiles').select('id,name,email,avatar_path')
+  if (error) throw error
+  const rows = data as ProfileMeta[]
+  const paths = rows.map((r) => r.avatar_path).filter(Boolean) as string[]
+  const urls: Record<string, string> = {}
+  if (paths.length) {
+    const { data: signed } = await supabase.storage.from('photos').createSignedUrls(paths, 3600)
+    for (const s of signed ?? []) if (s.signedUrl && s.path) urls[s.path] = s.signedUrl
+  }
+  const m: Record<string, ProfileMeta> = {}
+  for (const r of rows) if (r.email) m[r.email.toLowerCase()] = { ...r, avatar_url: r.avatar_path ? urls[r.avatar_path] : undefined }
+  return m
+}
+
+/** Upload (resized) avatar PNG and store its path on my profile. Returns signed URL. */
+export async function uploadMyAvatar(userId: string, png: Blob): Promise<string> {
+  const path = `avatars/${userId}-${Date.now()}.png`
+  const { error: upErr } = await supabase.storage.from('photos').upload(path, png, { contentType: 'image/png', upsert: true })
+  if (upErr) throw upErr
+  const { error } = await supabase.from('profiles').update({ avatar_path: path }).eq('id', userId)
+  if (error) throw error
+  const { data } = await supabase.storage.from('photos').createSignedUrls([path], 3600)
+  return data?.[0]?.signedUrl ?? ''
+}

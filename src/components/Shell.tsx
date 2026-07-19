@@ -10,7 +10,7 @@ import { NotificationsBell } from './Notifications'
 import { AboutDialog } from './AboutDialog'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
-import { countUnacked } from '../lib/messages'
+import { countUnacked, fetchProfileMetas } from '../lib/messages'
 
 function ThemeToggle() {
   const [theme, set] = useState<Theme>(getTheme())
@@ -53,6 +53,7 @@ export function Shell() {
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [unacked, setUnacked] = useState(0)
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
   const defectsMode = loc.pathname.startsWith('/defects') || loc.pathname.startsWith('/admin/defect-items')
@@ -64,6 +65,7 @@ export function Shell() {
     poll()
     const t = setInterval(poll, 60_000)
     window.addEventListener('messages-changed', poll)
+    fetchProfileMetas().then((m) => setAvatarUrl(m[user.email.toLowerCase()]?.avatar_url ?? null)).catch(() => {})
     return () => { clearInterval(t); window.removeEventListener('messages-changed', poll) }
   }, [user?.email])
 
@@ -124,7 +126,9 @@ export function Shell() {
         </div>
         <LangToggle />
         <div className="user-chip">
-          <Avatar name={user?.name ?? '?'} />
+          {avatarUrl
+            ? <img className="chat-avatar" style={{ width: 34, height: 34 }} src={avatarUrl} alt="" />
+            : <Avatar name={user?.name ?? '?'} />}
           <div className="meta">
             <b>{user?.name}</b>
             <small>{user?.email}</small>
