@@ -73,7 +73,8 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
 .sidebar { padding: 26px 20px; display: flex; flex-direction: column; gap: 30px;
   position: sticky; top: 0; height: 100vh; color: var(--shell-ink);
   background: linear-gradient(168deg, var(--shell-2), var(--shell) 62%);
-  border-inline-end: 1px solid rgba(11,18,16,.28); }
+  border-inline-end: 1px solid rgba(11,18,16,.28);
+  overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .sidebar__brand { padding-inline-start: 4px; }
 .sidebar__brand .sub { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
   color: var(--shell-faint); margin-top: 10px; }
