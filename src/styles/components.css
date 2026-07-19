@@ -756,3 +756,27 @@ html[dir='ltr'] select.input { background-position: right 14px center; }
 .group-pick__row input { accent-color: var(--green); width: 17px; height: 17px; }
 .chat__tools { display: flex; flex-direction: column; gap: 6px; padding: 4px; }
 .chat__search { padding: 9px 12px; font-size: 14.5px; border-radius: 10px; }
+
+/* ============ top user menu ============ */
+.user-menu { position: relative; }
+.user-menu__btn { display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 11px;
+  border: 1px solid var(--shell-line); border-radius: var(--r-lg); background: rgba(233,242,236,.06);
+  cursor: pointer; font: inherit; color: var(--shell-ink); text-align: start;
+  transition: background .16s var(--ease), border-color .16s var(--ease); }
+.user-menu__btn:hover { background: rgba(233,242,236,.12); border-color: var(--green); }
+.user-menu__btn--compact { width: auto; padding: 5px 9px; border-color: var(--line-strong);
+  background: var(--panel); color: var(--ink); }
+.user-menu__meta { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }
+.user-menu__meta b { font-size: 14px; }
+.user-menu__meta small { font-size: 11px; color: var(--shell-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.user-menu__chev { font-size: 11px; opacity: .7; }
+.user-menu__panel { position: absolute; top: calc(100% + 6px); inset-inline: 0; z-index: 70; min-width: 230px;
+  background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r-lg);
+  box-shadow: var(--shadow-2); padding: 6px; display: flex; flex-direction: column; }
+.mobile-bar .user-menu__panel { inset-inline: auto 0; }
+.user-menu__panel button { display: flex; align-items: center; gap: 10px; width: 100%; border: 0; background: none;
+  font: inherit; font-weight: 600; font-size: 14.5px; color: var(--ink); padding: 11px 12px; border-radius: var(--r);
+  cursor: pointer; text-align: start; }
+.user-menu__panel button:hover { background: var(--paper); }
+.user-menu__sep { height: 1px; background: var(--line); margin: 5px 8px; }
+.user-menu__danger { color: var(--clay) !important; }

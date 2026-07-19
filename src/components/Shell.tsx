@@ -12,13 +12,46 @@ import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
 import { countUnackedAll, fetchProfileMetas } from '../lib/messages'
 
-function ThemeToggle() {
-  const [theme, set] = useState<Theme>(getTheme())
-  const flip = () => { const t = theme === 'dark' ? 'light' : 'dark'; setTheme(t); set(t) }
+/** Top user menu: avatar button → account, theme, about, sign-out. */
+function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; onAbout: () => void; compact?: boolean }) {
+  const { user, signOut } = useAuth()
+  const nav = useNavigate()
+  const [open, setOpen] = useState(false)
+  const [theme, setThemeState] = useState<Theme>(getTheme())
+  const flipTheme = () => { const t = theme === 'dark' ? 'light' : 'dark'; setTheme(t); setThemeState(t) }
+  const close = () => setOpen(false)
+
+  useEffect(() => {
+    if (!open) return
+    const onDoc = () => setOpen(false)
+    document.addEventListener('click', onDoc)
+    return () => document.removeEventListener('click', onDoc)
+  }, [open])
+
   return (
-    <button className="btn btn--quiet" onClick={flip} title={theme === 'dark' ? 'מצב בהיר' : 'מצב כהה'} aria-label="theme">
-      {theme === 'dark' ? '☀' : '☾'}
-    </button>
+    <div className="user-menu" onClick={(e) => e.stopPropagation()}>
+      <button className={`user-menu__btn ${compact ? 'user-menu__btn--compact' : ''}`} onClick={() => setOpen((o) => !o)} aria-haspopup="menu" aria-expanded={open}>
+        {avatarUrl
+          ? <img className="chat-avatar" style={{ width: 36, height: 36 }} src={avatarUrl} alt="" />
+          : <Avatar name={user?.name ?? '?'} size={36} />}
+        {!compact && (
+          <span className="user-menu__meta">
+            <b>{user?.name}</b>
+            <small>{user?.email}</small>
+          </span>
+        )}
+        <span className="user-menu__chev" aria-hidden>▾</span>
+      </button>
+      {open && (
+        <div className="user-menu__panel" role="menu">
+          <button role="menuitem" onClick={() => { close(); nav('/account') }}>👤 החשבון שלי — פרופיל וסיסמה</button>
+          <button role="menuitem" onClick={() => { flipTheme() }}>{theme === 'dark' ? '☀ מעבר למצב בהיר' : '☾ מעבר למצב כהה'}</button>
+          <button role="menuitem" onClick={() => { close(); onAbout() }}>ⓘ על התוכנה</button>
+          <div className="user-menu__sep" />
+          <button role="menuitem" className="user-menu__danger" onClick={() => { close(); signOut(); nav('/login') }}>⇥ התנתקות</button>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -48,7 +81,7 @@ function NavItem({ to, icon, label, end }: { to: string; icon: string; label: st
 
 export function Shell() {
   const { t } = useI18n()
-  const { user, signOut, isAdmin } = useAuth()
+  const { user, isAdmin } = useAuth()
   const { online, pending } = useOfflineSync()
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
@@ -81,6 +114,8 @@ export function Shell() {
         <Logo height={34} tone="light" />
         <div className="sub">{t('app_title')} · {t('app_sub')}</div>
       </div>
+
+      <UserMenu avatarUrl={avatarUrl} onAbout={() => setAboutOpen(true)} />
 
       <nav className="nav" onClick={() => setOpen(false)}>
         {defectsMode ? (
@@ -120,22 +155,9 @@ export function Shell() {
       <div className="sidebar__foot">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <NotificationsBell />
-          <ThemeToggle />
-          <button className="btn btn--quiet" onClick={() => setAboutOpen(true)} title="על התוכנה" aria-label="about">ⓘ</button>
           {syncBadge}
         </div>
         <LangToggle />
-        <div className="user-chip">
-          {avatarUrl
-            ? <img className="chat-avatar" style={{ width: 34, height: 34 }} src={avatarUrl} alt="" />
-            : <Avatar name={user?.name ?? '?'} />}
-          <div className="meta">
-            <b>{user?.name}</b>
-            <small>{user?.email}</small>
-          </div>
-          <button className="btn btn--quiet" style={{ marginInlineStart: 'auto' }} onClick={() => nav('/account')} title={t('change_password')}>🔑</button>
-          <button className="btn btn--quiet" onClick={() => { signOut(); nav('/login') }} title={t('sign_out')}>⇥</button>
-        </div>
       </div>
     </aside>
   )
@@ -150,8 +172,7 @@ export function Shell() {
           <Logo height={26} withTag={false} />
           {syncBadge}
           <NotificationsBell />
-          <ThemeToggle />
-          <LangToggle />
+          <UserMenu avatarUrl={avatarUrl} onAbout={() => setAboutOpen(true)} compact />
         </div>
         <main className="main">
           <AnimatePresence mode="wait">
