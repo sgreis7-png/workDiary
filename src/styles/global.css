@@ -75,3 +75,11 @@ button, a, label, select, [role='button'], .btn, .tag, .staff-chip, .cal-chip, .
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
 }
+
+/* ---- dark mode adjustments ---- */
+html[data-theme='dark'] body::after { opacity: .04; mix-blend-mode: screen; }
+html[data-theme='dark'] ::selection { background: var(--green-deep); color: #fff; }
+html[data-theme='dark'] select.input { background-image:
+  url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='%23a2b3a9' stroke-width='2.6' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E"); }
+html[data-theme='dark'] .lang-toggle button.on { background: var(--ink); color: var(--paper); }
+html[data-theme='dark'] .gate-sign__done img, html[data-theme='dark'] .sigpad__canvas { background: #f4f7f5; }

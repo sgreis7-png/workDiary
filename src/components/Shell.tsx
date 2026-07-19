@@ -7,6 +7,18 @@ import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { useOfflineSync } from '../lib/useOfflineSync'
 import { NotificationsBell } from './Notifications'
+import { AboutDialog } from './AboutDialog'
+import { getTheme, setTheme, type Theme } from '../lib/theme'
+
+function ThemeToggle() {
+  const [theme, set] = useState<Theme>(getTheme())
+  const flip = () => { const t = theme === 'dark' ? 'light' : 'dark'; setTheme(t); set(t) }
+  return (
+    <button className="btn btn--quiet" onClick={flip} title={theme === 'dark' ? 'מצב בהיר' : 'מצב כהה'} aria-label="theme">
+      {theme === 'dark' ? '☀' : '☾'}
+    </button>
+  )
+}
 
 function LangToggle() {
   const { lang, setLang } = useI18n()
@@ -37,6 +49,7 @@ export function Shell() {
   const { user, signOut, isAdmin } = useAuth()
   const { online, pending } = useOfflineSync()
   const [open, setOpen] = useState(false)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const loc = useLocation()
   const nav = useNavigate()
   const defectsMode = loc.pathname.startsWith('/defects')
@@ -84,6 +97,8 @@ export function Shell() {
       <div className="sidebar__foot">
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <NotificationsBell />
+          <ThemeToggle />
+          <button className="btn btn--quiet" onClick={() => setAboutOpen(true)} title="על התוכנה" aria-label="about">ⓘ</button>
           {syncBadge}
         </div>
         <LangToggle />
@@ -110,6 +125,7 @@ export function Shell() {
           <Logo height={26} withTag={false} />
           {syncBadge}
           <NotificationsBell />
+          <ThemeToggle />
           <LangToggle />
         </div>
         <main className="main">
@@ -126,6 +142,7 @@ export function Shell() {
           </AnimatePresence>
         </main>
       </div>
+      {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
     </div>
   )
 }

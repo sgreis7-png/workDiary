@@ -7,7 +7,10 @@ import { I18nProvider } from './i18n'
 import { AuthProvider } from './auth'
 import { DataProvider } from './store'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { initTheme } from './lib/theme'
 import App from './App'
+
+initTheme()
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
