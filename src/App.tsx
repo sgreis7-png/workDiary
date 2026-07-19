@@ -22,6 +22,7 @@ import Coops from './screens/defects/Coops'
 import CoopView from './screens/defects/CoopView'
 import CoopReport from './screens/defects/CoopReport'
 import DefectFormBuilder from './screens/admin/DefectFormBuilder'
+import DefectSearch from './screens/defects/DefectSearch'
 import Messages from './screens/Messages'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
@@ -64,6 +65,7 @@ export default function App() {
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Home />} />
         <Route path="defects" element={<RequirePerm area="defects"><Coops /></RequirePerm>} />
+        <Route path="defects/search" element={<RequirePerm area="defects"><DefectSearch /></RequirePerm>} />
         <Route path="defects/coop/:id" element={<RequirePerm area="defects"><CoopView /></RequirePerm>} />
         <Route path="defects/coop/:id/report" element={<RequirePerm area="defects"><CoopReport /></RequirePerm>} />
         <Route path="dashboard" element={<RequirePerm area="dashboard"><Dashboard /></RequirePerm>} />

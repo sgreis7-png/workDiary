@@ -141,7 +141,8 @@ export function Shell() {
       <nav className="nav" onClick={() => setOpen(false)}>
         {defectsMode ? (
           <>
-            {can('defects') && <NavItem to="/defects" icon="🛡" label="לולים — תפיסת סיום שלב" />}
+            {can('defects') && <NavItem to="/defects" end icon="🛡" label="לולים — תפיסת סיום שלב" />}
+            {can('defects') && <NavItem to="/defects/search" icon="⌕" label="חיפוש" />}
             {canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label="בונה טופס ליקויים" />}
           </>
         ) : (
