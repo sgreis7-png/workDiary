@@ -15,12 +15,13 @@ body {
   font-weight: 500;
   color: var(--ink);
   background-color: var(--paper);
-  /* ledger grid + warm vignette + paper grain */
+  /* cool wash + fine engineering grid */
   background-image:
-    radial-gradient(120% 90% at 50% -10%, rgba(58,170,53,.06), transparent 60%),
+    radial-gradient(110% 80% at 85% -10%, rgba(58,170,53,.07), transparent 55%),
+    radial-gradient(90% 70% at 0% 100%, rgba(20,48,36,.05), transparent 60%),
     linear-gradient(var(--rule) 1px, transparent 1px),
     linear-gradient(90deg, var(--rule) 1px, transparent 1px);
-  background-size: 100% 100%, 100% 28px, 28px 100%;
+  background-size: 100% 100%, 100% 100%, 100% 32px, 32px 100%;
   background-attachment: fixed;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
@@ -34,7 +35,7 @@ body::after {
   inset: 0;
   pointer-events: none;
   z-index: 9999;
-  opacity: .035;
+  opacity: .022;
   mix-blend-mode: multiply;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }

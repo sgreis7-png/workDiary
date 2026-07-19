@@ -1,27 +1,35 @@
 :root {
-  /* ---- palette: warm paper + ink + Agrotop green + clay ---- */
-  --paper:        #f4f1ea;
-  --paper-2:      #eae6dc;
-  --panel:        #fbfaf6;
-  --panel-edge:   #e3ddd0;
-  --ink:          #14181b;
-  --ink-2:        #2b3136;
-  --ink-3:        #4e565c;
-  --ink-faint:    #6c747a;
+  /* ---- palette: cool porcelain canvas + near-black ink + Agrotop green ---- */
+  --paper:        #eef2f0;
+  --paper-2:      #e2e8e5;
+  --panel:        #ffffff;
+  --panel-edge:   #d7dfdb;
+  --ink:          #0b1210;
+  --ink-2:        #26312c;
+  --ink-3:        #47554e;
+  --ink-faint:    #68766f;
 
   --green:        #3aaa35;   /* brand */
-  --green-deep:   #277d23;
-  --green-dark:   #1c5a1a;
-  --green-tint:   #e7f1e4;
-  --green-glow:   rgba(58, 170, 53, 0.18);
+  --green-deep:   #1f7a1b;
+  --green-dark:   #145612;
+  --green-tint:   #e1f3df;
+  --green-glow:   rgba(58, 170, 53, 0.20);
 
-  --clay:         #c2541f;   /* accent / alerts / weather */
-  --clay-tint:    #f6e4d8;
+  --clay:         #c14a15;   /* accent / alerts / weather */
+  --clay-tint:    #fbe8dc;
   --amber:        #d8a01a;
+  --amber-tint:   #fdf3d7;
 
-  --line:         rgba(20, 24, 27, 0.10);
-  --line-strong:  rgba(20, 24, 27, 0.20);
-  --rule:         rgba(20, 24, 27, 0.06);
+  /* deep forest-graphite shell (sidebar) */
+  --shell:        #0d1f15;
+  --shell-2:      #143024;
+  --shell-ink:    #e9f2ec;
+  --shell-faint:  #96ab9e;
+  --shell-line:   rgba(233, 242, 236, 0.14);
+
+  --line:         rgba(11, 18, 16, 0.12);
+  --line-strong:  rgba(11, 18, 16, 0.22);
+  --rule:         rgba(11, 18, 16, 0.05);
 
   /* ---- type ---- */
   --font-display: 'Heebo', 'Assistant', system-ui, sans-serif;
@@ -29,11 +37,11 @@
   --font-mono:    'JetBrains Mono', ui-monospace, monospace;
 
   /* ---- geometry ---- */
-  --r-sm: 3px;
-  --r:    5px;
-  --r-lg: 9px;
-  --shadow-1: 0 1px 2px rgba(20,24,27,.06), 0 2px 8px rgba(20,24,27,.05);
-  --shadow-2: 0 8px 30px rgba(20,24,27,.10), 0 2px 6px rgba(20,24,27,.06);
+  --r-sm: 4px;
+  --r:    8px;
+  --r-lg: 14px;
+  --shadow-1: 0 1px 2px rgba(11,18,16,.05), 0 4px 14px rgba(11,18,16,.06);
+  --shadow-2: 0 4px 10px rgba(11,18,16,.08), 0 20px 48px rgba(11,18,16,.13);
   --shadow-green: 0 10px 34px var(--green-glow);
 
   /* ---- motion ---- */

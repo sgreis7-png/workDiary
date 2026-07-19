@@ -50,7 +50,7 @@ export function Shell() {
   const sidebar = (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar__brand">
-        <Logo height={34} />
+        <Logo height={34} tone="light" />
         <div className="sub">{t('app_title')} · {t('app_sub')}</div>
       </div>
 
