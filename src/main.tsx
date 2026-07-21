@@ -10,8 +10,18 @@ import { DataProvider } from './store'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { initTheme } from './lib/theme'
 import App from './App'
+import { registerSW } from 'virtual:pwa-register'
 
 initTheme()
+
+// aggressive update pickup: check for a new build on launch + every 15 min,
+// reload as soon as the fresh service worker takes control (TWA/PWA lag fix)
+registerSW({
+  immediate: true,
+  onRegisteredSW(_url, reg) {
+    setInterval(() => { reg?.update().catch(() => {}) }, 15 * 60 * 1000)
+  },
+})
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
