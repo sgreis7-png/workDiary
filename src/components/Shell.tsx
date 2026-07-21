@@ -175,6 +175,7 @@ export function Shell() {
           {dt('nav_messages')}
           {unacked > 0 && <span className="coop-tab__badge" style={{ marginInlineStart: 'auto' }}>{unacked}</span>}
         </NavLink>
+        {can('alert_rules') && <NavItem to="/alert-rules" icon="⚑" label={t('nav_alert_rules')} />}
         {!defectsMode && (isAdmin || canEdit('form_builder')) && (
           <>
             <div className="nav__heading">{t('nav_admin')}</div>

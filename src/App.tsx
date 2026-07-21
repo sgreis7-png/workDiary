@@ -26,6 +26,7 @@ import DefectSearch from './screens/defects/DefectSearch'
 import QCDashboard from './screens/defects/QCDashboard'
 import Tasks from './screens/Tasks'
 import Messages from './screens/Messages'
+import AlertRules from './screens/AlertRules'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
 import { getMode } from './defects/mode'
@@ -80,6 +81,7 @@ export default function App() {
         <Route path="search" element={<RequirePerm area="search"><Search /></RequirePerm>} />
         <Route path="account" element={<Account />} />
         <Route path="messages" element={<Messages />} />
+        <Route path="alert-rules" element={<RequirePerm area="alert_rules"><AlertRules /></RequirePerm>} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
