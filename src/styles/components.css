@@ -580,6 +580,30 @@ select.input { cursor: pointer; }
   .m-cards--stats td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; }
   .m-cards--stats td[data-label]::before { margin-bottom: 0; font-size: 13px; }
   .m-cards--stats .summary-gate-link { font-size: 17px; padding: 0 0 4px; }
+
+  /* ---- compact density: phones get smaller controls so forms fit the screen ---- */
+  .input, textarea.input, select.input { padding: 9px 12px; font-size: 15px; border-radius: 10px; }
+  textarea.input { min-height: 68px; }
+  .input-affix textarea, .input-affix input { padding-inline-end: 40px; }
+  .mic { width: 29px; height: 29px; top: 6px; inset-inline-end: 6px; font-size: 13px; }
+  .field { gap: 5px; }
+  .field__label { font-size: 10.5px; letter-spacing: .06em; }
+  .field__hint { font-size: 10.5px; }
+  .form-grid { gap: 12px 14px; }
+  .btn { padding: 9px 13px; font-size: 14px; }
+  .gate-panel { padding: 14px 12px; }
+  .gate-panel__title { font-size: 17.5px; }
+  .gate-panel__sub { font-size: 13px; }
+  .gate-table { font-size: 13.5px; }
+  .gate-footnote { font-size: 12px; }
+  .coop-tab { padding: 7px 11px; font-size: 13.5px; }
+  .m-cards tr { padding: 9px 11px 11px; margin-bottom: 9px; border-radius: 10px; }
+  .m-cards td { padding: 4px 0; }
+  .m-cards td[data-label]::before { font-size: 10.5px; margin-bottom: 2px; }
+  .m-cards .gate-table__item { font-size: 14px; line-height: 1.4; }
+  .page__head { margin-bottom: 16px; padding-bottom: 14px; }
+  .page-title { font-size: 24px; }
+  .kicker { font-size: 10px; }
 }
 .gate-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .gate-table th { text-align: start; padding: 9px 10px; border-bottom: 2px solid var(--line);
