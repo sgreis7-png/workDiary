@@ -32,7 +32,7 @@ function td(v: string, extra = ''): string {
 }
 /** Block wrapper that stays RTL in Outlook: single-cell table with dir+align. */
 function rtlBlock(inner: string, extra = ''): string {
-  return `<table dir="rtl" align="right" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;${extra}">
+  return `<table dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;${extra}">
     <tr><td dir="rtl" align="right" style="text-align:right;color:${I}">${inner}</td></tr></table>`
 }
 function section(title: string, inner: string): string {
@@ -134,7 +134,7 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
   <meta name="color-scheme" content="light only"/><meta name="supported-color-schemes" content="light"/>
   <style>:root{color-scheme:light only}</style></head>
   <body bgcolor="#f2f5f3" style="margin:0;background:${BG};font-family:'Assistant','Heebo',Arial,sans-serif;color:${I}">
-  <table dir="rtl" align="center" width="100%" cellpadding="0" cellspacing="0" style="max-width:1100px;width:100%;border-collapse:collapse;background:${BG}">
+  <table dir="rtl" align="center" width="860" cellpadding="0" cellspacing="0" style="max-width:860px;width:100%;border-collapse:collapse;background:${BG}">
     <tr><td dir="rtl" align="right" style="text-align:right;padding:28px 20px;background:${BG};color:${I}">
     <table dir="rtl" width="100%" cellpadding="0" cellspacing="0" style="width:100%;border-collapse:collapse;border-bottom:3px solid ${GREEN};margin-bottom:6px">
       <tr><td dir="rtl" align="right" style="text-align:right;padding-bottom:14px">
