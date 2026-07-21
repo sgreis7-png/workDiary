@@ -8,6 +8,7 @@ import { useAuth } from '../auth'
 import { useOfflineSync } from '../lib/useOfflineSync'
 import { NotificationsBell } from './Notifications'
 import { AboutDialog } from './AboutDialog'
+import { FeedbackDialog } from './FeedbackDialog'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
 import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
@@ -97,6 +98,7 @@ export function Shell() {
   const { online, pending } = useOfflineSync()
   const [open, setOpen] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [feedbackOpen, setFeedbackOpen] = useState(false)
   const [unacked, setUnacked] = useState(0)
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null)
   const [msgToast, setMsgToast] = useState<UserMessage | null>(null)
@@ -176,6 +178,11 @@ export function Shell() {
           {unacked > 0 && <span className="coop-tab__badge" style={{ marginInlineStart: 'auto' }}>{unacked}</span>}
         </NavLink>
         {can('alert_rules') && <NavItem to="/alert-rules" icon="⚑" label={t('nav_alert_rules')} />}
+        {isAdmin && <NavItem to="/admin/feedback" icon="📢" label={t('nav_feedback_admin')} />}
+        <button className="nav__item" onClick={() => setFeedbackOpen(true)}>
+          <span className="ic" aria-hidden>🛈</span>
+          {t('nav_feedback')}
+        </button>
         {!defectsMode && (isAdmin || canEdit('form_builder')) && (
           <>
             <div className="nav__heading">{t('nav_admin')}</div>
@@ -223,6 +230,7 @@ export function Shell() {
         </main>
       </div>
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
+      {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       <AnimatePresence>
         {msgToast && (
           <motion.button

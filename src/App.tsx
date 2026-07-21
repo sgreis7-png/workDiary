@@ -27,6 +27,7 @@ import QCDashboard from './screens/defects/QCDashboard'
 import Tasks from './screens/Tasks'
 import Messages from './screens/Messages'
 import AlertRules from './screens/AlertRules'
+import Feedback from './screens/admin/Feedback'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
 import { getMode } from './defects/mode'
@@ -87,6 +88,7 @@ export default function App() {
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
         <Route path="admin/defect-items" element={<RequirePerm area="form_builder" edit><DefectFormBuilder /></RequirePerm>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
+        <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
