@@ -650,6 +650,7 @@ select.input { cursor: pointer; }
   .shell { display: block; }
   .main { padding: 0; max-width: none; }
   .report-frame { border: none; box-shadow: none; border-radius: 0; }
+  .report-frame > div { zoom: 1 !important; } /* print at full size even on phone */
   body { background: #fff !important; }
   body::after { display: none; }
 }

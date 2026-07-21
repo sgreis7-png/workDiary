@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
@@ -25,6 +25,23 @@ export default function CoopReport() {
     fetchCoopBundle(id).then(setBundle).catch((e) => setErr(String(e.message ?? e)))
     loadGateDefs().then(setDefs)
   }, [id])
+
+  // phone: scale the 860px document to the container width (PDF-viewer style),
+  // so nothing is cut and no horizontal scrolling is needed
+  const frameRef = useRef<HTMLDivElement>(null)
+  const [zoom, setZoom] = useState(1)
+  useEffect(() => {
+    const el = frameRef.current
+    if (!el) return
+    const fit = () => {
+      const w = el.clientWidth
+      setZoom(w > 0 && w < 900 ? Math.max(0.3, w / 905) : 1)
+    }
+    fit()
+    const ro = new ResizeObserver(fit)
+    ro.observe(el)
+    return () => ro.disconnect()
+  }, [bundle])
 
   const pName = bundle ? projectName(bundle.coop.project_id) : ''
   const html = useMemo(
@@ -96,7 +113,9 @@ export default function CoopReport() {
       {err && <div className="alert">{err}</div>}
       {copyMsg && <div className="alert alert--ok">{copyMsg}</div>}
 
-      <div className="report-frame" dangerouslySetInnerHTML={{ __html: html }} />
+      <div className="report-frame" ref={frameRef}>
+        <div style={{ zoom }} dangerouslySetInnerHTML={{ __html: html }} />
+      </div>
     </div>
   )
 }
