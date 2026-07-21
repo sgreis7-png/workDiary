@@ -1,0 +1,10 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.agrotop.workdiary",
+      "sha256_cert_fingerprints": ["1B:D0:21:E7:38:C0:47:5E:7B:C0:B4:A7:23:04:D3:D7:FF:10:7B:95:C9:73:CB:4A:07:88:A3:EB:6B:DE:A4:B2"]
+    }
+  }
+]
