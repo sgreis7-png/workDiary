@@ -38,8 +38,10 @@ export default function CoopReport() {
     setErr(''); setCopyMsg('')
     try {
       const text = buildCoopReportText(bundle, pName)
+      // clipboard variant is doubled — Outlook renders pasted HTML small
+      const htmlLarge = buildCoopReportHtml(bundle, pName, { senderName: user?.name, large: true }, defs)
       await navigator.clipboard.write([new ClipboardItem({
-        'text/html': new Blob([html], { type: 'text/html' }),
+        'text/html': new Blob([htmlLarge], { type: 'text/html' }),
         'text/plain': new Blob([text], { type: 'text/plain' }),
       })])
       setCopyMsg(dt('rep_copied'))
