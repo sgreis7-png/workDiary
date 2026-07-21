@@ -41,6 +41,9 @@ export default function CoopReport() {
     host.style.position = 'fixed'
     host.style.insetInlineStart = '-99999px'
     host.style.top = '0'
+    // wide host: Chromium inlines computed widths on copy — a narrow container
+    // would bake a squeezed table width into the pasted HTML
+    host.style.width = '900px'
     host.innerHTML = htmlBody
     document.body.appendChild(host)
     const range = document.createRange()
