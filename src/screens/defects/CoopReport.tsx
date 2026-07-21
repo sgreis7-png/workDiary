@@ -32,14 +32,37 @@ export default function CoopReport() {
     [bundle, pName, user?.name, defs],
   )
 
-  // בדיוק כמו בניהול עבודה: העתקה ללוח (HTML עשיר + טקסט) → הדבקה במייל
+  // העתקה ללוח דרך בחירת DOM נסתרת (execCommand) ולא clipboard.write —
+  // ה-sanitizer של כרום מוחק dir/align מה-HTML, ואז Outlook מדביק LTR.
+  function copyViaSelection(htmlBody: string): boolean {
+    const host = document.createElement('div')
+    host.setAttribute('contenteditable', 'true')
+    host.setAttribute('dir', 'rtl')
+    host.style.position = 'fixed'
+    host.style.insetInlineStart = '-99999px'
+    host.style.top = '0'
+    host.innerHTML = htmlBody
+    document.body.appendChild(host)
+    const range = document.createRange()
+    range.selectNodeContents(host)
+    const sel = window.getSelection()
+    sel?.removeAllRanges()
+    sel?.addRange(range)
+    let ok = false
+    try { ok = document.execCommand('copy') } catch { ok = false }
+    sel?.removeAllRanges()
+    host.remove()
+    return ok
+  }
+
   async function onCopy() {
     if (!bundle) return
     setErr(''); setCopyMsg('')
+    const text = buildCoopReportText(bundle, pName)
+    // clipboard variant is doubled — Outlook renders pasted HTML small
+    const htmlLarge = buildCoopReportHtml(bundle, pName, { senderName: user?.name, large: true }, defs)
+    if (copyViaSelection(htmlLarge)) { setCopyMsg(dt('rep_copied')); return }
     try {
-      const text = buildCoopReportText(bundle, pName)
-      // clipboard variant is doubled — Outlook renders pasted HTML small
-      const htmlLarge = buildCoopReportHtml(bundle, pName, { senderName: user?.name, large: true }, defs)
       await navigator.clipboard.write([new ClipboardItem({
         'text/html': new Blob([htmlLarge], { type: 'text/html' }),
         'text/plain': new Blob([text], { type: 'text/plain' }),
