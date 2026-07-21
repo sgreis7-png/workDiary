@@ -21,3 +21,16 @@ export async function savePrefill(email: string, name: string, phone: string): P
   await supabase.from('user_prefill')
     .upsert({ email: email.toLowerCase(), name: name || null, phone: phone || null, updated_at: new Date().toISOString() })
 }
+
+// site_location is remembered per user PER PROJECT — never leaks between projects or users
+export async function fetchProjectLocation(email: string, projectId: string): Promise<string | null> {
+  const { data } = await supabase.from('user_prefill_locations').select('site_location')
+    .eq('email', email.toLowerCase()).eq('project_id', projectId).maybeSingle()
+  return (data as { site_location: string | null } | null)?.site_location ?? null
+}
+
+export async function saveProjectLocation(email: string, projectId: string, siteLocation: string): Promise<void> {
+  if (!siteLocation.trim()) return
+  await supabase.from('user_prefill_locations')
+    .upsert({ email: email.toLowerCase(), project_id: projectId, site_location: siteLocation.trim(), updated_at: new Date().toISOString() })
+}

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Field, stagger, riseIn } from '../components/ui'
@@ -8,7 +8,7 @@ import { useI18n } from '../i18n'
 import { createEntry, getEntry, getEntryPhotos, lastEntryForProject, updateEntry } from '../api'
 import { queueEntry } from '../lib/offline'
 import { clearDraft, loadDraft, saveDraft } from '../lib/draft'
-import { applyPrefill, fetchPrefill, savePrefill } from '../lib/prefill'
+import { applyPrefill, fetchPrefill, savePrefill, fetchProjectLocation, saveProjectLocation } from '../lib/prefill'
 import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
@@ -70,17 +70,25 @@ export default function EntryForm() {
     return () => { alive = false }
   }, [editing])
 
-  // prefill the site location from the chosen project's last entry (only if untouched)
+  // prefill the site location from MY saved location for the chosen project.
+  // Tracks what was auto-filled so switching projects replaces a stale auto value
+  // but never overwrites text the user typed themselves.
+  const autoLocRef = useRef<string | null>(null)
   useEffect(() => {
-    if (editing || !restored || !project) return
+    if (editing || !restored || !project || !user?.email) return
     let alive = true
-    lastEntryForProject(project).then((e) => {
-      const loc = e?.values?.site_location
-      if (!alive || !loc) return
-      setValues((v) => ((v.site_location ?? '').trim() ? v : { ...v, site_location: loc }))
+    fetchProjectLocation(user.email, project).then((loc) => {
+      if (!alive) return
+      setValues((v) => {
+        const cur = (v.site_location ?? '').trim()
+        const untouched = !cur || cur === autoLocRef.current
+        if (!untouched) return v
+        autoLocRef.current = loc
+        return { ...v, site_location: loc ?? '' }
+      })
     }).catch(() => {})
     return () => { alive = false }
-  }, [project, editing, restored])
+  }, [project, editing, restored, user?.email])
 
   // load the entry when editing (draft, if any, wins — it's newer user work)
   useEffect(() => {
@@ -162,6 +170,7 @@ export default function EntryForm() {
     const keepPrefs = () => {
       if (!editing && savePrefs && user?.email) {
         void savePrefill(user.email, values.manager_name ?? '', values.phone ?? '').catch(() => {})
+        void saveProjectLocation(user.email, project, values.site_location ?? '').catch(() => {})
       }
     }
     try {
