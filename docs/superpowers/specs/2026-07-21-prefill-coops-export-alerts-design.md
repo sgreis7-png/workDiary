@@ -78,6 +78,14 @@ In `src/defects/report.ts`:
 - Vitest: report builder — filled/empty filtering cases (meta rows dropped, untouched checklist items dropped, gate with no content dropped, defect log message kept). Prefill logic — helper functions (choose-prefill precedence: draft > saved > empty) as pure units.
 - Manual: permission gating (member without/with `coops_manage`), coop delete cascade, alert-rule firing (SQL function invoked manually with a test rule), new-record push on second device.
 
+## 6. Voice dictation everywhere (added mid-implementation by user)
+
+Every free-text field gets the existing `MicButton` speech-to-text: all entry-form text/phone fields (name, phone, contractor, equipment, location — alongside its GPS button), defects checklist notes/external-by, defect log description/assignee/closure, project-open fields and responsibilities (shared `TextCell` component), concession dialog, signature names, coop create, defect search.
+
+## 7. "דווח" feedback button (added mid-implementation by user)
+
+Sidebar button opens a modal: kind (🐞 problem / 💡 request), free text (with mic), optional image/screenshot. Stored in new `feedback_reports` table (migration 0027; reporter email+profile name attached; screenshot in the private `photos` bucket under `feedback/`). All admins get an in-app notification + web push linking to a new admin screen `/admin/feedback` (list, view screenshot, mark done, delete). RLS: reporters insert/see their own, admins see/manage all.
+
 ## Out of scope
 
 Digest/summary emails, per-defect-severity rules, quiet hours, iOS push.

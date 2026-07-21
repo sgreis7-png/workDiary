@@ -26,7 +26,7 @@
 **Interfaces:**
 - Produces tables `user_prefill(email,name,phone,updated_at)`, `alert_rules(id,email,project_id,kind,frequency,alert_hour,weekday,month_day,active,last_fired_at,created_at)`; RPCs `admin_emails() returns setof text`, `filled_rule_emails(pid uuid) returns setof text`; function `check_alert_rules()` + hourly cron job `check-alert-rules`.
 
-- [ ] **Step 1: Write the migration** exactly:
+- [x] **Step 1: Write the migration** exactly:
 
 ```sql
 -- user_prefill: "שמור נתונים" — per-user saved name/phone for the entry form.
@@ -123,9 +123,9 @@ select cron.schedule('check-alert-rules', '0 * * * *', $$select check_alert_rule
 where not exists (select 1 from cron.job where jobname = 'check-alert-rules');
 ```
 
-- [ ] **Step 2: Sanity-check SQL** — `node -e` is useless for SQL; instead verify referenced objects exist in earlier migrations: `allowed_emails.role/active` (0003), `notifications(recipient_email,title,body,link)` (0013), `entries.work_date` (0001), `projects.active` (0001), `cron.schedule` (0025 created extension). Grep each once.
+- [x] **Step 2: Sanity-check SQL** — `node -e` is useless for SQL; instead verify referenced objects exist in earlier migrations: `allowed_emails.role/active` (0003), `notifications(recipient_email,title,body,link)` (0013), `entries.work_date` (0001), `projects.active` (0001), `cron.schedule` (0025 created extension). Grep each once.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add supabase/migrations/0026_prefill_alert_rules.sql
@@ -145,7 +145,7 @@ git commit -m "feat(db): user_prefill, alert_rules, admin_emails RPC, hourly rul
 **Interfaces:**
 - `buildCoopReportHtml` / `buildCoopReportText` signatures unchanged; output now omits empty content.
 
-- [ ] **Step 1: Write failing tests** — `src/defects/report.filter.test.ts`:
+- [x] **Step 1: Write failing tests** — `src/defects/report.filter.test.ts`:
 
 ```ts
 import { describe, expect, it } from 'vitest'
@@ -200,9 +200,9 @@ describe('report skips empty content', () => {
 
 (Adjust `gate: 'construction'` to a real first key from `GATE_ORDER` in `src/defects/model.ts` — check before writing.)
 
-- [ ] **Step 2: Run to verify fail** — `npx vitest run src/defects/report.filter.test.ts` → FAIL (meta rows/sections currently always render).
+- [x] **Step 2: Run to verify fail** — `npx vitest run src/defects/report.filter.test.ts` → FAIL (meta rows/sections currently always render).
 
-- [ ] **Step 3: Implement filtering in `report.ts`:**
+- [x] **Step 3: Implement filtering in `report.ts`:**
   - Meta: build `metaRows` as before, then `const filledMeta = metaRows.filter(([, v]) => v && v !== '—')`; render `filledMeta`. Change fallbacks from `'—'` to `''` so the filter catches them (`fmtDate` gains a variant returning `''` for null in meta usage: `c.opened_on ? fmtDate(c.opened_on) : ''`). `yesNo` values stay (they're real booleans — keep all three equipment rows since false = "לא" is information; ONLY null-ish text/number/date rows drop).
   - Responsibilities: `const filledResp = RESP_DOMAINS.filter((d) => { const r = b.responsibilities.find((x) => x.domain_key === d.key); return r && (r.responsible || r.external_who || r.notes) })`; map rows only for `filledResp`, with `''` instead of `'—'` for missing cells; wrap section in `filledResp.length ? section(...) : ''`.
   - Summary: `const answeredGates = GATE_ORDER.filter((g) => b.items.some((i) => i.gate === g && i.status))`; summary rows over `answeredGates`; section omitted when `answeredGates.length === 0`.
@@ -210,9 +210,9 @@ describe('report skips empty content', () => {
   - Defect log: unchanged.
   - `buildCoopReportText`: status lines only for `answeredGates`.
 
-- [ ] **Step 4: Run tests** — `npx vitest run src/defects/report.filter.test.ts` → PASS; then full `npm test` → all pass (existing `report.test.ts` covers the entries report, unaffected).
+- [x] **Step 4: Run tests** — `npx vitest run src/defects/report.filter.test.ts` → PASS; then full `npm test` → all pass (existing `report.test.ts` covers the entries report, unaffected).
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add src/defects/report.ts src/defects/report.filter.test.ts
@@ -231,7 +231,7 @@ git commit -m "feat(defects): report export includes only filled content"
 **Interfaces:**
 - Produces `fetchPrefill(): Promise<{name: string|null, phone: string|null} | null>`, `savePrefill(name: string, phone: string): Promise<void>`, pure `applyPrefill(values, prefill): Record<string,string>`.
 
-- [ ] **Step 1: Failing test** — `src/lib/prefill.test.ts` for the pure merge:
+- [x] **Step 1: Failing test** — `src/lib/prefill.test.ts` for the pure merge:
 
 ```ts
 import { describe, expect, it } from 'vitest'
@@ -252,9 +252,9 @@ describe('applyPrefill', () => {
 })
 ```
 
-- [ ] **Step 2: Verify fail** — `npx vitest run src/lib/prefill.test.ts` → FAIL (module missing).
+- [x] **Step 2: Verify fail** — `npx vitest run src/lib/prefill.test.ts` → FAIL (module missing).
 
-- [ ] **Step 3: Implement `src/lib/prefill.ts`:**
+- [x] **Step 3: Implement `src/lib/prefill.ts`:**
 
 ```ts
 // "שמור נתונים" — server-saved name/phone prefill for the entry form.
@@ -281,7 +281,7 @@ export async function savePrefill(email: string, name: string, phone: string): P
 }
 ```
 
-- [ ] **Step 4: Wire `EntryForm.tsx`** (new-entry mode only):
+- [x] **Step 4: Wire `EntryForm.tsx`** (new-entry mode only):
   - State: `const [savePrefs, setSavePrefs] = useState(false)`.
   - In the draft-restore effect (`EntryForm.tsx:51-64`): after `loadDraft('new')` resolves with **no draft**, fetch prefill and apply: `const p = await fetchPrefill(user.email); setValues((v) => applyPrefill(v, p)); if (p) setSavePrefs(true)` (wrapped `.catch(() => {})`; user email via `useAuth().user?.email`). Draft present → skip prefill (draft wins).
   - Project-change location prefill: new effect — when `project` changes in new-entry mode and `values.site_location` is empty, call `lastEntryForProject(project)` and set `site_location` from its values if present (silent catch; guard with a `locPrefillBusy` ref to avoid races).
@@ -289,9 +289,9 @@ export async function savePrefill(email: string, name: string, phone: string): P
   - In `save()` success paths (both online `createEntry` and offline `queueEntry` branches): `if (!editing && savePrefs) void savePrefill(user.email, values.manager_name ?? '', values.phone ?? '').catch(() => {})`.
   - i18n: add `save_my_details` to `src/i18n.ts` — he: `שמור נתונים לפעם הבאה`, en: `Save my details for next time` (find the two language maps by grepping an existing key, e.g. `copy_last`).
 
-- [ ] **Step 5: Tests + typecheck** — `npx vitest run src/lib/prefill.test.ts` PASS; `npm run build` clean.
+- [x] **Step 5: Tests + typecheck** — `npx vitest run src/lib/prefill.test.ts` PASS; `npm run build` clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/prefill.ts src/lib/prefill.test.ts src/screens/EntryForm.tsx src/i18n.ts
@@ -308,9 +308,9 @@ git commit -m "feat(diary): save-my-details prefill checkbox + per-project locat
 **Interfaces:**
 - New `PermArea` `'coops_manage'`; UI honors `canEdit('coops_manage')`.
 
-- [ ] **Step 1: perms.ts** — add to the union type, `PERM_AREAS` (after `defects`): `{ key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה' }`, and `MEMBER_DEFAULTS.coops_manage: 'none'`. PermissionsDialog picks it up automatically.
+- [x] **Step 1: perms.ts** — add to the union type, `PERM_AREAS` (after `defects`): `{ key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה' }`, and `MEMBER_DEFAULTS.coops_manage: 'none'`. PermissionsDialog picks it up automatically.
 
-- [ ] **Step 2: Coops.tsx delete button** — inside the coop card map, when `canEdit('coops_manage')`, render a small 🗑 button (stopPropagation — card itself navigates); handler:
+- [x] **Step 2: Coops.tsx delete button** — inside the coop card map, when `canEdit('coops_manage')`, render a small 🗑 button (stopPropagation — card itself navigates); handler:
 
 ```ts
 async function onDelete(c: Coop) {
@@ -323,13 +323,13 @@ async function onDelete(c: Coop) {
 
 Import `deleteCoop` from `../../defects/api`. Note: coop cards are `<button>` — a nested button is invalid HTML; render the 🗑 as a sibling `<span role="button">` positioned over the card corner, or restructure the card to a `<div>` with onClick. Use the span approach (minimal diff).
 
-- [ ] **Step 3: CoopView.tsx** — grep for `canEdit('defects')` occurrences; the coop-metadata form (the `updateCoop` call region, ~line 69) switches to `canEdit('coops_manage')`; checklist/defect/photo/signature actions stay `canEdit('defects')`. Add delete button in the header when `canEdit('coops_manage')`: same confirm, then `await deleteCoop(coop.id); nav('/defects')`.
+- [x] **Step 3: CoopView.tsx** — grep for `canEdit('defects')` occurrences; the coop-metadata form (the `updateCoop` call region, ~line 69) switches to `canEdit('coops_manage')`; checklist/defect/photo/signature actions stay `canEdit('defects')`. Add delete button in the header when `canEdit('coops_manage')`: same confirm, then `await deleteCoop(coop.id); nav('/defects')`.
 
-- [ ] **Step 4: defects/i18n.ts strings** — add keys (both langs): `coop_delete_confirm` he: `למחוק את הלול? כל הליקויים, הצ'קליסטים והחתימות שלו יימחקו.` en: `Delete this coop? All its defects, checklists and signatures will be deleted.`; `coop_delete` he: `מחיקת לול` en: `Delete coop`.
+- [x] **Step 4: defects/i18n.ts strings** — add keys (both langs): `coop_delete_confirm` he: `למחוק את הלול? כל הליקויים, הצ'קליסטים והחתימות שלו יימחקו.` en: `Delete this coop? All its defects, checklists and signatures will be deleted.`; `coop_delete` he: `מחיקת לול` en: `Delete coop`.
 
-- [ ] **Step 5: Verify** — `npm run build` clean; manual reasoning check: member without grant sees no 🗑 and read-only metadata (MEMBER_DEFAULTS none); admin sees both (resolvePerm admin → edit).
+- [x] **Step 5: Verify** — `npm run build` clean; manual reasoning check: member without grant sees no 🗑 and read-only metadata (MEMBER_DEFAULTS none); admin sees both (resolvePerm admin → edit).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/perms.ts src/screens/defects/Coops.tsx src/screens/defects/CoopView.tsx src/defects/i18n.ts
@@ -347,7 +347,7 @@ git commit -m "feat(defects): coop delete/edit gated by grantable coops_manage p
 **Interfaces:**
 - Produces `notifyNewRecord(kind: 'entry'|'defect', projectId: string, opts: {projectName: string, coopName?: string, link: string}): Promise<void>` — fire-and-forget safe.
 
-- [ ] **Step 1: Implement `src/lib/notifyNewRecord.ts`:**
+- [x] **Step 1: Implement `src/lib/notifyNewRecord.ts`:**
 
 ```ts
 // Fan-out for new-record alerts: admins + project staff + 'filled'-rule subscribers.
@@ -383,17 +383,17 @@ export async function notifyNewRecord(
 
 (Check `sendPush` signature in `src/lib/push.ts:44` first and match it exactly.)
 
-- [ ] **Step 2: Fire on entry save** — `EntryForm.tsx` online-create branch, after `await createEntry(...)`:
+- [x] **Step 2: Fire on entry save** — `EntryForm.tsx` online-create branch, after `await createEntry(...)`:
 `void notifyNewRecord('entry', project, { projectName: projects.find((p) => p.id === project)?.name ?? '', link: '/' })` (entry id available if createEntry return captured — link to `/entry/${newId}`; capture it).
 
-- [ ] **Step 3: Fire on offline flush** — in `src/lib/offline.ts`, locate the queue-flush function that calls `createEntry` (grep `createEntry` there); after a queued entry syncs successfully, call `notifyNewRecord('entry', item.project_id, { projectName: '', link: '/' })` — pass project name by looking it up via a lightweight `supabase.from('projects').select('name').eq('id', ...)` inside notify helper when `projectName` empty? NO — keep simple: extend `notifyNewRecord` to fetch the project name itself when `opts.projectName === ''`. Implement that fallback in the helper (single extra select, inside the try).
+- [x] **Step 3: Fire on offline flush** — in `src/lib/offline.ts`, locate the queue-flush function that calls `createEntry` (grep `createEntry` there); after a queued entry syncs successfully, call `notifyNewRecord('entry', item.project_id, { projectName: '', link: '/' })` — pass project name by looking it up via a lightweight `supabase.from('projects').select('name').eq('id', ...)` inside notify helper when `projectName` empty? NO — keep simple: extend `notifyNewRecord` to fetch the project name itself when `opts.projectName === ''`. Implement that fallback in the helper (single extra select, inside the try).
 
-- [ ] **Step 4: Fire on defect create** — in `CoopView.tsx`, find the `createDefect` call; after success:
+- [x] **Step 4: Fire on defect create** — in `CoopView.tsx`, find the `createDefect` call; after success:
 `void notifyNewRecord('defect', coop.project_id, { projectName: projects.find((p) => p.id === coop.project_id)?.name ?? '', coopName: coop.name, link: `/defects/coop/${coop.id}` })`.
 
-- [ ] **Step 5: Verify** — `npm run build` clean; `npm test` green.
+- [x] **Step 5: Verify** — `npm run build` clean; `npm test` green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/lib/notifyNewRecord.ts src/screens/EntryForm.tsx src/screens/defects/CoopView.tsx src/lib/offline.ts
@@ -411,9 +411,9 @@ git commit -m "feat(notify): new-record alerts to admins, project staff, and sub
 **Interfaces:**
 - `alertRules.ts`: `AlertRule` type mirroring the table; `fetchMyRules()`, `createRule(r)`, `deleteRule(id)`, `toggleRule(id, active)` — plain supabase CRUD on `alert_rules` (RLS scopes to owner).
 
-- [ ] **Step 1: perms.ts** — add `'alert_rules'` to `PermArea` union, `PERM_AREAS` (`{ key: 'alert_rules', label: 'כללי התראות' }`), `MEMBER_DEFAULTS.alert_rules: 'none'`.
+- [x] **Step 1: perms.ts** — add `'alert_rules'` to `PermArea` union, `PERM_AREAS` (`{ key: 'alert_rules', label: 'כללי התראות' }`), `MEMBER_DEFAULTS.alert_rules: 'none'`.
 
-- [ ] **Step 2: `src/lib/alertRules.ts`:**
+- [x] **Step 2: `src/lib/alertRules.ts`:**
 
 ```ts
 import { supabase } from './supabase'
@@ -447,17 +447,17 @@ export async function toggleRule(id: string, active: boolean): Promise<void> {
 }
 ```
 
-- [ ] **Step 3: `src/screens/AlertRules.tsx`** — follow the page pattern of `Coops.tsx` (`page`, `page__head`, `kicker`, `input`, `btn btn--primary`, `alert`, `empty` classes). Content:
+- [x] **Step 3: `src/screens/AlertRules.tsx`** — follow the page pattern of `Coops.tsx` (`page`, `page__head`, `kicker`, `input`, `btn btn--primary`, `alert`, `empty` classes). Content:
   - Guard: `const { isAdmin } = useAuth(); const { can } = usePerms(); if (!isAdmin && !can('alert_rules')) return <div className="empty">{t('no_access')}</div>` (check exact `usePerms` API — explorer says `can`/`canEdit`; `no_access` key: grep i18n for an existing "אין הרשאה" key and reuse, else add).
   - List my rules: table/cards showing project name (`useStore().projects` lookup, null → `כל הפרויקטים`), kind label, frequency + hour, active toggle, delete button.
   - Add form: selects for project (with "כל הפרויקטים" empty option → `project_id: null`), kind (`חסרה רשומה` / `כשממלאים רשומה`), frequency (`יומי`/`שבועי`/`חודשי`), hour (0-23 number input, default 20), weekday select shown when weekly (א׳-ש׳), month-day (1-31) when monthly. Kind `filled` hides frequency/hour controls (immediate).
   - All strings via `t()` — add keys to `src/i18n.ts` (both langs): `alert_rules_title` (כללי התראות / Alert rules), `rule_kind_missing` (התראה כשחסרה רשומה / Alert when a record is missing), `rule_kind_filled` (התראה כשממלאים רשומה / Alert when a record is filled), `rule_all_projects` (כל הפרויקטים / All projects), `rule_daily` (יומי / Daily), `rule_weekly` (שבועי / Weekly), `rule_monthly` (חודשי / Monthly), `rule_until_hour` (עד שעה / By hour), `rule_add` (הוספת כלל / Add rule), `rule_delete` (מחיקה / Delete).
 
-- [ ] **Step 4: Route + menu** — add route `/alert-rules` next to existing screen routes; add a menu item "כללי התראות" (🔔 icon consistent with menu style) in the user menu, visible under the same guard (`isAdmin || can('alert_rules')`).
+- [x] **Step 4: Route + menu** — add route `/alert-rules` next to existing screen routes; add a menu item "כללי התראות" (🔔 icon consistent with menu style) in the user menu, visible under the same guard (`isAdmin || can('alert_rules')`).
 
-- [ ] **Step 5: Verify** — `npm run build` clean, `npm test` green.
+- [x] **Step 5: Verify** — `npm run build` clean, `npm test` green.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add src/screens/AlertRules.tsx src/lib/alertRules.ts src/lib/perms.ts src/i18n.ts <router file> <menu file>
@@ -470,12 +470,12 @@ git commit -m "feat(alerts): personal alert-rules screen with grantable access"
 
 **Files:** none new.
 
-- [ ] **Step 1: Apply migration 0026 to the live Supabase project.** Check link state: `npx supabase projects list` / presence of `supabase/.temp/project-ref`. If linked: `npx supabase db push` (applies pending migrations). If NOT linked/authenticated: print the SQL and ask the user to paste `supabase/migrations/0026_prefill_alert_rules.sql` into the Supabase SQL editor — hard stop until confirmed, features depend on it.
+- [x] **Step 1: Apply migration 0026 to the live Supabase project.** Check link state: `npx supabase projects list` / presence of `supabase/.temp/project-ref`. If linked: `npx supabase db push` (applies pending migrations). If NOT linked/authenticated: print the SQL and ask the user to paste `supabase/migrations/0026_prefill_alert_rules.sql` into the Supabase SQL editor — hard stop until confirmed, features depend on it.
 
-- [ ] **Step 2: Full test + build** — `npm test` (all green), `npm run build` (clean).
+- [x] **Step 2: Full test + build** — `npm test` (all green), `npm run build` (clean).
 
-- [ ] **Step 3: Push** — `git push origin main` (Vercel auto-deploys; push-classifier caveat per memory).
+- [x] **Step 3: Push** — `git push origin main` (Vercel auto-deploys; push-classifier caveat per memory).
 
-- [ ] **Step 4: Verify live** — poll deploy: `curl -s https://work-diary-phi.vercel.app/index.html`, get new asset hash, grep the JS bundle for a new marker string (e.g. `coops_manage`). Confirm `/.well-known` unaffected.
+- [x] **Step 4: Verify live** — poll deploy: `curl -s https://work-diary-phi.vercel.app/index.html`, get new asset hash, grep the JS bundle for a new marker string (e.g. `coops_manage`). Confirm `/.well-known` unaffected.
 
-- [ ] **Step 5: Report** — summarize to user: what shipped, what needs their manual check on phone (prefill flow, coop delete as admin, report print, push on second device, rule at chosen hour), mark plan checkboxes done, commit plan update.
+- [x] **Step 5: Report** — summarize to user: what shipped, what needs their manual check on phone (prefill flow, coop delete as admin, report print, push on second device, rule at chosen hour), mark plan checkboxes done, commit plan update.
