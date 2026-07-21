@@ -6,7 +6,9 @@ html, body, #root { height: 100%; }
    report on mobile makes the browser zoom out to fit, which pushes the effective
    CSS width past the 920px breakpoint and snaps the desktop sidebar back in
    ("menu opens, resolution changes"). Clip horizontally instead. */
-html, body { max-width: 100%; overflow-x: hidden; }
+/* clip, not hidden: hidden still lets focus/scrollIntoView shift the page
+   sideways with no way to scroll back (mobile "everything escaped left" bug) */
+html, body { max-width: 100%; overflow-x: clip; }
 
 body {
   margin: 0;

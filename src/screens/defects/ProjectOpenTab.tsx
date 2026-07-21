@@ -81,7 +81,7 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
 
       <h2 className="gate-panel__title" style={{ marginTop: 34 }}>{dt('po_matrix_title')}</h2>
       <div className="gate-table-wrap">
-        <table className="gate-table resp-table">
+        <table className="gate-table resp-table m-cards">
           <thead>
             <tr><th>{dt('po_domain')}</th><th>{dt('po_resp')}</th><th>{dt('po_external_who')}</th><th>{dt('po_notes')}</th></tr>
           </thead>
@@ -91,7 +91,7 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
               return (
                 <tr key={d.key}>
                   <td className="gate-table__item">{d.label}</td>
-                  <td>
+                  <td data-label={dt('po_resp')}>
                     <select
                       className="input" value={r.responsible ?? ''}
                       onChange={(e) => onResponsibility({ ...r, responsible: (e.target.value || null) as Responsible | null })}
@@ -102,10 +102,10 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
                       ))}
                     </select>
                   </td>
-                  <td>
+                  <td data-label={dt('po_external_who')}>
                     <TextCell value={r.external_who} onCommit={(v) => onResponsibility({ ...r, external_who: v || null })} />
                   </td>
-                  <td>
+                  <td data-label={dt('po_notes')}>
                     <TextCell value={r.notes} onCommit={(v) => onResponsibility({ ...r, notes: v || null })} />
                   </td>
                 </tr>

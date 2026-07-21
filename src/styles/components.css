@@ -576,6 +576,10 @@ select.input { cursor: pointer; }
   .m-cards .gate-table__item { min-width: 0; max-width: none; font-weight: 600; padding-top: 0; }
   .m-cards .input { width: 100%; min-width: 0; }
   .m-cards .m-no { display: inline-block; color: var(--ink-3); margin-inline-end: 4px; margin-bottom: 3px; }
+  /* stats variant (ריכוז סטטוס): label + number on one compact line */
+  .m-cards--stats td[data-label] { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; }
+  .m-cards--stats td[data-label]::before { margin-bottom: 0; font-size: 13px; }
+  .m-cards--stats .summary-gate-link { font-size: 17px; padding: 0 0 4px; }
 }
 .gate-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .gate-table th { text-align: start; padding: 9px 10px; border-bottom: 2px solid var(--line);

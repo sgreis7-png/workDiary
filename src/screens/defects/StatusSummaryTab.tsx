@@ -15,7 +15,7 @@ export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
     <div className="gate-panel">
       <h2 className="gate-panel__title">{STATUS_SUMMARY_TITLE}</h2>
       <div className="gate-table-wrap">
-        <table className="gate-table summary-table">
+        <table className="gate-table summary-table m-cards m-cards--stats">
           <thead>
             <tr>
               <th>{dt('sum_gate')}</th><th>{dt('sum_done')}</th><th>{dt('sum_not_done')}</th><th>{dt('sum_na')}</th><th>{dt('sum_pending')}</th>
@@ -30,12 +30,12 @@ export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
                   <td>
                     <button className="summary-gate-link" onClick={() => onGoGate(g)}>{gateShortName(lang, g)}</button>
                   </td>
-                  <td className="mono">{s.done}</td>
-                  <td className={`mono ${s.notDone ? 'summary-bad' : ''}`}>{s.notDone}</td>
-                  <td className="mono">{s.na}</td>
-                  <td className="mono">{s.pending}</td>
-                  <td className="mono">{Math.round(s.pct * 100)}%</td>
-                  <td>{s.notDoneNos.length ? s.notDoneNos.join(', ') : '—'}</td>
+                  <td className="mono" data-label={dt('sum_done')}>{s.done}</td>
+                  <td className={`mono ${s.notDone ? 'summary-bad' : ''}`} data-label={dt('sum_not_done')}>{s.notDone}</td>
+                  <td className="mono" data-label={dt('sum_na')}>{s.na}</td>
+                  <td className="mono" data-label={dt('sum_pending')}>{s.pending}</td>
+                  <td className="mono" data-label={dt('sum_pct')}>{Math.round(s.pct * 100)}%</td>
+                  <td data-label={dt('sum_not_done_nos')}>{s.notDoneNos.length ? s.notDoneNos.join(', ') : '—'}</td>
                 </tr>
               )
             })}

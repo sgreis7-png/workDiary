@@ -84,21 +84,21 @@ export default function DefectSearch() {
         <div className="empty"><div className="big">{dt('search_none_title')}</div>{dt('search_none_sub')}</div>
       ) : (
         <div className="gate-table-wrap" style={{ background: 'var(--panel)', border: '1px solid var(--panel-edge)', borderRadius: 'var(--r-lg)', padding: 16 }}>
-          <table className="gate-table defect-table">
+          <table className="gate-table defect-table m-cards m-cards--stats">
             <thead>
               <tr><th>{dt('rep_house')}</th><th>{dt('sum_gate')}</th><th>{dt('dl_item')}</th><th>{dt('dl_desc')}</th><th>{dt('dl_severity')}</th><th>{dt('dl_assignee')}</th><th>{dt('dl_due_short')}</th><th>{dt('dl_status')}</th><th></th></tr>
             </thead>
             <tbody>
               {results.map((d) => (
                 <tr key={d.id} className={d.status === 'open' && (d.severity === 'critical' || d.severity === 'major') ? 'gate-row--bad' : ''}>
-                  <td>{d.coop_name}</td>
-                  <td>{gateShortName(lang, d.gate)}</td>
-                  <td>{d.item_no ? itemLabel(defs, d.gate, d.item_no) : '—'}</td>
-                  <td>{d.description ?? '—'}</td>
-                  <td>{d.severity ? severityLabel(lang, d.severity) : '—'}</td>
-                  <td>{d.assignee ?? '—'}</td>
-                  <td className="mono">{d.due_date ? new Date(d.due_date).toLocaleDateString('he-IL') : '—'}</td>
-                  <td>{defectStatusLabel(lang, d.status)}</td>
+                  <td className="gate-table__item">{d.coop_name}</td>
+                  <td data-label={dt('sum_gate')}>{gateShortName(lang, d.gate)}</td>
+                  <td data-label={dt('dl_item')}>{d.item_no ? itemLabel(defs, d.gate, d.item_no) : '—'}</td>
+                  <td data-label={dt('dl_desc')}>{d.description ?? '—'}</td>
+                  <td data-label={dt('dl_severity')}>{d.severity ? severityLabel(lang, d.severity) : '—'}</td>
+                  <td data-label={dt('dl_assignee')}>{d.assignee ?? '—'}</td>
+                  <td className="mono" data-label={dt('dl_due_short')}>{d.due_date ? new Date(d.due_date).toLocaleDateString('he-IL') : '—'}</td>
+                  <td data-label={dt('dl_status')}>{defectStatusLabel(lang, d.status)}</td>
                   <td><button className="btn btn--quiet" onClick={() => nav(`/defects/coop/${d.coop_id}`)}>{dt('search_open')}</button></td>
                 </tr>
               ))}
