@@ -52,7 +52,7 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
       )}
 
       <div className="gate-table-wrap">
-        <table className="gate-table">
+        <table className="gate-table m-cards">
           <thead>
             <tr><th>#</th><th>{dt('col_item')}</th><th>{dt('col_status')}</th><th>{dt('col_severity')}</th><th>{dt('col_note')}</th><th>{dt('col_external')}</th></tr>
           </thead>
@@ -65,10 +65,11 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
                 <tr key={it.no} className={status === 'not_done' ? 'gate-row--bad' : ''}>
                   <td className="mono">{it.no}</td>
                   <td className="gate-table__item">
+                    <span className="m-no mono">{it.no} · </span>
                     {it.text}
                     {row?.auto_na_reason && <span className="auto-na-chip" title={row.auto_na_reason}>אוטומטי: {row.auto_na_reason}</span>}
                   </td>
-                  <td>
+                  <td data-label={dt('col_status')}>
                     <select
                       className={`input status-select status--${status ?? 'none'}`}
                       value={status ?? ''} disabled={frozen}
@@ -80,7 +81,7 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
                       ))}
                     </select>
                   </td>
-                  <td>
+                  <td data-label={dt('col_severity')}>
                     <select
                       className={`input ${needSeverity ? 'input--invalid' : ''}`}
                       value={row?.severity ?? ''}
@@ -97,8 +98,8 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
                       <button className="btn btn--quiet cell-link" onClick={onGoDefects}>{dt('defect_opened_link')}</button>
                     )}
                   </td>
-                  <td><TextCell value={row?.note ?? null} onCommit={(v) => onItem(it.no, { note: v || null })} disabled={frozen} /></td>
-                  <td><TextCell value={row?.external_by ?? null} onCommit={(v) => onItem(it.no, { external_by: v || null })} disabled={frozen} /></td>
+                  <td data-label={dt('col_note')}><TextCell value={row?.note ?? null} onCommit={(v) => onItem(it.no, { note: v || null })} disabled={frozen} /></td>
+                  <td data-label={dt('col_external')}><TextCell value={row?.external_by ?? null} onCommit={(v) => onItem(it.no, { external_by: v || null })} disabled={frozen} /></td>
                 </tr>
               )
             })}

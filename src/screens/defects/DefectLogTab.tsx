@@ -38,7 +38,7 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
         <div className="empty">{dt('dl_empty')}</div>
       ) : (
         <div className="gate-table-wrap">
-          <table className="gate-table defect-table">
+          <table className="gate-table defect-table m-cards">
             <thead>
               <tr>
                 <th>{dt('dl_no')}</th><th>{dt('sum_gate')}</th><th>{dt('dl_item')}</th><th>{dt('dl_desc')}</th><th>{dt('dl_severity')}</th>
@@ -50,7 +50,8 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
               {defects.map((d) => (
                 <tr key={d.id} className={d.status === 'open' && (d.severity === 'critical' || d.severity === 'major') ? 'gate-row--bad' : ''}>
                   <td className="mono">{d.seq}</td>
-                  <td>
+                  <td data-label={dt('sum_gate')}>
+                    <span className="m-no mono">{dt('dl_no')} {d.seq}</span>
                     <select
                       className="input" value={d.gate}
                       onChange={(e) => onPatch(d.id, { gate: e.target.value as GateKey, item_no: null })}
@@ -58,7 +59,7 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
                       {GATE_ORDER.map((g) => <option key={g} value={g}>{gateShortName(lang, g)}</option>)}
                     </select>
                   </td>
-                  <td>
+                  <td data-label={dt('dl_item')}>
                     <select
                       className="input" value={d.item_no ?? ''}
                       onChange={(e) => onPatch(d.id, { item_no: e.target.value ? Number(e.target.value) : null })}
@@ -69,8 +70,8 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
                       ))}
                     </select>
                   </td>
-                  <td><TextCell value={d.description} onCommit={(v) => onPatch(d.id, { description: v || null })} /></td>
-                  <td>
+                  <td data-label={dt('dl_desc')}><TextCell value={d.description} onCommit={(v) => onPatch(d.id, { description: v || null })} /></td>
+                  <td data-label={dt('dl_severity')}>
                     <select
                       className="input" value={d.severity ?? ''}
                       onChange={(e) => onPatch(d.id, { severity: (e.target.value || null) as Severity | null })}
@@ -81,7 +82,7 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
                       ))}
                     </select>
                   </td>
-                  <td>
+                  <td data-label={dt('dl_assignee')}>
                     <select
                       className="input" value={d.assignee_email ?? ''}
                       onChange={(e) => {
@@ -94,13 +95,13 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
                       {users.map((u) => <option key={u.email} value={u.email.toLowerCase()}>{u.name}</option>)}
                     </select>
                   </td>
-                  <td>
+                  <td data-label={dt('dl_due')}>
                     <input
                       className="input" type="date" value={d.due_date ?? ''}
                       onChange={(e) => onPatch(d.id, { due_date: e.target.value || null })}
                     />
                   </td>
-                  <td>
+                  <td data-label={dt('dl_status')}>
                     <select
                       className={`input status-select status--${d.status}`} value={d.status}
                       onChange={(e) => {
@@ -116,14 +117,14 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
                       ))}
                     </select>
                   </td>
-                  <td>
+                  <td data-label={dt('dl_closed_on')}>
                     <input
                       className="input" type="date" value={d.closed_on ?? ''} disabled={d.status !== 'closed'}
                       onChange={(e) => onPatch(d.id, { closed_on: e.target.value || null })}
                     />
                   </td>
-                  <td><TextCell value={d.closure_note} onCommit={(v) => onPatch(d.id, { closure_note: v || null })} /></td>
-                  <td>
+                  <td data-label={dt('dl_closure')}><TextCell value={d.closure_note} onCommit={(v) => onPatch(d.id, { closure_note: v || null })} /></td>
+                  <td data-label="📷">
                     <div className="defect-photos">
                       {photos.filter((p) => p.defect_id === d.id).map((p) => (
                         <span key={p.id} className="defect-photo">

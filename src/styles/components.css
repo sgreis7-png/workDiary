@@ -558,6 +558,22 @@ select.input { cursor: pointer; }
 .guidelines__block p { color: var(--ink-2); line-height: 1.65; }
 
 .gate-table-wrap { overflow-x: auto; margin-top: 14px; }
+.m-no { display: none; }
+/* phones: checklist/defect tables become stacked cards — no horizontal scroll */
+@media (max-width: 720px) {
+  .m-cards, .m-cards tbody { display: block; }
+  .m-cards thead { display: none; }
+  .m-cards tr { display: block; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px 14px 14px; margin-bottom: 12px; background: var(--panel); }
+  .m-cards tr.gate-row--bad { border-color: var(--clay); }
+  .m-cards td { display: block; border: none; padding: 6px 0; }
+  .m-cards td.mono { display: none; }
+  .m-cards td[data-label]::before { content: attr(data-label);
+    display: block; font-size: 11.5px; color: var(--ink-3); margin-bottom: 3px; }
+  .m-cards .gate-table__item { min-width: 0; max-width: none; font-weight: 600; padding-top: 0; }
+  .m-cards .input { width: 100%; min-width: 0; }
+  .m-cards .m-no { display: inline-block; color: var(--ink-3); margin-inline-end: 4px; margin-bottom: 3px; }
+}
 .gate-table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
 .gate-table th { text-align: start; padding: 9px 10px; border-bottom: 2px solid var(--line);
   color: var(--ink-2); font-weight: 700; white-space: nowrap; }
