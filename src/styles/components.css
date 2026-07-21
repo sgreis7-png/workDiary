@@ -108,8 +108,11 @@ select.input { cursor: pointer; }
 .sidebar .lang-toggle button.on { background: var(--shell-ink); color: var(--shell); }
 
 /* min-width:0 — grid item must shrink below content width, else wide tables
-   push past the viewport and inner overflow-x wrappers never engage (mobile) */
-.main { padding: 40px clamp(20px, 5vw, 64px) 80px; max-width: 1180px; min-width: 0; }
+   push past the viewport and inner overflow-x wrappers never engage (mobile).
+   overflow-x:clip — belt+suspenders: any rogue wide element clips instead of
+   dragging the whole page (header, inputs) past the viewport edge. */
+.main { padding: 40px clamp(20px, 5vw, 64px) 80px; max-width: 1180px; min-width: 0; overflow-x: clip; }
+.page { min-width: 0; }
 
 /* ============ page header ============ */
 .page__head { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; margin-bottom: 30px;
