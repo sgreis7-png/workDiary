@@ -3,6 +3,7 @@
 import { supabase } from '../lib/supabase'
 import type { GateKey, ItemStatus, Severity, DefectStatus, CoopType, Responsible, SignatureRole } from './model'
 import { cachePut, cacheGet, queueOp, isNetworkError, replayOutbox, type DefectOp } from './offline'
+import { notifyNewDefect } from '../lib/notifyNewRecord'
 
 export interface Coop {
   id: string; project_id: string; name: string
@@ -179,6 +180,7 @@ export async function createDefect(coopId: string, init: Partial<Defect>): Promi
     const { data, error } = await supabase.from('coop_defects')
       .insert({ ...base, seq }).select('*').single()
     if (error) throw error
+    notifyNewDefect(coopId, base.description)
     return data as Defect
   } catch (e) {
     if (isNetworkError(e)) {

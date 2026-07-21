@@ -1,6 +1,7 @@
 // All Supabase data access. Function names mirror the old mock helpers so screens
 // read the same — only now they're async and hit the real database.
 import { supabase } from './lib/supabase'
+import { notifyNewEntry } from './lib/notifyNewRecord'
 import { entryMatchesText, hasMalfunction, deptIdOf, MALFUNCTION_DEPT_KEY } from './data'
 import type { AppUser, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
 
@@ -106,6 +107,7 @@ export async function createEntry(
     const { error: pErr } = await supabase.from('entry_photos').insert({ entry_id: entryId, storage_path: path })
     if (pErr) throw pErr
   }
+  notifyNewEntry(project_id, entryId)
   return entryId
 }
 
