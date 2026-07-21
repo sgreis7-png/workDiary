@@ -1,0 +1,16 @@
+# Bubblewrap-generated Android project — regenerable from twa-manifest.json
+app/
+gradle/
+build/
+.gradle/
+*.apk
+*.aab
+*.idsig
+gradlew
+gradlew.bat
+build.gradle
+settings.gradle
+gradle.properties
+local.properties
+store_icon.png
+manifest-checksum.txt
