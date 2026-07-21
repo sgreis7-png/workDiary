@@ -8,6 +8,7 @@ import { useI18n } from '../i18n'
 import { createEntry, getEntry, getEntryPhotos, lastEntryForProject, updateEntry } from '../api'
 import { queueEntry } from '../lib/offline'
 import { clearDraft, loadDraft, saveDraft } from '../lib/draft'
+import { applyPrefill, fetchPrefill, savePrefill } from '../lib/prefill'
 import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
@@ -46,8 +47,10 @@ export default function EntryForm() {
   // React state. The draft lives in IndexedDB until the entry is saved.
   const draftKey = id ?? 'new'
   const [restored, setRestored] = useState(false)
+  // "שמור נתונים" — server-saved name/phone; on by default once the user saved once
+  const [savePrefs, setSavePrefs] = useState(false)
 
-  // restore a pending draft (new entry)
+  // restore a pending draft (new entry); no draft → apply server prefill
   useEffect(() => {
     if (editing) return
     let alive = true
@@ -58,10 +61,26 @@ export default function EntryForm() {
         setProject(d.project_id)
         setValues((v) => ({ ...v, ...d.values }))
         setPhotos(d.files.map((f) => ({ file: f, url: URL.createObjectURL(f) })))
+      } else if (user?.email) {
+        const p = await fetchPrefill(user.email).catch(() => null)
+        if (!alive) return
+        if (p) { setValues((v) => applyPrefill(v, p)); setSavePrefs(true) }
       }
     })().catch(() => {}).finally(() => { if (alive) setRestored(true) })
     return () => { alive = false }
   }, [editing])
+
+  // prefill the site location from the chosen project's last entry (only if untouched)
+  useEffect(() => {
+    if (editing || !restored || !project) return
+    let alive = true
+    lastEntryForProject(project).then((e) => {
+      const loc = e?.values?.site_location
+      if (!alive || !loc) return
+      setValues((v) => ((v.site_location ?? '').trim() ? v : { ...v, site_location: loc }))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [project, editing, restored])
 
   // load the entry when editing (draft, if any, wins — it's newer user work)
   useEffect(() => {
@@ -140,6 +159,11 @@ export default function EntryForm() {
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
     setBusy(true); setSaveErr('')
     const newFiles = photos.filter((p) => p.file).map((p) => p.file!)
+    const keepPrefs = () => {
+      if (!editing && savePrefs && user?.email) {
+        void savePrefill(user.email, values.manager_name ?? '', values.phone ?? '').catch(() => {})
+      }
+    }
     try {
       if (editing && id) {
         await updateEntry(id, project, values, newFiles, removedPaths)
@@ -149,10 +173,12 @@ export default function EntryForm() {
         // offline: queue locally, sync when back online
         await queueEntry({ project_id: project, values, files: newFiles })
         await clearDraft(draftKey).catch(() => {})
+        keepPrefs()
         nav('/')
       } else {
         await createEntry(project, values, newFiles)
         await clearDraft(draftKey).catch(() => {})
+        keepPrefs()
         nav('/')
       }
     } catch (e) {
@@ -161,6 +187,7 @@ export default function EntryForm() {
         try {
           await queueEntry({ project_id: project, values, files: newFiles })
           await clearDraft(draftKey).catch(() => {})
+          keepPrefs()
           nav('/'); return
         } catch { /* fall through */ }
       }
@@ -315,6 +342,12 @@ export default function EntryForm() {
           </label>
         </motion.div>
 
+        {!editing && (
+          <label style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 18, fontSize: 14, cursor: 'pointer' }}>
+            <input type="checkbox" checked={savePrefs} onChange={(e) => setSavePrefs(e.target.checked)} />
+            {t('save_my_details')}
+          </label>
+        )}
         <div className="form-actions">
           <Button variant="ghost" onClick={() => nav('/')}>{t('cancel')}</Button>
           <Button variant="primary" onClick={save} disabled={busy}>{busy ? <><span className="spin" />{t('saving')}</> : t('save')}</Button>
