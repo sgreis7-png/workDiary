@@ -495,6 +495,9 @@ select.input { cursor: pointer; }
    Pin it to the viewport instead so it always fits within the margins. */
 .mobile-bar .notif__panel { position: fixed; top: 58px; left: 12px; right: 12px; bottom: auto;
   inset-inline-start: auto; inset-inline-end: auto; width: auto; max-width: none; }
+/* Inside the sidebar the absolute panel is clipped by its overflow-y scroll —
+   pin to the viewport just past the 264px sidebar edge, next to the bell. */
+.sidebar .notif__panel { position: fixed; top: 118px; inset-inline-start: 272px; inset-inline-end: auto; }
 .notif__head { display: flex; align-items: center; justify-content: space-between; padding: 12px 14px; border-bottom: 1px solid var(--line); }
 .notif__empty { padding: 22px; text-align: center; color: var(--ink-3); font-size: 14px; }
 .notif__item { display: block; width: 100%; text-align: start; padding: 12px 14px; border: none; border-bottom: 1px solid var(--line);
