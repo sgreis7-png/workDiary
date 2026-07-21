@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
 import { useAuth } from '../../auth'
-import { fetchCoopBundle, type CoopBundle } from '../../defects/api'
+import { fetchCoopBundle, sendCoopReport, type CoopBundle } from '../../defects/api'
 import { buildCoopReportHtml, buildCoopReportText } from '../../defects/report'
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { GATES } from '../../defects/model'
@@ -50,6 +50,23 @@ export default function CoopReport() {
     }
   }
 
+  // שליחה ישירה במייל — עוקף את בעיות ההדבקה של Outlook (העיצוב נשמר במדויק)
+  const [sending, setSending] = useState(false)
+  async function onEmail() {
+    if (!bundle || sending) return
+    const raw = window.prompt(dt('rep_email_ph'))
+    if (!raw?.trim()) return
+    const emails = raw.split(/[,;\s]+/).filter((e) => e.includes('@'))
+    if (!emails.length) { setCopyMsg(dt('rep_email_bad')); return }
+    setSending(true); setErr(''); setCopyMsg('')
+    try {
+      await sendCoopReport(id, emails, '', html, buildCoopReportText(bundle, pName))
+      setCopyMsg(dt('rep_email_sent'))
+    } catch (e) {
+      setErr(String((e as Error).message ?? e))
+    } finally { setSending(false) }
+  }
+
   if (err && !bundle) return <div className="page"><div className="alert">{err}</div></div>
   if (!bundle) return <Loader label={dt('rep_preparing')} />
 
@@ -63,6 +80,7 @@ export default function CoopReport() {
         <div className="report-toolbar__btns">
           <button className="btn btn--ghost" onClick={() => nav(`/defects/coop/${id}`)}>{dt('rep_back')}</button>
           <button className="btn btn--ghost" onClick={onCopy}>{dt('rep_copy')}</button>
+          <button className="btn btn--ghost" onClick={onEmail} disabled={sending}>{sending ? <span className="spin" /> : <>✉ {dt('rep_send_email')}</>}</button>
           <button className="btn btn--primary" onClick={() => window.print()}>{dt('rep_print')}</button>
         </div>
       </div>
