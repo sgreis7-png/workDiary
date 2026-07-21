@@ -208,6 +208,7 @@ export function Shell() {
       <div className="sidebar__foot">
         {syncBadge}
         <LangToggle />
+        <div style={{ fontSize: 9.5, color: 'var(--shell-faint)', fontFamily: 'var(--font-mono)', marginTop: 6 }}>v{__BUILD_TS__}</div>
       </div>
     </aside>
   )

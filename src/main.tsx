@@ -11,8 +11,10 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { initTheme } from './lib/theme'
 import App from './App'
 import { registerSW } from 'virtual:pwa-register'
+import { ensureFresh } from './lib/freshness'
 
 initTheme()
+ensureFresh()
 
 // aggressive update pickup: check for a new build on launch + every 15 min,
 // reload as soon as the fresh service worker takes control (TWA/PWA lag fix)
