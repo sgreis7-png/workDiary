@@ -34,31 +34,37 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
   const c = b.coop
   const yesNo = (v: boolean) => YES_NO_LABELS[v ? 'yes' : 'no']
 
-  const metaRows: [string, string][] = [
+  // רק מה שמלא נכנס לדו"ח: שורות מטא ריקות מסוננות (בוליאנים נשארים — "לא" זה מידע)
+  const metaRows: [string, string][] = ([
     ['פרויקט / אתר', projectName],
     ['לול', c.name],
-    ['מספר לולים בחווה', c.farm_coop_count != null ? String(c.farm_coop_count) : '—'],
-    ['סוג לול', c.coop_type ? COOP_TYPE_LABELS[c.coop_type] : '—'],
-    ['ספק ציוד גידול', c.equipment_supplier ?? '—'],
+    ['מספר לולים בחווה', c.farm_coop_count != null ? String(c.farm_coop_count) : ''],
+    ['סוג לול', c.coop_type ? COOP_TYPE_LABELS[c.coop_type] : ''],
+    ['ספק ציוד גידול', c.equipment_supplier ?? ''],
     ['חימום', yesNo(c.has_heating)],
     ['מזרוני צינון', yesNo(c.has_cooling_pads)],
     ['תריס מאוורר מנהרה', yesNo(c.has_tunnel_shutter)],
-    ['מנהל ביצוע', c.execution_manager ?? '—'],
-    ['מפקח שטח', c.field_supervisor ?? '—'],
-    ['תאריך פתיחה', fmtDate(c.opened_on)],
-  ]
+    ['מנהל ביצוע', c.execution_manager ?? ''],
+    ['מפקח שטח', c.field_supervisor ?? ''],
+    ['תאריך פתיחה', c.opened_on ? fmtDate(c.opened_on) : ''],
+  ] as [string, string][]).filter(([, v]) => v.trim() !== '')
   const meta = `<table dir="rtl" style="width:100%;border-collapse:collapse">${metaRows.map(([k, v], i) =>
     `<tr style="background:${i % 2 ? '#fafcfa' : '#fff'}">
       <td style="padding:7px 10px;color:${MUT};font-size:12.5px;width:200px;border-bottom:1px solid ${LINE}">${esc(k)}</td>
       <td style="padding:7px 10px;font-weight:600;font-size:13.5px;border-bottom:1px solid ${LINE}">${esc(v)}</td></tr>`).join('')}</table>`
 
-  const respRows = RESP_DOMAINS.map((d) => {
+  const filledResp = RESP_DOMAINS.filter((d) => {
     const r = b.responsibilities.find((x) => x.domain_key === d.key)
-    return `<tr>${td(esc(d.label))}${td(r?.responsible ? esc(RESPONSIBLE_LABELS[r.responsible]) : '—')}${td(esc(r?.external_who ?? '—'))}${td(esc(r?.notes ?? '—'))}</tr>`
+    return r && (r.responsible || r.external_who || r.notes)
+  })
+  const respRows = filledResp.map((d) => {
+    const r = b.responsibilities.find((x) => x.domain_key === d.key)
+    return `<tr>${td(esc(d.label))}${td(r?.responsible ? esc(RESPONSIBLE_LABELS[r.responsible]) : '')}${td(esc(r?.external_who ?? ''))}${td(esc(r?.notes ?? ''))}</tr>`
   }).join('')
 
   const itemsState = b.items.map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
-  const summaryRows = GATE_ORDER.map((g) => {
+  const answeredGates = GATE_ORDER.filter((g) => b.items.some((i) => i.gate === g && i.status))
+  const summaryRows = answeredGates.map((g) => {
     const s = gateSummary(g, itemsState, defs)
     return `<tr>${td(`<b>${esc(GATES[g].shortName)}</b>`)}${td(String(s.done))}${td(s.notDone ? `<b style="color:${CLAY}">${s.notDone}</b>` : '0')}${td(String(s.na))}${td(String(s.pending))}${td(`${Math.round(s.pct * 100)}%`)}${td(s.notDoneNos.length ? s.notDoneNos.join(', ') : '—')}</tr>`
   }).join('')
@@ -72,17 +78,26 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
 
   const gatesHtml = GATE_ORDER.map((g) => {
     const def = defs[g]
-    const rows = def.items.map((it) => {
+    // רק סעיפים שמולאו (סטטוס/הערה/חומרה/גורם חיצוני); שער בלי תוכן וללא חתימות מושמט
+    const filledItems = def.items.filter((it) => {
       const row = b.items.find((i) => i.gate === g && i.item_no === it.no)
-      return `<tr>${td(String(it.no))}${td(esc(it.text), 'min-width:220px')}${td(statusCell(row?.status ?? null))}${td(row?.severity ? esc(SEVERITY_LABELS[row.severity]) : '—')}${td(esc(row?.note ?? ''))}${td(esc(row?.external_by ?? ''))}</tr>`
+      return row && (row.status || row.note || row.severity || row.external_by)
+    })
+    const gateSigs = SIGNATURE_ROLES
+      .map(({ key, label }) => ({ label, s: b.signatures.find((x) => x.gate === g && x.role === key) }))
+      .filter((x) => x.s)
+    if (filledItems.length === 0 && gateSigs.length === 0) return ''
+    const rows = filledItems.map((it) => {
+      const row = b.items.find((i) => i.gate === g && i.item_no === it.no)
+      return `<tr>${td(String(it.no))}${td(esc(it.text), 'min-width:220px')}${td(statusCell(row?.status ?? null))}${td(row?.severity ? esc(SEVERITY_LABELS[row.severity]) : '')}${td(esc(row?.note ?? ''))}${td(esc(row?.external_by ?? ''))}</tr>`
     }).join('')
-    const sigs = SIGNATURE_ROLES.map(({ key, label }) => {
-      const s = b.signatures.find((x) => x.gate === g && x.role === key)
-      const img = s?.signature_url ? `<img src="${esc(s.signature_url)}" alt="" style="height:44px;vertical-align:middle;background:#fff;border:1px solid ${LINE};border-radius:6px;margin-inline-start:10px"/>` : ''
-      return `<div style="margin-top:6px;font-size:13px;color:${I}">${esc(label)} ${s ? `<b>${esc(s.signer_name)}</b> · ${fmtDate(s.signed_at)} ${img}` : '<span style="color:' + MUT + '">— טרם נחתם —</span>'}</div>`
+    const sigs = gateSigs.map(({ label, s }) => {
+      const img = s!.signature_url ? `<img src="${esc(s!.signature_url)}" alt="" style="height:44px;vertical-align:middle;background:#fff;border:1px solid ${LINE};border-radius:6px;margin-inline-start:10px"/>` : ''
+      return `<div style="margin-top:6px;font-size:13px;color:${I}">${esc(label)} <b>${esc(s!.signer_name)}</b> · ${fmtDate(s!.signed_at)} ${img}</div>`
     }).join('')
-    return section(def.title, table(['#', 'הסעיף', 'סטטוס', 'חומרה (אם לא בוצע)', 'הערה', 'בוצע עם גורם חיצוני'], rows)
-      + `<div style="margin-top:10px">${sigs}</div>`
+    return section(def.title,
+      (filledItems.length ? table(['#', 'הסעיף', 'סטטוס', 'חומרה (אם לא בוצע)', 'הערה', 'בוצע עם גורם חיצוני'], rows) : '')
+      + (sigs ? `<div style="margin-top:10px">${sigs}</div>` : '')
       + def.footnotes.map((f) => `<div style="margin-top:8px;background:#fdf3d7;border:1px solid #e5cf8e;border-radius:6px;padding:8px 12px;font-size:12px;color:${I}">${esc(f)}</div>`).join(''))
   }).join('')
 
@@ -106,8 +121,8 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
     </div>
     ${note}
     ${section('פתיחת פרויקט', meta)}
-    ${section('מטריצת אחריות', table(['תחום', 'אחריות', 'גורם חיצוני (מי?)', 'הערות'], respRows))}
-    ${section('ריכוז סטטוס', table(['שער', 'בוצע', 'לא בוצע', 'לא רלוונטי', 'טרם', '% הושלם', 'סעיפים "לא בוצע"'], summaryRows))}
+    ${filledResp.length ? section('מטריצת אחריות', table(['תחום', 'אחריות', 'גורם חיצוני (מי?)', 'הערות'], respRows)) : ''}
+    ${answeredGates.length ? section('ריכוז סטטוס', table(['שער', 'בוצע', 'לא בוצע', 'לא רלוונטי', 'טרם', '% הושלם', 'סעיפים "לא בוצע"'], summaryRows)) : ''}
     ${gatesHtml}
     ${section('יומן ליקויים', b.defects.length
       ? table(['מס\'', 'שער', 'סעיף', 'תיאור הליקוי', 'חומרה', 'אחראי לתיקון', 'תאריך יעד', 'סטטוס', 'נסגר בתאריך', 'הערות / אסמכתא'], defectRows)
@@ -119,15 +134,18 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
 
 export function buildCoopReportText(b: CoopBundle, projectName: string): string {
   const itemsState = b.items.map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
+  const answered = GATE_ORDER.filter((g) => b.items.some((i) => i.gate === g && i.status))
   const lines: string[] = [
     `תפיסת סיום שלב — ${projectName} — לול ${b.coop.name}`,
     '',
-    'ריכוז סטטוס:',
-    ...GATE_ORDER.map((g) => {
-      const s = gateSummary(g, itemsState)
-      return `  ${GATES[g].shortName}: בוצע ${s.done} · לא בוצע ${s.notDone} · לא רלוונטי ${s.na} · טרם ${s.pending} · ${Math.round(s.pct * 100)}%`
-    }),
-    '',
+    ...(answered.length ? [
+      'ריכוז סטטוס:',
+      ...answered.map((g) => {
+        const s = gateSummary(g, itemsState)
+        return `  ${GATES[g].shortName}: בוצע ${s.done} · לא בוצע ${s.notDone} · לא רלוונטי ${s.na} · טרם ${s.pending} · ${Math.round(s.pct * 100)}%`
+      }),
+      '',
+    ] : []),
     `ליקויים פתוחים: ${b.defects.filter((d) => d.status === 'open').length} מתוך ${b.defects.length}`,
   ]
   return lines.join('\n')
