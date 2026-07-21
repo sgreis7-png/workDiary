@@ -153,43 +153,52 @@ export function Shell() {
       </div>
 
       <nav className="nav" onClick={() => setOpen(false)}>
+        {/* ---- עבודה: כל מה ששייך למצב הנוכחי ---- */}
+        <div className="nav__heading">{defectsMode ? t('nav_section_defects') : t('nav_section_work')}</div>
         {defectsMode ? (
           <>
             {can('defects') && <NavItem to="/defects" end icon="🛡" label={dt('nav_coops')} />}
-            {can('dashboard') && <NavItem to="/defects/dashboard" icon="◷" label={t('nav_dashboard')} />}
             {can('defects') && <NavItem to="/defects/search" icon="⌕" label={dt('nav_defect_search')} />}
-            {canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label={dt('nav_form_builder')} />}
+            {can('dashboard') && <NavItem to="/defects/dashboard" icon="◷" label={t('nav_dashboard')} />}
           </>
         ) : (
           <>
             {can('logbook') && <NavItem to="/" end icon="▤" label={t('nav_log')} />}
-            {can('dashboard') && <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />}
-            {can('calendar') && <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />}
             {canEdit('logbook') && <NavItem to="/new" icon="✛" label={t('nav_new')} />}
+            {can('calendar') && <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />}
             {can('search') && <NavItem to="/search" icon="⌕" label={t('nav_search')} />}
             {can('projects') && <NavItem to="/projects" icon="◆" label={t('nav_projects')} />}
             {can('export') && <NavItem to="/export" icon="⭳" label={t('nav_export')} />}
             <NavItem to="/tasks" icon="☑" label={dt('nav_tasks')} />
+            {can('dashboard') && <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />}
           </>
         )}
+
+        {/* ---- כללי: תקשורת והתראות ---- */}
+        <div className="nav__heading">{t('nav_section_general')}</div>
         <NavLink to="/messages" className={({ isActive }) => `nav__item ${isActive ? 'active' : ''}`} onClick={() => window.scrollTo(0, 0)}>
           <span className="ic" aria-hidden>✉</span>
           {dt('nav_messages')}
           {unacked > 0 && <span className="coop-tab__badge" style={{ marginInlineStart: 'auto' }}>{unacked}</span>}
         </NavLink>
         {can('alert_rules') && <NavItem to="/alert-rules" icon="⚑" label={t('nav_alert_rules')} />}
-        {isAdmin && <NavItem to="/admin/feedback" icon="📢" label={t('nav_feedback_admin')} />}
         <button className="nav__item" onClick={() => setFeedbackOpen(true)}>
           <span className="ic" aria-hidden>🛈</span>
           {t('nav_feedback')}
         </button>
-        {!defectsMode && (isAdmin || canEdit('form_builder')) && (
+
+        {/* ---- ניהול: כלים לאדמין ולמי שהוענקה הרשאה ---- */}
+        {(isAdmin || canEdit('form_builder')) && (
           <>
             <div className="nav__heading">{t('nav_admin')}</div>
-            {canEdit('form_builder') && <NavItem to="/admin/fields" icon="⚙" label={t('nav_fields')} />}
+            {defectsMode
+              ? canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label={dt('nav_form_builder')} />
+              : canEdit('form_builder') && <NavItem to="/admin/fields" icon="⚙" label={t('nav_fields')} />}
             {isAdmin && <NavItem to="/admin/users" icon="◎" label={t('nav_users')} />}
+            {isAdmin && <NavItem to="/admin/feedback" icon="📢" label={t('nav_feedback_admin')} />}
           </>
         )}
+
         <button className="nav__item nav__switch" onClick={() => nav('/mode')}>
           <span className="ic" aria-hidden>⇄</span>
           {defectsMode ? dt('switch_to_work') : dt('switch_to_defects')}
