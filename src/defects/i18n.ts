@@ -80,6 +80,8 @@ const D = {
   coop_report_btn:   { he: '⭳ דוח / ייצוא', en: '⭳ Report / export' },
   coop_back_all:     { he: '→ כל הלולים', en: '→ All houses' },
   coop_readonly:     { he: '👁 מצב צפייה בלבד — אין לך הרשאת עריכה בניהול ליקויים.', en: '👁 View-only — you have no edit permission in defect management.' },
+  coop_delete:         { he: 'מחיקת לול', en: 'Delete coop' },
+  coop_delete_confirm: { he: 'למחוק את הלול? כל הליקויים, הצ\'קליסטים והחתימות שלו יימחקו.', en: 'Delete this coop? All its defects, checklists and signatures will be deleted.' },
   tab_project_open:  { he: 'פתיחת פרויקט', en: 'Project setup' },
   tab_summary:       { he: 'ריכוז סטטוס', en: 'Status summary' },
   tab_defect_log:    { he: 'יומן ליקויים', en: 'Defect log' },

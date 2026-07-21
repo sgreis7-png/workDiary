@@ -4,7 +4,7 @@ import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
 import {
   fetchCoopBundle, updateCoop, saveResponsibility, upsertChecklistItem,
-  createDefect, updateDefect, deleteDefect, signGate, removeGateSignatures, createConcession,
+  createDefect, updateDefect, deleteDefect, deleteCoop, signGate, removeGateSignatures, createConcession,
   fetchDefectPhotos, addDefectPhoto, deleteDefectPhoto, logAudit, notifyUser,
   type CoopBundle, type ChecklistItem, type Coop, type CoopResponsibility, type Defect, type DefectPhoto,
 } from '../../defects/api'
@@ -43,6 +43,8 @@ export default function CoopView() {
   const { dt, lang } = useDT()
   const { user } = useAuth()
   const readOnly = !canEdit('defects')
+  // עריכת פרטי לול ומחיקה — הרשאת coops_manage (אדמין, או עובד שהוענקה לו)
+  const canManageCoops = canEdit('coops_manage')
   const [users, setUsers] = useState<AppUser[]>([])
   const [photos, setPhotos] = useState<DefectPhoto[]>([])
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
@@ -233,6 +235,15 @@ export default function CoopView() {
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
           <button className="btn btn--primary" onClick={() => nav(`/defects/coop/${bundle.coop.id}/report`)}>{dt('coop_report_btn')}</button>
           <button className="btn btn--ghost" onClick={() => nav('/defects')}>{dt('coop_back_all')}</button>
+          {canManageCoops && (
+            <button
+              className="btn btn--ghost" style={{ color: 'var(--clay)' }}
+              onClick={async () => {
+                if (!window.confirm(dt('coop_delete_confirm'))) return
+                try { await deleteCoop(bundle.coop.id); nav('/defects') } catch (e) { fail(e) }
+              }}
+            >🗑 {dt('coop_delete')}</button>
+          )}
         </div>
       </div>
 
@@ -260,14 +271,16 @@ export default function CoopView() {
         })}
       </div>
 
-      <fieldset disabled={readOnly} className="perm-fieldset">
       {tab === 'project_open' && (
-        <ProjectOpenTab
-          coop={bundle.coop} responsibilities={bundle.responsibilities}
-          projectName={projectName(bundle.coop.project_id)}
-          onCoop={patchCoop} onResponsibility={patchResponsibility}
-        />
+        <fieldset disabled={readOnly || !canManageCoops} className="perm-fieldset">
+          <ProjectOpenTab
+            coop={bundle.coop} responsibilities={bundle.responsibilities}
+            projectName={projectName(bundle.coop.project_id)}
+            onCoop={patchCoop} onResponsibility={patchResponsibility}
+          />
+        </fieldset>
       )}
+      <fieldset disabled={readOnly} className="perm-fieldset">
       {tab === 'summary' && (
         <StatusSummaryTab items={bundle.items} defs={defs} onGoGate={(g) => setTab(g)} />
       )}

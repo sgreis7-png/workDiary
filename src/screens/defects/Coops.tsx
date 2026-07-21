@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useStore } from '../../store'
 import { Loader } from '../../components/Loader'
-import { fetchAllCoops, createCoop, type Coop } from '../../defects/api'
+import { fetchAllCoops, createCoop, deleteCoop, type Coop } from '../../defects/api'
 import { COOP_TYPE_LABELS } from '../../defects/model'
 import { usePerms } from '../../lib/usePerms'
 import { useDT, coopTypeLabel } from '../../defects/i18n'
@@ -47,6 +47,14 @@ export default function Coops() {
     } catch (e) {
       setErr(String((e as Error).message ?? e)); setCreating(false)
     }
+  }
+
+  // מחיקת לול — הרשאת coops_manage בלבד; אופטימי עם שחזור בכישלון
+  async function onDelete(c: Coop) {
+    if (!window.confirm(dt('coop_delete_confirm'))) return
+    const prev = coops
+    setCoops((cs) => (cs ?? []).filter((x) => x.id !== c.id))
+    try { await deleteCoop(c.id) } catch (e) { setCoops(prev); setErr(String((e as Error).message ?? e)) }
   }
 
   if (!ready || coops === null) return <Loader label={dt('coops_loading')} />
@@ -99,14 +107,24 @@ export default function Coops() {
           {shown.map((c) => {
             const proj = projects.find((p) => p.id === c.project_id)
             return (
-              <button key={c.id} className="coop-card" onClick={() => nav(`/defects/coop/${c.id}`)}>
-                <span className="coop-card__dot" style={{ background: projectColor(c.project_id) }} />
-                <span className="coop-card__name">{c.name}</span>
-                <span className="coop-card__meta">
-                  {proj?.name ?? '—'}
-                  {c.coop_type ? ` · ${coopTypeLabel(lang, c.coop_type)}` : ''}
-                </span>
-              </button>
+              <div key={c.id} style={{ position: 'relative' }}>
+                <button className="coop-card" style={{ width: '100%' }} onClick={() => nav(`/defects/coop/${c.id}`)}>
+                  <span className="coop-card__dot" style={{ background: projectColor(c.project_id) }} />
+                  <span className="coop-card__name">{c.name}</span>
+                  <span className="coop-card__meta">
+                    {proj?.name ?? '—'}
+                    {c.coop_type ? ` · ${coopTypeLabel(lang, c.coop_type)}` : ''}
+                  </span>
+                </button>
+                {canEdit('coops_manage') && (
+                  <span
+                    role="button" tabIndex={0} title={dt('coop_delete')}
+                    style={{ position: 'absolute', top: 8, insetInlineEnd: 8, cursor: 'pointer', fontSize: 15, opacity: 0.75 }}
+                    onClick={(e) => { e.stopPropagation(); void onDelete(c) }}
+                    onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); void onDelete(c) } }}
+                  >🗑</span>
+                )}
+              </div>
             )
           })}
         </div>

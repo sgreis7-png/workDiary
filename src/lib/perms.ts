@@ -5,7 +5,7 @@ import type { Role } from '../data'
 export type PermLevel = 'none' | 'view' | 'edit'
 export type PermArea =
   | 'dashboard' | 'logbook' | 'calendar' | 'search' | 'projects' | 'export'
-  | 'defects' | 'form_builder'
+  | 'defects' | 'form_builder' | 'coops_manage' | 'alert_rules'
 
 export const PERM_AREAS: { key: PermArea; label: string }[] = [
   { key: 'logbook', label: 'יומן עבודה' },
@@ -15,6 +15,8 @@ export const PERM_AREAS: { key: PermArea; label: string }[] = [
   { key: 'export', label: 'ייצוא דוחות' },
   { key: 'dashboard', label: 'סקירה / סטטיסטיקות' },
   { key: 'defects', label: 'ניהול ליקויים' },
+  { key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה' },
+  { key: 'alert_rules', label: 'כללי התראות' },
   { key: 'form_builder', label: 'בוני טפסים' },
 ]
 
@@ -28,6 +30,8 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   dashboard: 'none', // סטטיסטיקות — לאדמין, אלא אם הוענקה גישה
   defects: 'edit',
   form_builder: 'none',
+  coops_manage: 'none', // מחיקה/עריכת לולים — לאדמין, אלא אם הוענקה
+  alert_rules: 'none',  // כללי התראות אישיים — לאדמין, אלא אם הוענקה
 }
 
 export interface PermOverride { email: string; area: PermArea; level: PermLevel }
