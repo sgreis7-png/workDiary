@@ -15,18 +15,20 @@ function esc(s: string | null | undefined): string {
 }
 const fmtDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString('he-IL') : '—')
 
+// Every cell carries its own color: email clients (esp. Gmail dark mode / paste
+// into compose) drop the <body> styles, so inherited colors turn light-on-light.
 function th(label: string): string {
-  return `<th style="text-align:right;padding:8px 10px;border-bottom:2px solid ${LINE};color:${MUT};font-size:12px;white-space:nowrap">${label}</th>`
+  return `<th style="text-align:right;padding:8px 10px;border-bottom:2px solid ${LINE};color:${MUT};font-size:12px;white-space:nowrap;background:#fff">${label}</th>`
 }
 function td(v: string, extra = ''): string {
-  return `<td style="padding:8px 10px;border-bottom:1px solid ${LINE};font-size:13px;vertical-align:top;${extra}">${v}</td>`
+  return `<td style="padding:8px 10px;border-bottom:1px solid ${LINE};font-size:13px;vertical-align:top;color:${I};background:#fff;${extra}">${v}</td>`
 }
 function section(title: string, inner: string): string {
-  return `<div style="margin-top:26px">
+  return `<div style="margin-top:26px;color:${I}">
     <h2 style="margin:0 0 10px;font-size:17px;color:${I}">${esc(title)}</h2>${inner}</div>`
 }
 function table(headers: string[], rows: string): string {
-  return `<table dir="rtl" style="width:100%;border-collapse:collapse;background:#fff;border:1px solid ${LINE};border-radius:8px">
+  return `<table dir="rtl" bgcolor="#ffffff" style="width:100%;border-collapse:collapse;background:#fff;color:${I};border:1px solid ${LINE};border-radius:8px">
     <tr>${headers.map(th).join('')}</tr>${rows}</table>`
 }
 
@@ -48,10 +50,10 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
     ['מפקח שטח', c.field_supervisor ?? ''],
     ['תאריך פתיחה', c.opened_on ? fmtDate(c.opened_on) : ''],
   ] as [string, string][]).filter(([, v]) => v.trim() !== '')
-  const meta = `<table dir="rtl" style="width:100%;border-collapse:collapse">${metaRows.map(([k, v], i) =>
+  const meta = `<table dir="rtl" bgcolor="#ffffff" style="width:100%;border-collapse:collapse;background:#fff;color:${I}">${metaRows.map(([k, v], i) =>
     `<tr style="background:${i % 2 ? '#fafcfa' : '#fff'}">
-      <td style="padding:7px 10px;color:${MUT};font-size:12.5px;width:200px;border-bottom:1px solid ${LINE}">${esc(k)}</td>
-      <td style="padding:7px 10px;font-weight:600;font-size:13.5px;border-bottom:1px solid ${LINE}">${esc(v)}</td></tr>`).join('')}</table>`
+      <td style="padding:7px 10px;color:${MUT};font-size:12.5px;width:200px;border-bottom:1px solid ${LINE};background:${i % 2 ? '#fafcfa' : '#fff'}">${esc(k)}</td>
+      <td style="padding:7px 10px;font-weight:600;font-size:13.5px;border-bottom:1px solid ${LINE};color:${I};background:${i % 2 ? '#fafcfa' : '#fff'}">${esc(v)}</td></tr>`).join('')}</table>`
 
   const filledResp = RESP_DOMAINS.filter((d) => {
     const r = b.responsibilities.find((x) => x.domain_key === d.key)
@@ -108,15 +110,17 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
     ${td(fmtDate(d.closed_on))}${td(esc(d.closure_note ?? ''))}</tr>`).join('')
 
   const note = opts?.note?.trim()
-    ? `<div style="background:#fff;border-inline-start:4px solid ${GREEN};border:1px solid ${LINE};border-radius:8px;padding:12px 16px;margin-top:18px;font-size:14px;white-space:pre-wrap">${esc(opts.note)}</div>`
+    ? `<div style="background:#fff;color:${I};border-inline-start:4px solid ${GREEN};border:1px solid ${LINE};border-radius:8px;padding:12px 16px;margin-top:18px;font-size:14px;white-space:pre-wrap">${esc(opts.note)}</div>`
     : ''
 
-  return `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"/></head>
-  <body style="margin:0;background:${BG};font-family:'Assistant','Heebo',Arial,sans-serif;color:${I}">
-  <div style="max-width:860px;margin:0 auto;padding:28px 20px">
+  return `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"/>
+  <meta name="color-scheme" content="light only"/><meta name="supported-color-schemes" content="light"/>
+  <style>:root{color-scheme:light only}</style></head>
+  <body bgcolor="#f2f5f3" style="margin:0;background:${BG};font-family:'Assistant','Heebo',Arial,sans-serif;color:${I}">
+  <div style="max-width:860px;margin:0 auto;padding:28px 20px;background:${BG};color:${I}">
     <div style="border-bottom:3px solid ${GREEN};padding-bottom:14px;margin-bottom:6px">
       <div style="font-size:12px;letter-spacing:.14em;color:${MUT}">AGROTOP · תפיסת סיום שלב</div>
-      <h1 style="margin:6px 0 0;font-size:24px">${esc(projectName)} — לול ${esc(c.name)}</h1>
+      <h1 style="margin:6px 0 0;font-size:24px;color:${I}">${esc(projectName)} — לול ${esc(c.name)}</h1>
       <div style="color:${MUT};font-size:13px;margin-top:4px">דוח בקרת איכות${opts?.senderName ? ` · הופק ע"י ${esc(opts.senderName)}` : ''} · ${new Date().toLocaleDateString('he-IL')}</div>
     </div>
     ${note}
