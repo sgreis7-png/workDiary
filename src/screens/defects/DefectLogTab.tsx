@@ -8,17 +8,7 @@ import { itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, severityLabel, defectStatusLabel, gateShortName } from '../../defects/i18n'
 import type { Defect, DefectPhoto } from '../../defects/api'
 import type { AppUser } from '../../data'
-
-function TextCell({ value, onCommit, placeholder }: { value: string | null; onCommit: (v: string) => void; placeholder?: string }) {
-  const [v, setV] = useState(value ?? '')
-  return (
-    <input
-      className="input" value={v} placeholder={placeholder}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => { if (v !== (value ?? '')) onCommit(v) }}
-    />
-  )
-}
+import { TextCell } from './TextCell'
 
 export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], onAdd, onPatch, onRemove, onAddPhoto, onRemovePhoto }: {
   defects: Defect[]

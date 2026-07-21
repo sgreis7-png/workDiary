@@ -6,6 +6,7 @@ import { fetchAllCoops, fetchDefectsForSearch, type Coop, type DefectSearchRow }
 import { GATES, SEVERITY_LABELS, DEFECT_STATUS_LABELS } from '../../defects/model'
 import { loadGateDefs, itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, severityLabel, defectStatusLabel, gateShortName } from '../../defects/i18n'
+import { MicButton } from '../../components/MicButton'
 
 /** חיפוש בניהול ליקויים — חופשי / לפי פרויקט / לפי לול. */
 export default function DefectSearch() {
@@ -61,10 +62,13 @@ export default function DefectSearch() {
       {err && <div className="alert">{err}</div>}
 
       <div className="coop-search">
-        <input
-          className="input" placeholder={dt('search_ph')}
-          value={q} onChange={(e) => setQ(e.target.value)} autoFocus
-        />
+        <div className="input-affix">
+          <input
+            className="input" placeholder={dt('search_ph')}
+            value={q} onChange={(e) => setQ(e.target.value)} autoFocus
+          />
+          <MicButton onText={(txt) => setQ((r) => (r ? r + ' ' : '') + txt)} />
+        </div>
         <select className="input" value={projectId} onChange={(e) => { setProjectId(e.target.value); setCoopId('') }}>
           <option value="">{dt('coops_all_projects')}</option>
           {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}

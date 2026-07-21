@@ -3,6 +3,7 @@ import { defectItemLabel } from '../../defects/model'
 import { useDT, severityLabel } from '../../defects/i18n'
 import type { Defect } from '../../defects/api'
 import { SignaturePad } from './SignaturePad'
+import { MicButton } from '../../components/MicButton'
 
 /** טופס ויתור (Concession) — double signature over an open 🟠 major defect. */
 export function ConcessionDialog({ defect, onClose, onSubmit }: {
@@ -31,17 +32,26 @@ export function ConcessionDialog({ defect, onClose, onSubmit }: {
         </p>
         <label className="field">
           <span className="field__label">{dt('con_reason')}</span>
-          <textarea className="input" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
+          <div className="input-affix">
+            <textarea className="input" rows={3} value={reason} onChange={(e) => setReason(e.target.value)} />
+            <MicButton onText={(txt) => setReason((r) => (r ? r + ' ' : '') + txt)} />
+          </div>
         </label>
         <div className="concession__signs">
           <div>
             <b>{dt('con_manager')}</b>
-            <input className="input" placeholder={dt('sign_name_ph')} value={mName} onChange={(e) => setMName(e.target.value)} />
+            <div className="input-affix">
+              <input className="input" placeholder={dt('sign_name_ph')} value={mName} onChange={(e) => setMName(e.target.value)} />
+              <MicButton onText={(txt) => setMName((r) => (r ? r + ' ' : '') + txt)} />
+            </div>
             <SignaturePad onChange={setMPng} height={90} />
           </div>
           <div>
             <b>{dt('con_supervisor')}</b>
-            <input className="input" placeholder={dt('sign_name_ph')} value={sName} onChange={(e) => setSName(e.target.value)} />
+            <div className="input-affix">
+              <input className="input" placeholder={dt('sign_name_ph')} value={sName} onChange={(e) => setSName(e.target.value)} />
+              <MicButton onText={(txt) => setSName((r) => (r ? r + ' ' : '') + txt)} />
+            </div>
             <SignaturePad onChange={setSPng} height={90} />
           </div>
         </div>

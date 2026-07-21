@@ -6,19 +6,8 @@ import type { GateDefs } from '../../defects/defs'
 import type { CoopBundle, ChecklistItem } from '../../defects/api'
 import { SignaturePad } from './SignaturePad'
 import { ConcessionDialog } from './ConcessionDialog'
-
-function TextCell({ value, onCommit, placeholder, disabled }: {
-  value: string | null; onCommit: (v: string) => void; placeholder?: string; disabled?: boolean
-}) {
-  const [v, setV] = useState(value ?? '')
-  return (
-    <input
-      className="input" value={v} placeholder={placeholder} disabled={disabled}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => { if (v !== (value ?? '')) onCommit(v) }}
-    />
-  )
-}
+import { TextCell } from './TextCell'
+import { MicButton } from '../../components/MicButton'
 
 export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConcession, onGoDefects }: {
   gate: GateDef
@@ -192,7 +181,10 @@ function SignBox({ disabled, reasons, onSign }: {
   }
   return (
     <div className="gate-sign__pad">
-      <input className="input" placeholder={dt('sign_name_ph')} value={name} onChange={(e) => setName(e.target.value)} />
+      <div className="input-affix">
+        <input className="input" placeholder={dt('sign_name_ph')} value={name} onChange={(e) => setName(e.target.value)} />
+        <MicButton onText={(txt) => setName((r) => (r ? r + ' ' : '') + txt)} />
+      </div>
       <SignaturePad onChange={setPng} />
       <button
         className="btn btn--primary" disabled={!name.trim() || !png}

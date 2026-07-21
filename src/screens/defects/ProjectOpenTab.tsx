@@ -7,18 +7,7 @@ import {
 } from '../../defects/model'
 import type { Coop, CoopResponsibility } from '../../defects/api'
 import { useDT, coopTypeLabel, responsibleLabel, yesNoLabel } from '../../defects/i18n'
-
-/** Debounced-on-blur text input so each keystroke doesn't hit the DB. */
-function TextCell({ value, onCommit, placeholder }: { value: string | null; onCommit: (v: string) => void; placeholder?: string }) {
-  const [v, setV] = useState(value ?? '')
-  return (
-    <input
-      className="input" value={v} placeholder={placeholder}
-      onChange={(e) => setV(e.target.value)}
-      onBlur={() => { if (v !== (value ?? '')) onCommit(v) }}
-    />
-  )
-}
+import { TextCell } from './TextCell'
 
 export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, onResponsibility }: {
   coop: Coop

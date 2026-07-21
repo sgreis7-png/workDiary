@@ -287,13 +287,21 @@ export default function EntryForm() {
                   ) : f.key === 'site_location' ? (
                     <div className="input-affix">
                       <input {...common} type="text" onChange={(e) => set(f.key, e.target.value)} />
+                      <MicButton onText={(txt) => appendText(f.key, txt)} />
                       <button type="button" className="mic" title={t('use_gps')} onClick={() => fillLocation(f.key)} disabled={locBusy}>
                         {locBusy ? <span className="spin" /> : '📍'}
                       </button>
                     </div>
-                  ) : (
-                    <input {...common} type={f.type === 'date' ? 'date' : f.type === 'number' ? 'number' : f.type === 'phone' ? 'tel' : 'text'}
+                  ) : f.type === 'date' || f.type === 'number' ? (
+                    <input {...common} type={f.type === 'date' ? 'date' : 'number'}
                       onChange={(e) => set(f.key, e.target.value)} />
+                  ) : (
+                    // כל שדה טקסט חופשי (כולל טלפון, שם מנהל, קבלן, ציוד) — עם הקלדה קולית
+                    <div className="input-affix">
+                      <input {...common} type={f.type === 'phone' ? 'tel' : 'text'}
+                        onChange={(e) => set(f.key, e.target.value)} />
+                      <MicButton onText={(txt) => appendText(f.key, txt)} />
+                    </div>
                   )}
                 </Field>
               </div>

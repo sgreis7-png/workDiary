@@ -6,6 +6,7 @@ import { fetchAllCoops, createCoop, deleteCoop, type Coop } from '../../defects/
 import { COOP_TYPE_LABELS } from '../../defects/model'
 import { usePerms } from '../../lib/usePerms'
 import { useDT, coopTypeLabel } from '../../defects/i18n'
+import { MicButton } from '../../components/MicButton'
 
 export default function Coops() {
   const { projects, projectColor, ready } = useStore()
@@ -84,11 +85,14 @@ export default function Coops() {
             <option value="">{dt('coops_which_project')}</option>
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
-          <input
-            className="input" placeholder={dt('coops_new_ph')} value={newName}
-            onChange={(e) => setNewName(e.target.value)}
-            onKeyDown={(e) => e.key === 'Enter' && onCreate()}
-          />
+          <div className="input-affix">
+            <input
+              className="input" placeholder={dt('coops_new_ph')} value={newName}
+              onChange={(e) => setNewName(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && onCreate()}
+            />
+            <MicButton onText={(txt) => setNewName((r) => (r ? r + ' ' : '') + txt)} />
+          </div>
           <input
             className="input coop-new__count" type="number" min={1} max={24} value={newCount}
             title={dt('coops_count_ph')}
