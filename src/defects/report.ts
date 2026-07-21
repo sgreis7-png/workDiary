@@ -95,12 +95,12 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
     }).join('')
     const sigs = gateSigs.map(({ label, s }) => {
       const img = s!.signature_url ? `<img src="${esc(s!.signature_url)}" alt="" style="height:44px;vertical-align:middle;background:#fff;border:1px solid ${LINE};border-radius:6px;margin-inline-start:10px"/>` : ''
-      return `<div style="margin-top:6px;font-size:14.5px;color:${I}">${esc(label)} <b>${esc(s!.signer_name)}</b> · ${fmtDate(s!.signed_at)} ${img}</div>`
+      return `<div dir="rtl" style="margin-top:6px;font-size:14.5px;color:${I};text-align:right">${esc(label)} <b>${esc(s!.signer_name)}</b> · ${fmtDate(s!.signed_at)} ${img}</div>`
     }).join('')
     return section(def.title,
       (filledItems.length ? table(['#', 'הסעיף', 'סטטוס', 'חומרה (אם לא בוצע)', 'הערה', 'בוצע עם גורם חיצוני'], rows) : '')
-      + (sigs ? `<div style="margin-top:10px">${sigs}</div>` : '')
-      + def.footnotes.map((f) => `<div style="margin-top:8px;background:#fdf3d7;border:1px solid #e5cf8e;border-radius:6px;padding:8px 12px;font-size:13.5px;color:${I}">${esc(f)}</div>`).join(''))
+      + (sigs ? `<div dir="rtl" style="margin-top:10px;text-align:right">${sigs}</div>` : '')
+      + def.footnotes.map((f) => `<div dir="rtl" style="margin-top:8px;background:#fdf3d7;border:1px solid #e5cf8e;border-radius:6px;padding:8px 12px;font-size:13.5px;color:${I};text-align:right">${esc(f)}</div>`).join(''))
   }).join('')
 
   const defectRows = b.defects.map((d) => `<tr>
@@ -110,18 +110,18 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
     ${td(fmtDate(d.closed_on))}${td(esc(d.closure_note ?? ''))}</tr>`).join('')
 
   const note = opts?.note?.trim()
-    ? `<div style="background:#fff;color:${I};border-inline-start:4px solid ${GREEN};border:1px solid ${LINE};border-radius:8px;padding:12px 16px;margin-top:18px;font-size:15.5px;white-space:pre-wrap">${esc(opts.note)}</div>`
+    ? `<div dir="rtl" style="background:#fff;color:${I};border-right:4px solid ${GREEN};border:1px solid ${LINE};border-radius:8px;padding:12px 16px;margin-top:18px;font-size:15.5px;white-space:pre-wrap;text-align:right">${esc(opts.note)}</div>`
     : ''
 
   return `<!doctype html><html dir="rtl" lang="he"><head><meta charset="utf-8"/>
   <meta name="color-scheme" content="light only"/><meta name="supported-color-schemes" content="light"/>
   <style>:root{color-scheme:light only}</style></head>
   <body bgcolor="#f2f5f3" style="margin:0;background:${BG};font-family:'Assistant','Heebo',Arial,sans-serif;color:${I}">
-  <div style="max-width:860px;margin:0 auto;padding:28px 20px;background:${BG};color:${I}">
-    <div style="border-bottom:3px solid ${GREEN};padding-bottom:14px;margin-bottom:6px">
-      <div style="font-size:13px;letter-spacing:.14em;color:${MUT}">AGROTOP · תפיסת סיום שלב</div>
-      <h1 style="margin:6px 0 0;font-size:26px;color:${I}">${esc(projectName)} — לול ${esc(c.name)}</h1>
-      <div style="color:${MUT};font-size:14.5px;margin-top:4px">דוח בקרת איכות${opts?.senderName ? ` · הופק ע"י ${esc(opts.senderName)}` : ''} · ${new Date().toLocaleDateString('he-IL')}</div>
+  <div dir="rtl" style="max-width:860px;margin:0 auto;padding:28px 20px;background:${BG};color:${I};text-align:right">
+    <div dir="rtl" style="border-bottom:3px solid ${GREEN};padding-bottom:14px;margin-bottom:6px;text-align:right">
+      <div dir="rtl" style="font-size:13px;letter-spacing:.14em;color:${MUT};text-align:right">AGROTOP · תפיסת סיום שלב</div>
+      <h1 dir="rtl" style="margin:6px 0 0;font-size:26px;color:${I};text-align:right">${esc(projectName)} — לול ${esc(c.name)}</h1>
+      <div dir="rtl" style="color:${MUT};font-size:14.5px;margin-top:4px;text-align:right">דוח בקרת איכות${opts?.senderName ? ` · הופק ע"י ${esc(opts.senderName)}` : ''} · ${new Date().toLocaleDateString('he-IL')}</div>
     </div>
     ${note}
     ${section('פתיחת פרויקט', meta)}
@@ -130,8 +130,8 @@ export function buildCoopReportHtml(b: CoopBundle, projectName: string, opts?: {
     ${gatesHtml}
     ${section('יומן ליקויים', b.defects.length
       ? table(['מס\'', 'שער', 'סעיף', 'תיאור הליקוי', 'חומרה', 'אחראי לתיקון', 'תאריך יעד', 'סטטוס', 'נסגר בתאריך', 'הערות / אסמכתא'], defectRows)
-      : `<div style="color:${MUT};font-size:14.5px">אין ליקויים רשומים.</div>`)}
-    <div style="margin-top:28px;padding-top:14px;border-top:1px solid ${LINE};color:${MUT};font-size:11px">
+      : `<div dir="rtl" style="color:${MUT};font-size:14.5px;text-align:right">אין ליקויים רשומים.</div>`)}
+    <div dir="rtl" style="margin-top:28px;padding-top:14px;border-top:1px solid ${LINE};color:${MUT};font-size:11px;text-align:right">
       Agrotop · Agriculture Turnkey Projects — הופק אוטומטית ממערכת יומן עבודה</div>
   </div></body></html>`
 }
