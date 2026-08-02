@@ -203,6 +203,7 @@ const STRINGS = {
   house_pct:      { he: 'סה״כ התקדמות', en: 'Total progress' },
   add_coop:       { he: 'צור דוח התקדמות', en: 'Create progress report' },
   bd_field:       { he: 'ציוד BD', en: 'BD equipment' },
+  edit_progress:  { he: 'עריכת דוחות התקדמות', en: 'Edit progress reports' },
   bd_open:        { he: 'מילוי', en: 'Fill in' },
   done:           { he: 'סיום', en: 'Done' },
   confirm_remove_coop: { he: 'להסיר את דוח ההתקדמות?', en: 'Remove this progress report?' },

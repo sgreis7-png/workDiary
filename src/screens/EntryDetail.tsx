@@ -5,11 +5,13 @@ import { Button, Tag, WeatherChip, Avatar, stagger, riseIn } from '../components
 import { Loader } from '../components/Loader'
 import { Lightbox } from '../components/Lightbox'
 import { useI18n } from '../i18n'
-import { getEntry, deleteEntry } from '../api'
+import { getEntry, deleteEntry, updateEntry } from '../api'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import type { Entry, FieldDef } from '../data'
-import { MISSING_KEY, bdActive, filledMissing, parseCoops, parseMissing, reasonLabel } from '../lib/reportTables'
+import { COOPS_KEY, MISSING_KEY, bdActive, defaultCoop, filledMissing, parseCoops, parseMissing, reasonLabel } from '../lib/reportTables'
+import type { CoopReport } from '../lib/reportTables'
+import { CoopReports } from '../components/ReportTables'
 
 export default function EntryDetail() {
   const { id } = useParams()
@@ -19,6 +21,10 @@ export default function EntryDetail() {
   const { user, isAdmin } = useAuth()
   const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
   const [lightbox, setLightbox] = useState<number | null>(null)
+  // Inline progress-report editing straight from the diary (no full edit form)
+  const [progEdit, setProgEdit] = useState(false)
+  const [progDraft, setProgDraft] = useState<CoopReport[]>([])
+  const [progBusy, setProgBusy] = useState(false)
 
   useEffect(() => {
     let alive = true
@@ -38,6 +44,22 @@ export default function EntryDetail() {
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const defs = fieldDefs.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
   const canManage = entry.created_by === user?.id || isAdmin
+  const startProgEdit = () => {
+    const cur = parseCoops(entry.values, lang)
+    setProgDraft(cur.length ? cur : [defaultCoop(lang)])
+    setProgEdit(true)
+  }
+  const saveProg = async () => {
+    setProgBusy(true)
+    try {
+      const values = { ...entry.values, [COOPS_KEY]: JSON.stringify(progDraft) }
+      await updateEntry(entry.id, entry.project_id, values, [], [])
+      setEntry({ ...entry, values })
+      setProgEdit(false)
+    } catch (e) { window.alert('⚠ ' + String((e as Error).message ?? e)) }
+    finally { setProgBusy(false) }
+  }
+
   const coops = parseCoops(entry.values, lang)
     .map((c) => ({
       ...c,
@@ -72,7 +94,28 @@ export default function EntryDetail() {
             ))}
           </dl>
 
-          {coops.map((c, ci) => (
+          {canManage && (
+            <motion.div variants={riseIn} style={{ display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 8 }}>
+              {progEdit ? (
+                <>
+                  <Button variant="primary" onClick={saveProg} disabled={progBusy}>{progBusy ? t('saving') : t('save')}</Button>
+                  <Button variant="ghost" onClick={() => setProgEdit(false)} disabled={progBusy}>{t('cancel')}</Button>
+                </>
+              ) : (
+                <Button variant="ghost" onClick={startProgEdit}>
+                  {coops.length ? <>✎ {t('edit_progress')}</> : <>＋ {t('add_coop')}</>}
+                </Button>
+              )}
+            </motion.div>
+          )}
+
+          {progEdit && (
+            <motion.div variants={riseIn}>
+              <CoopReports coops={progDraft} onChange={setProgDraft} />
+            </motion.div>
+          )}
+
+          {!progEdit && coops.map((c, ci) => (
             <motion.div variants={riseIn} key={ci}>
               <div className="detail__subhead">
                 {t('progress_report')} — {c.name}
