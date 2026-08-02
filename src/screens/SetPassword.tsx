@@ -51,7 +51,7 @@ export default function SetPassword() {
   return (
     <div className="login">
       <div className="login__art">
-        <Logo height={40} animated tone="light" />
+        <Logo height={84} animated tone="light" />
         <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1], delay: 0.1 }} className="big">
           {t('app_title')}.<br />ברוך הבא,<br /><em>קבע סיסמה</em>.

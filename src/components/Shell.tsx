@@ -143,7 +143,7 @@ export function Shell() {
   const sidebar = (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar__brand">
-        <Logo height={34} tone="light" />
+        <Logo height={52} tone="light" />
         <div className="sub">{t('app_title')} · {t('app_sub')}</div>
       </div>
 
@@ -220,7 +220,7 @@ export function Shell() {
       <div>
         <div className="mobile-bar">
           <button className="btn btn--ghost" onClick={() => setOpen(true)}>☰</button>
-          <Logo height={26} withTag={false} />
+          <Logo height={34} withTag={false} />
           {syncBadge}
           <NotificationsBell />
           <UserMenu avatarUrl={avatarUrl} onAbout={() => setAboutOpen(true)} compact />
