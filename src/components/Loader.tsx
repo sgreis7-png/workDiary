@@ -1,9 +1,10 @@
 import { motion } from 'framer-motion'
+import { CHECK_D } from './logoPaths'
 
 /**
- * Branded loading animation: the Agrotop checkmark draws itself on a loop inside
- * a rotating ring. Use <Loader full /> for a page/screen-filling spinner, or
- * <Loader /> inline.
+ * Branded loading animation: the official Agrotop checkmark wipes itself in
+ * (left→right) on a loop inside a rotating ring. Use <Loader full /> for a
+ * page/screen-filling spinner, or <Loader /> inline.
  */
 export function Loader({ full = false, label }: { full?: boolean; label?: string }) {
   const mark = (
@@ -13,16 +14,22 @@ export function Loader({ full = false, label }: { full?: boolean; label?: string
         animate={{ rotate: 360 }}
         transition={{ duration: 1.1, ease: 'linear', repeat: Infinity }}
       />
-      <svg width="48" height="48" viewBox="0 0 48 48" fill="none" aria-label="loading" role="img">
+      <svg width="52" height="38" viewBox="146 46 110 80" fill="none" aria-label="loading" role="img">
+        <defs>
+          <clipPath id="loader-check-wipe">
+            <motion.rect
+              x="146" y="46" height="80"
+              initial={{ width: 0 }}
+              animate={{ width: [0, 110, 110] }}
+              transition={{ duration: 1.6, times: [0, 0.55, 1], ease: 'easeInOut', repeat: Infinity }}
+            />
+          </clipPath>
+        </defs>
         <motion.path
-          d="M10 26 L21 36 L39 11"
-          stroke="var(--green)"
-          strokeWidth={7}
-          strokeLinecap="butt"
-          strokeLinejoin="miter"
-          initial={{ pathLength: 0, opacity: 0.2 }}
-          animate={{ pathLength: [0, 1, 1], opacity: [0.2, 1, 0.2] }}
-          transition={{ duration: 1.6, ease: 'easeInOut', repeat: Infinity }}
+          d={CHECK_D} fill="var(--green)" fillRule="evenodd"
+          clipPath="url(#loader-check-wipe)"
+          animate={{ opacity: [1, 1, 0.25] }}
+          transition={{ duration: 1.6, times: [0, 0.7, 1], ease: 'easeInOut', repeat: Infinity }}
         />
       </svg>
     </div>

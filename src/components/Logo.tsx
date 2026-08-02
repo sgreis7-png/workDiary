@@ -1,10 +1,11 @@
 import { motion } from 'framer-motion'
+import { AGRO_D, CHECK_D, LOGO_VIEWBOX_FULL, LOGO_VIEWBOX_WORD, TOP_D } from './logoPaths'
 
 /**
- * Agrotop wordmark, recreated as vector so it stays crisp at any size and can be
- * re-toned (white on the green header). Matches the official logo: italic
- * "Agro**top**", angular green checkmark over the o|t junction, serif-italic
- * "Agriculture Turnkey Projects" tagline. Official raster: /agrotop-logo.png.
+ * Official Agrotop logo as exact vectors (traced from the brand PNG — see
+ * logoPaths.ts): italic "Agro" + green "top", green checkmark over the o|t
+ * junction, serif-italic tagline. Vector so it stays crisp at any size and can
+ * be re-toned white for the dark-green sidebar.
  *
  * NOTE: the SVG is forced to LTR — otherwise an `dir="rtl"` ancestor (Hebrew UI)
  * reorders the Latin glyphs and pushes the wordmark off-canvas.
@@ -20,55 +21,52 @@ export function Logo({
   animated?: boolean
   tone?: 'dark' | 'light'
 }) {
-  const w = height * (withTag ? 5.1 : 4.2)
-  const h = height
+  const ratio = withTag ? 285 / 164 : 285 / 140
   const light = tone === 'light'
-  const wordA = light ? '#ffffff' : 'var(--ink)'
-  const tagMain = light ? 'rgba(255,255,255,.7)' : 'var(--ink-3)'
-  const tagBold = light ? '#ffffff' : 'var(--ink-2)'
+  const word = light ? '#ffffff' : 'var(--ink)'
+  const tag = light ? 'rgba(255,255,255,.85)' : 'var(--ink-2)'
+  // brand green from the official file; the brighter theme green reads better on the dark sidebar
+  const green = light ? 'var(--green)' : '#008540'
 
+  const Word = animated ? motion.g : 'g'
   const Check = animated ? motion.path : 'path'
+  const wordAnim = animated
+    ? { initial: { opacity: 0, y: 6 }, animate: { opacity: 1, y: 0 }, transition: { duration: 0.5, ease: 'easeOut' } }
+    : {}
   const checkAnim = animated
-    ? { initial: { pathLength: 0, opacity: 0 }, animate: { pathLength: 1, opacity: 1 }, transition: { duration: 0.7, ease: 'easeOut', delay: 0.15 } }
+    ? {
+        initial: { scale: 0, opacity: 0 },
+        animate: { scale: 1, opacity: 1 },
+        transition: { type: 'spring', stiffness: 260, damping: 16, delay: 0.35 },
+        style: { transformBox: 'fill-box', transformOrigin: '50% 100%' } as React.CSSProperties,
+      }
     : {}
 
   return (
     <svg
-      width={w}
-      height={h}
-      viewBox="0 0 255 50"
+      width={height * ratio}
+      height={height}
+      viewBox={withTag ? LOGO_VIEWBOX_FULL : LOGO_VIEWBOX_WORD}
       fill="none"
       role="img"
       aria-label="Agrotop"
       style={{ direction: 'ltr' }}
     >
-      {/* checkmark — drawn first so the letters overlap its dip, like the official mark */}
-      <Check
-        d="M82 15 L103 32 L172 3"
-        stroke="var(--green)"
-        strokeWidth={9}
-        strokeLinecap="butt"
-        strokeLinejoin="miter"
-        {...(checkAnim as object)}
-      />
-      <text
-        x="2" y="40" textAnchor="start"
-        fontFamily="'Assistant', system-ui, sans-serif" fontWeight={800} fontSize="40" fontStyle="italic"
-        fill={wordA} letterSpacing="-1"
-        style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}
-      >
-        Agro<tspan fill="var(--green)">top</tspan>
-      </text>
-      {withTag && (
-        <text
-          x="4" y="49" textAnchor="start"
-          fontFamily="Georgia, 'Times New Roman', serif" fontWeight={500} fontSize="9" fontStyle="italic"
-          fill={tagMain} letterSpacing="0.2"
-          style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}
-        >
-          Agriculture Turnkey <tspan fontWeight={800} fill={tagBold}>Projects</tspan>
-        </text>
-      )}
+      <Word {...(wordAnim as object)}>
+        <path d={AGRO_D} fill={word} fillRule="evenodd" />
+        <path d={TOP_D} fill={green} fillRule="evenodd" />
+        {withTag && (
+          <text
+            x="14" y="207" textAnchor="start"
+            fontFamily="Georgia, 'Times New Roman', serif" fontStyle="italic" fontSize="15"
+            fill={tag} textLength="235" lengthAdjust="spacingAndGlyphs"
+            style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}
+          >
+            Agriculture Turnkey <tspan fontWeight={700}>Projects</tspan>
+          </text>
+        )}
+      </Word>
+      <Check d={CHECK_D} fill={green} fillRule="evenodd" {...(checkAnim as object)} />
     </svg>
   )
 }
