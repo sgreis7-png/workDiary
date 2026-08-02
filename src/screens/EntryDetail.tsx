@@ -9,7 +9,7 @@ import { getEntry, deleteEntry } from '../api'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import type { Entry, FieldDef } from '../data'
-import { HOUSE_PCT_KEY, MISSING_KEY, PROGRESS_KEY, filledMissing, parseMissing, parseProgress, reasonLabel } from '../lib/reportTables'
+import { MISSING_KEY, bdActive, filledMissing, parseCoops, parseMissing, reasonLabel } from '../lib/reportTables'
 
 export default function EntryDetail() {
   const { id } = useParams()
@@ -38,9 +38,14 @@ export default function EntryDetail() {
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const defs = fieldDefs.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
   const canManage = entry.created_by === user?.id || isAdmin
-  const progress = entry.values[PROGRESS_KEY] ? parseProgress(entry.values[PROGRESS_KEY], lang).filter((r) => r.task.trim()) : []
+  const coops = parseCoops(entry.values, lang)
+    .map((c) => ({
+      ...c,
+      rows: c.rows.filter((r) => r.task.trim()),
+      bd: bdActive(c.bd) ? c.bd.filter((r) => r.task.trim()) : [],
+    }))
+    .filter((c) => c.rows.length > 0 || c.pct > 0 || c.bd.length > 0)
   const missing = filledMissing(parseMissing(entry.values[MISSING_KEY]))
-  const housePct = entry.values[HOUSE_PCT_KEY]
 
   return (
     <div className="page">
@@ -67,17 +72,17 @@ export default function EntryDetail() {
             ))}
           </dl>
 
-          {(progress.length > 0 || housePct) && (
-            <motion.div variants={riseIn}>
+          {coops.map((c, ci) => (
+            <motion.div variants={riseIn} key={ci}>
               <div className="detail__subhead">
-                {t('progress_report')}
-                {housePct ? <span className="detail__subhead-val">{t('house_pct')}: {housePct}%</span> : null}
+                {t('progress_report')} — {c.name}
+                <span className="detail__subhead-val">{t('house_pct')}: {c.pct}%</span>
               </div>
               <div className="vtable">
                 <div className="vtable__row vtable__row--head vtable__row--progress">
                   <span>{t('col_task')}</span><span>{t('col_pct')}</span><span>{t('col_remarks')}</span>
                 </div>
-                {progress.map((r, i) => (
+                {c.rows.map((r, i) => (
                   <div key={i} className="vtable__row vtable__row--progress">
                     <span>{r.task}</span>
                     <span className="vbar"><span className="vbar__track"><span className="vbar__fill" style={{ width: `${r.pct}%` }} /></span><b>{r.pct}%</b></span>
@@ -85,8 +90,25 @@ export default function EntryDetail() {
                   </div>
                 ))}
               </div>
+              {c.bd.length > 0 && (
+                <>
+                  <div className="detail__subhead" style={{ marginTop: 14 }}>{t('bd_field')} — {c.name}</div>
+                  <div className="vtable">
+                    <div className="vtable__row vtable__row--head vtable__row--progress">
+                      <span>{t('col_task')}</span><span>{t('col_pct')}</span><span>{t('col_remarks')}</span>
+                    </div>
+                    {c.bd.map((r, i) => (
+                      <div key={i} className="vtable__row vtable__row--progress">
+                        <span>{r.task}</span>
+                        <span className="vbar"><span className="vbar__track"><span className="vbar__fill" style={{ width: `${r.pct}%` }} /></span><b>{r.pct}%</b></span>
+                        <span>{r.remarks}</span>
+                      </div>
+                    ))}
+                  </div>
+                </>
+              )}
             </motion.div>
-          )}
+          ))}
 
           {missing.length > 0 && (
             <motion.div variants={riseIn}>

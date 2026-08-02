@@ -3,15 +3,31 @@
 // (IndexedDB), offline queue and Supabase JSONB storage with no schema change.
 import type { Lang } from '../i18n'
 
-export const PROGRESS_KEY = 'progress_table'
-export const HOUSE_PCT_KEY = 'progress_house_pct'
+export const PROGRESS_KEY = 'progress_table'      // legacy: single flat table
+export const HOUSE_PCT_KEY = 'progress_house_pct'  // legacy: single overall pct
+export const COOPS_KEY = 'progress_coops'          // current: per-coop reports
 export const MISSING_KEY = 'missing_material'
 
 export interface ProgressRow { task: string; pct: number; remarks: string }
+/** bd = the Big Dutchman equipment sub-form ("ציוד BD") nested inside a coop report. */
+export interface CoopReport { name: string; pct: number; rows: ProgressRow[]; bd: ProgressRow[] }
 export interface MissingRow { code: string; desc: string; amount: string; reason: string }
 
-// Standard Big Dutchman installation tasks — pre-seeded on every new report.
+// Standard coop construction phases — pre-seeded on every new report.
 export const DEFAULT_TASKS: { he: string; en: string }[] = [
+  { he: 'הקמת קונס׳ (שלד)', en: 'Structure erection (frame)' },
+  { he: 'גמר קורות בטון', en: 'Concrete beams finish' },
+  { he: 'כיסוי תקרה', en: 'Ceiling covering' },
+  { he: 'חיפוי קירות', en: 'Wall cladding' },
+  { he: 'כיסוי גג', en: 'Roof covering' },
+  { he: 'ציוד פנים (אוכל, מים)', en: 'Interior equipment (feed, water)' },
+  { he: 'ציוד אקלים', en: 'Climate equipment' },
+  { he: 'חשמל ובקרה', en: 'Electrical & controls' },
+  { he: 'גמרים ומסירה', en: 'Finishes & handover' },
+]
+
+// Big Dutchman installation tasks — the "ציוד BD" sub-form inside each coop report.
+export const BD_TASKS: { he: string; en: string }[] = [
   { he: 'סט קצה קדמי', en: 'End set front' },
   { he: 'מערכת', en: 'System' },
   { he: 'סט קצה אחורי', en: 'End set rear' },
@@ -43,6 +59,52 @@ export function parseProgress(raw: string | undefined, lang: Lang): ProgressRow[
     if (!Array.isArray(a)) return defaultProgressRows(lang)
     return a.map((r) => ({ task: String(r?.task ?? ''), pct: clampPct(r?.pct), remarks: String(r?.remarks ?? '') }))
   } catch { return defaultProgressRows(lang) }
+}
+
+export const coopName = (lang: Lang, n: number) => (lang === 'he' ? `לול ${n}` : `Coop ${n}`)
+
+export const defaultBdRows = (lang: Lang): ProgressRow[] =>
+  BD_TASKS.map((t) => ({ task: t[lang], pct: 0, remarks: '' }))
+
+export const defaultCoop = (lang: Lang, n = 1): CoopReport =>
+  ({ name: coopName(lang, n), pct: 0, rows: defaultProgressRows(lang), bd: defaultBdRows(lang) })
+
+/** BD sub-form is worth showing in reports only once something was filled in. */
+export const bdActive = (bd: ProgressRow[]): boolean =>
+  bd.some((r) => r.pct > 0 || r.remarks.trim() !== '')
+
+const normRow = (r: unknown): ProgressRow => {
+  const o = r as Record<string, unknown> | null
+  return { task: String(o?.task ?? ''), pct: clampPct(o?.pct), remarks: String(o?.remarks ?? '') }
+}
+
+/**
+ * Per-coop progress reports. Prefers COOPS_KEY; entries written before the
+ * multi-coop format fall back to the legacy flat keys and render as one coop.
+ * Returns [] when the entry has no progress data at all.
+ */
+export function parseCoops(values: Record<string, string | undefined>, lang: Lang): CoopReport[] {
+  const raw = values[COOPS_KEY]
+  if (raw !== undefined && raw !== '') {
+    try {
+      const a = JSON.parse(raw)
+      if (Array.isArray(a)) {
+        return a.map((c, i) => {
+          const o = c as Record<string, unknown> | null
+          return {
+            name: String(o?.name ?? '') || coopName(lang, i + 1),
+            pct: clampPct(o?.pct),
+            rows: Array.isArray(o?.rows) ? (o.rows as unknown[]).map(normRow) : [],
+            bd: Array.isArray(o?.bd) ? (o.bd as unknown[]).map(normRow) : [],
+          }
+        })
+      }
+    } catch { /* fall through to legacy */ }
+  }
+  const legacyRows = values[PROGRESS_KEY]
+  const legacyPct = String(values[HOUSE_PCT_KEY] ?? '').trim()
+  if ((legacyRows === undefined || legacyRows === '') && !legacyPct) return []
+  return [{ name: coopName(lang, 1), pct: clampPct(legacyPct), rows: parseProgress(legacyRows, lang), bd: [] }]
 }
 
 export function parseMissing(raw: string | undefined): MissingRow[] {

@@ -156,6 +156,16 @@ select.input { cursor: pointer; }
 .form-actions { display: flex; gap: 12px; justify-content: flex-end; margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
 
 /* ============ report tables (progress / missing material) ============ */
+.coops { display: flex; flex-direction: column; gap: 18px; align-items: flex-start; }
+.rtable__row--bd { background: var(--paper-2); }
+.rtable__bdlabel { font-weight: 800; font-size: 15px; padding-inline-start: 4px; }
+.bd-modal { max-width: 760px; width: min(94vw, 760px); max-height: 86vh; overflow-y: auto; }
+.bd-modal__title { margin: 0 0 14px; font-size: 18px; }
+.bd-modal__foot { margin-top: 14px; display: flex; justify-content: flex-end; }
+.coop-card { width: 100%; border: 1px solid var(--rule); border-radius: 14px; padding: 16px; background: var(--paper); }
+.coop-card__head { display: flex; align-items: center; gap: 12px; margin-bottom: 14px; }
+.coop-card__name { max-width: 220px; font-weight: 800; font-size: 16px; }
+
 .house-pct { display: flex; align-items: center; gap: 18px; margin-bottom: 16px; }
 .house-pct__label { font-weight: 700; font-size: 15px; white-space: nowrap; }
 .house-pct .pct { flex: 1; max-width: 440px; }
@@ -203,6 +213,9 @@ select.input { cursor: pointer; }
   .pct__range::-moz-range-thumb { width: 24px; height: 24px; }
   .house-pct { flex-direction: column; align-items: stretch; gap: 8px; }
   .house-pct .pct { max-width: none; }
+  /* BD launcher row: label+button on one line, avg bar below */
+  .rtable__row--bd { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; }
+  .rtable__row--bd .vbar { flex: 1 1 100%; order: 2; }
 }
 
 /* read-only tables on the entry-detail page */

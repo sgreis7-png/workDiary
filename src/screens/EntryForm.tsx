@@ -14,9 +14,9 @@ import { useStore } from '../store'
 import { useAuth } from '../auth'
 import { MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, deptIdOf, deptLabel } from '../data'
 import type { FieldDef } from '../data'
-import { HOUSE_PCT_KEY, MISSING_KEY, PROGRESS_KEY, defaultProgressRows, parseMissing, parseProgress } from '../lib/reportTables'
-import type { MissingRow, ProgressRow } from '../lib/reportTables'
-import { MissingTable, PctSlider, ProgressTable } from '../components/ReportTables'
+import { COOPS_KEY, MISSING_KEY, defaultCoop, parseCoops, parseMissing } from '../lib/reportTables'
+import type { CoopReport, MissingRow } from '../lib/reportTables'
+import { CoopReports, MissingTable } from '../components/ReportTables'
 
 // new photo (file) or an existing one (storage path)
 interface Photo { url: string; file?: File; path?: string }
@@ -33,8 +33,8 @@ export default function EntryForm() {
   const [values, setValues] = useState<Record<string, string>>(
     editing ? {} : {
       [MALFUNCTION_DEPT_KEY]: deptLabel('none', lang),
-      // seed the standard task list so it is stored even if untouched
-      [PROGRESS_KEY]: JSON.stringify(defaultProgressRows(lang)),
+      // seed one coop with the standard task list so it is stored even if untouched
+      [COOPS_KEY]: JSON.stringify([defaultCoop(lang)]),
     },
   )
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -135,9 +135,9 @@ export default function EntryForm() {
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }))
 
   // report tables live inside `values` as JSON strings (draft + save for free)
-  const progressRows = parseProgress(values[PROGRESS_KEY], lang)
+  const coops = parseCoops(values, lang)
   const missingRows = parseMissing(values[MISSING_KEY])
-  const setProgress = (rows: ProgressRow[]) => set(PROGRESS_KEY, JSON.stringify(rows))
+  const setCoops = (c: CoopReport[]) => set(COOPS_KEY, JSON.stringify(c))
   const setMissing = (rows: MissingRow[]) => set(MISSING_KEY, JSON.stringify(rows))
 
   const addPhotos = (files: FileList | null) => {
@@ -320,11 +320,7 @@ export default function EntryForm() {
 
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('progress_report')}</motion.div>
         <motion.div variants={riseIn}>
-          <div className="house-pct">
-            <span className="house-pct__label">{t('house_pct')}</span>
-            <PctSlider value={Number(values[HOUSE_PCT_KEY]) || 0} onChange={(v) => set(HOUSE_PCT_KEY, String(v))} />
-          </div>
-          <ProgressTable rows={progressRows} onChange={setProgress} />
+          <CoopReports coops={coops} onChange={setCoops} />
         </motion.div>
 
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('missing_material')}</motion.div>

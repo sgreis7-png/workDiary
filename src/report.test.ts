@@ -64,9 +64,9 @@ describe('progress-report + missing-material rendering', () => {
   const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs }, 'https://logo.png')
   const text = buildReportText({ projectName: 'p', authorName: 'a', entry: e, defs })
 
-  it('renders the progress table with house total and bars in HTML', () => {
-    expect(html).toContain('דו״ח התקדמות')
-    expect(html).toContain('מבנה 70%')
+  it('renders legacy flat keys as a single coop with total and bars in HTML', () => {
+    expect(html).toContain('דו״ח התקדמות — לול 1')
+    expect(html).toContain('70%')
     expect(html).toContain('End set rear')
     expect(html).toContain('width:80%')
     expect(html).toContain('Missing material BD')
@@ -79,7 +79,7 @@ describe('progress-report + missing-material rendering', () => {
     expect((html.match(/91-00-1234/g) ?? []).length).toBe(1)
   })
   it('includes both tables in the plain-text version', () => {
-    expect(text).toContain('דו״ח התקדמות — מבנה 70%')
+    expect(text).toContain('דו״ח התקדמות — לול 1 — 70%')
     expect(text).toContain('End set rear: 80% — Missing material BD')
     expect(text).toContain('חומר חסר')
     expect(text).toContain('91-00-1234 · Egg belt · 2 · לא סופק מספיק')
@@ -88,6 +88,38 @@ describe('progress-report + missing-material rendering', () => {
     const plain = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs }, 'https://logo.png')
     expect(plain).not.toContain('דו״ח התקדמות')
     expect(plain).not.toContain('חומר חסר')
+  })
+})
+
+describe('multi-coop progress rendering', () => {
+  const coops = JSON.stringify([
+    { name: 'לול 1', pct: 75, rows: [{ task: 'כיסוי גג', pct: 100, remarks: '' }],
+      bd: [{ task: 'מסוע ביצים', pct: 60, remarks: '' }, { task: 'מערכת', pct: 0, remarks: '' }] },
+    { name: 'לול 2', pct: 25, rows: [{ task: 'חשמל ובקרה', pct: 50, remarks: 'בהמתנה' }],
+      bd: [{ task: 'מערכת', pct: 0, remarks: '' }] }, // untouched BD form → omitted
+  ])
+  const e: Entry = { ...entry, values: { ...entry.values, progress_coops: coops } }
+  const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs }, 'https://logo.png')
+  const text = buildReportText({ projectName: 'p', authorName: 'a', entry: e, defs })
+
+  it('renders one section per coop in HTML', () => {
+    expect(html).toContain('דו״ח התקדמות — לול 1')
+    expect(html).toContain('דו״ח התקדמות — לול 2')
+    expect(html).toContain('כיסוי גג')
+    expect(html).toContain('חשמל ובקרה')
+    expect(html).toContain('width:50%')
+  })
+  it('renders the BD sub-form only for coops where it was touched', () => {
+    expect(html).toContain('ציוד BD — לול 1')
+    expect(html).toContain('מסוע ביצים')
+    expect(html).not.toContain('ציוד BD — לול 2')
+  })
+  it('renders one block per coop in plain text', () => {
+    expect(text).toContain('דו״ח התקדמות — לול 1 — 75%')
+    expect(text).toContain('דו״ח התקדמות — לול 2 — 25%')
+    expect(text).toContain('חשמל ובקרה: 50% — בהמתנה')
+    expect(text).toContain('ציוד BD:')
+    expect(text).toContain('מסוע ביצים: 60%')
   })
 })
 

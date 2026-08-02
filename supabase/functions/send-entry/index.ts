@@ -122,10 +122,26 @@ function renderHtml(o: {
     if (typeof raw !== 'string' || !raw) return []
     try { const a = JSON.parse(raw); return Array.isArray(a) ? a : [] } catch { return [] }
   }
-  const progress = parseArr(o.values['progress_table'])
-    .map((r) => ({ task: String(r?.task ?? ''), pct: Math.min(100, Math.max(0, Math.round(Number(r?.pct) || 0))), remarks: String(r?.remarks ?? '') }))
-    .filter((r) => r.task.trim())
-  const housePct = String(o.values['progress_house_pct'] ?? '').trim()
+  const clampPct = (n: unknown) => Math.min(100, Math.max(0, Math.round(Number(n) || 0)))
+  const normRows = (rows: unknown): { task: string; pct: number; remarks: string }[] =>
+    (Array.isArray(rows) ? (rows as Record<string, unknown>[]) : [])
+      .map((r) => ({ task: String(r?.task ?? ''), pct: clampPct(r?.pct), remarks: String(r?.remarks ?? '') }))
+      .filter((r) => r.task.trim())
+  // Per-coop progress reports ('progress_coops'); legacy flat keys render as one coop.
+  // bd = the ציוד BD sub-form; shown only once something in it was filled.
+  const bdOf = (c: Record<string, unknown> | null) => {
+    const all = (Array.isArray(c?.bd) ? (c!.bd as Record<string, unknown>[]) : [])
+      .map((r) => ({ task: String(r?.task ?? ''), pct: clampPct(r?.pct), remarks: String(r?.remarks ?? '') }))
+    return all.some((r) => r.pct > 0 || r.remarks.trim()) ? all.filter((r) => r.task.trim()) : []
+  }
+  let coops = parseArr(o.values['progress_coops'])
+    .map((c, i) => ({ name: String(c?.name ?? '') || `לול ${i + 1}`, pct: clampPct(c?.pct), rows: normRows(c?.rows), bd: bdOf(c) }))
+  if (!coops.length) {
+    const legacyRows = normRows(parseArr(o.values['progress_table']))
+    const legacyPct = clampPct(o.values['progress_house_pct'])
+    if (legacyRows.length || legacyPct > 0) coops = [{ name: 'לול 1', pct: legacyPct, rows: legacyRows, bd: [] }]
+  }
+  coops = coops.filter((c) => c.rows.length > 0 || c.pct > 0 || c.bd.length > 0)
   const missing = parseArr(o.values['missing_material'])
     .map((r) => ({ code: String(r?.code ?? ''), desc: String(r?.desc ?? ''), amount: String(r?.amount ?? ''), reason: String(r?.reason ?? '') }))
     .filter((r) => (r.code + r.desc + r.amount).trim() || r.reason)
@@ -135,12 +151,15 @@ function renderHtml(o: {
     `<td style="padding:9px 12px;color:${I};font-size:14px;vertical-align:middle;border-bottom:1px solid ${LINE}">${s}</td>`
   const bar = (pct: number) =>
     `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;background:${LINE};border-radius:6px;height:9px;min-width:70px"><div style="width:${pct}%;background:${GREEN};height:9px;border-radius:6px"></div></div><b style="font-size:12px">${pct}%</b></div>`
-  const progressHtml = progress.length ? `
-    <div style="font-weight:800;color:${I};margin:22px 0 8px">דו״ח התקדמות${housePct ? ` · <span style="color:${GREEN}">מבנה ${esc(housePct)}%</span>` : ''}</div>
+  const progressRowsHtml = (rows: { task: string; pct: number; remarks: string }[]) => `
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:10px;overflow:hidden">
-      <tr>${th('משימה מכנית', 'width:30%')}${th('אחוז ביצוע', 'width:32%')}${th('הערות')}</tr>
-      ${progress.map((r, i) => `<tr style="background:${i % 2 ? '#fafbf9' : '#ffffff'}">${td(esc(r.task))}${td(bar(r.pct))}${td(esc(r.remarks))}</tr>`).join('')}
-    </table>` : ''
+      <tr>${th('משימה', 'width:30%')}${th('אחוז ביצוע', 'width:32%')}${th('הערות')}</tr>
+      ${rows.map((r, i) => `<tr style="background:${i % 2 ? '#fafbf9' : '#ffffff'}">${td(esc(r.task))}${td(bar(r.pct))}${td(esc(r.remarks))}</tr>`).join('')}
+    </table>`
+  const progressHtml = coops.map((c) => `
+    <div style="font-weight:800;color:${I};margin:22px 0 8px">דו״ח התקדמות — ${esc(c.name)} · <span style="color:${GREEN}">${c.pct}%</span></div>
+    ${progressRowsHtml(c.rows)}
+    ${c.bd.length ? `<div style="font-weight:800;color:${I};margin:14px 0 8px">ציוד BD — ${esc(c.name)}</div>${progressRowsHtml(c.bd)}` : ''}`).join('')
   const missingHtml = missing.length ? `
     <div style="font-weight:800;color:${I};margin:22px 0 8px">חומר חסר</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:10px;overflow:hidden">

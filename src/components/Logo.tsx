@@ -1,8 +1,10 @@
 import { motion } from 'framer-motion'
 
 /**
- * Agrotop wordmark, recreated as vector so it stays crisp at any size and in the
- * email/header. Replace with the official PNG at /agrotop-logo.png when supplied.
+ * Agrotop wordmark, recreated as vector so it stays crisp at any size and can be
+ * re-toned (white on the green header). Matches the official logo: italic
+ * "Agro**top**", angular green checkmark over the o|t junction, serif-italic
+ * "Agriculture Turnkey Projects" tagline. Official raster: /agrotop-logo.png.
  *
  * NOTE: the SVG is forced to LTR — otherwise an `dir="rtl"` ancestor (Hebrew UI)
  * reorders the Latin glyphs and pushes the wordmark off-canvas.
@@ -40,10 +42,13 @@ export function Logo({
       aria-label="Agrotop"
       style={{ direction: 'ltr' }}
     >
-      {/* check swoosh */}
+      {/* checkmark — drawn first so the letters overlap its dip, like the official mark */}
       <Check
-        d="M150 9 C162 9 173 12 181 19 C170 14 159 14 150 19 C144 22 139 27 135 31 L128 24 L132 20 L135 25 C140 18 144 12 150 9 Z"
-        fill="var(--green)"
+        d="M82 15 L103 32 L172 3"
+        stroke="var(--green)"
+        strokeWidth={9}
+        strokeLinecap="butt"
+        strokeLinejoin="miter"
         {...(checkAnim as object)}
       />
       <text
@@ -57,8 +62,8 @@ export function Logo({
       {withTag && (
         <text
           x="4" y="49" textAnchor="start"
-          fontFamily="'Assistant', system-ui, sans-serif" fontWeight={500} fontSize="9.5"
-          fill={tagMain} letterSpacing="0.5"
+          fontFamily="Georgia, 'Times New Roman', serif" fontWeight={500} fontSize="9" fontStyle="italic"
+          fill={tagMain} letterSpacing="0.2"
           style={{ direction: 'ltr', unicodeBidi: 'bidi-override' }}
         >
           Agriculture Turnkey <tspan fontWeight={800} fill={tagBold}>Projects</tspan>

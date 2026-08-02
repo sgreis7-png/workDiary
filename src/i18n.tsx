@@ -200,7 +200,12 @@ const STRINGS = {
   account:          { he: 'החשבון שלי', en: 'My account' },
 
   progress_report:{ he: 'דו״ח התקדמות', en: 'Progress report' },
-  house_pct:      { he: 'סה״כ התקדמות — מבנה', en: 'House total' },
+  house_pct:      { he: 'סה״כ התקדמות', en: 'Total progress' },
+  add_coop:       { he: 'צור דוח התקדמות', en: 'Create progress report' },
+  bd_field:       { he: 'ציוד BD', en: 'BD equipment' },
+  bd_open:        { he: 'מילוי', en: 'Fill in' },
+  done:           { he: 'סיום', en: 'Done' },
+  confirm_remove_coop: { he: 'להסיר את דוח ההתקדמות?', en: 'Remove this progress report?' },
   col_task:       { he: 'משימה מכנית', en: 'Mechanical task' },
   col_pct:        { he: 'אחוז ביצוע', en: 'Percentage completed' },
   col_remarks:    { he: 'הערות', en: 'Remarks' },
