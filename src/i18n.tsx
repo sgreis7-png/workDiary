@@ -39,6 +39,7 @@ export const STRINGS = {
   malf_by_dept:     { he: 'בלת"מ לפי מחלקה', en: 'By department' },
   malf_by_project:  { he: 'בלת"מ לפי פרויקט', en: 'By project' },
   malf_over_time:   { he: 'בלת"מ לאורך זמן', en: 'Over time' },
+  malf_pick_project: { he: 'בחרו פרויקט מהרשימה כדי לראות את פירוט הבלת"מים', en: 'Pick a project from the list to see its malfunction breakdown' },
 
   login_title:    { he: 'כניסה למערכת', en: 'Sign in' },
   login_sub:      { he: 'מידע עסקי מאובטח — לעובדי אגרוטופ בלבד', en: 'Secured business data — Agrotop staff only' },

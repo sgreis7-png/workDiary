@@ -86,6 +86,11 @@ export default function MalfunctionsSection() {
         <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
 
+      {!projectId && (
+        <div className="empty" style={{ padding: '26px 0' }}>{t('malf_pick_project')}</div>
+      )}
+
+      {projectId && (
       <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 16 }}>
         <motion.div variants={riseIn} className="stat-grid">
           <div className="panel stat"><div className="stat__value">{stats.total}</div><div className="stat__label">{t('malf_total')}</div></div>
