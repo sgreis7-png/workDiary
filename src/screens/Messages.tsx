@@ -120,6 +120,12 @@ export default function Messages() {
   }, [activeConv, groupMsgs, dms, me])
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }) }, [thread.length, active])
+  // images finish loading after that effect ran and add height below the
+  // viewport; if the user was at the bottom, keep them there
+  const onImgLoad = () => {
+    const el = scrollRef.current
+    if (el && el.scrollHeight - el.scrollTop - el.clientHeight < 320) el.scrollTo({ top: el.scrollHeight })
+  }
 
   // כמו וואטסאפ: פתיחת השיחה מסמנת "נראה" אוטומטית על כל ההודעות הנכנסות
   useEffect(() => {
@@ -194,7 +200,7 @@ export default function Messages() {
                 : <ChatAvatar meta={metas[c.email!]} name={c.title} size={44} />}
               <span className="chat-contact__meta">
                 <b>{c.title}{c.isGroup && <small className="chat-contact__count"> · {c.group!.members.length} {dt('chat_members')}</small>}</b>
-                <small>{c.last ? `${c.last.from_email.toLowerCase() === me ? dt('chat_me') : c.isGroup ? nameOf(c.last.from_email) + ': ' : ''}${c.last.body.slice(0, 36)}` : c.isGroup ? dt('chat_new_group_hint') : dt('chat_start')}</small>
+                <small>{c.last ? `${c.last.from_email.toLowerCase() === me ? dt('chat_me') : c.isGroup ? nameOf(c.last.from_email) + ': ' : ''}${(c.last.body || (c.last.attachment_path ? `📎 ${c.last.attachment_name ?? ''}` : '')).slice(0, 36)}` : c.isGroup ? dt('chat_new_group_hint') : dt('chat_start')}</small>
               </span>
               {c.unacked > 0 && <span className="coop-tab__badge">{c.unacked}</span>}
             </button>
@@ -236,7 +242,7 @@ export default function Messages() {
                           {isGroup && !mine && <div className="bubble__sender">{m.from_name ?? nameOf(m.from_email)}</div>}
                           {m.attachment_url && (m.attachment_type ?? '').startsWith('image/') && (
                             <a href={m.attachment_url} target="_blank" rel="noreferrer">
-                              <img src={m.attachment_url} alt={m.attachment_name ?? ''}
+                              <img src={m.attachment_url} alt={m.attachment_name ?? ''} onLoad={onImgLoad}
                                 style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block', marginBottom: m.body ? 6 : 0 }} />
                             </a>
                           )}

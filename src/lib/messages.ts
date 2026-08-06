@@ -20,6 +20,30 @@ export interface UserMessage {
 
 export interface ChatAttachment { path: string; name: string; type: string }
 
+// signed-URL cache: URLs live 1h, reuse for 45min so a stable path keeps a
+// stable src across the realtime refetches
+const signedCache = new Map<string, { url: string; at: number }>()
+const SIGN_REUSE_MS = 45 * 60 * 1000
+
+async function signPathsCached(paths: string[]): Promise<Record<string, string>> {
+  const now = Date.now()
+  const out: Record<string, string> = {}
+  const missing: string[] = []
+  for (const p of new Set(paths)) {
+    const hit = signedCache.get(p)
+    if (hit && now - hit.at < SIGN_REUSE_MS) out[p] = hit.url
+    else missing.push(p)
+  }
+  if (missing.length) {
+    const fresh = await signPaths(missing)
+    for (const [p, url] of Object.entries(fresh)) {
+      signedCache.set(p, { url, at: now })
+      out[p] = url
+    }
+  }
+  return out
+}
+
 /** Upload a chat attachment (images are compressed first). Objects live under
  *  an unguessable chat/<uuid>- prefix and are served via short signed URLs. */
 export async function uploadChatAttachment(file: File): Promise<ChatAttachment> {
@@ -129,8 +153,10 @@ export async function fetchAllChat(): Promise<{ dms: UserMessage[]; groupMsgs: (
     .select('*').order('created_at', { ascending: false }).limit(500)
   if (error) throw error
   const all = data as (UserMessage & { group_id: string | null })[]
-  // hydrate attachment URLs in one signing round-trip
-  const urls = await signPaths(all.map((m) => m.attachment_path))
+  // hydrate attachment URLs — through a cache, because realtime refetches the
+  // thread after every message: a fresh signed URL each time changes every
+  // <img src>, so the browser re-downloaded all images and the layout jumped
+  const urls = await signPathsCached(all.map((m) => m.attachment_path).filter(Boolean) as string[])
   for (const m of all) if (m.attachment_path) m.attachment_url = urls[m.attachment_path]
   return {
     dms: all.filter((m) => !m.group_id),
