@@ -233,6 +233,9 @@ export const STRINGS = {
 
   close:            { he: 'סגירה', en: 'Close' },
   retry:            { he: 'נסה שוב', en: 'Retry' },
+  export_csv:       { he: 'ייצוא ל-Excel', en: 'Export to Excel' },
+  work_date_col:    { he: 'תאריך', en: 'Date' },
+  photos_col:       { he: 'מס׳ תמונות', en: 'Photos' },
   perm_btn:         { he: 'הרשאות', en: 'Permissions' },
   perm_title:       { he: 'הרשאות גישה', en: 'Access permissions' },
   perm_admin_note:  { he: 'משתמש זה אדמין — יש לו גישה מלאה לכל האזורים; ההגדרות כאן ישפיעו רק אם יורד לתפקיד עובד.', en: 'This user is an admin with full access everywhere; these settings only apply if demoted to worker.' },

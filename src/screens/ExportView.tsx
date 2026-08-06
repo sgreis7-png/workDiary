@@ -3,7 +3,10 @@ import { Button, Field } from '../components/ui'
 import { useI18n } from '../i18n'
 import { searchEntries } from '../api'
 import { buildReportHtml } from '../report'
+import { downloadCsv } from '../lib/exportCsv'
 import { useStore } from '../store'
+import { SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from '../data'
+import { parseCoops } from '../lib/reportTables'
 import type { Entry } from '../data'
 
 // Date-range / per-project bulk export. Renders every matching entry as a report
@@ -29,6 +32,28 @@ export default function ExportView() {
     } finally { setBusy(false) }
   }
 
+  // One row per entry: fixed columns, every active field, then the derived
+  // progress/safety values the office actually filters on in Excel.
+  const exportCsv = (rows: Entry[]) => {
+    const headers = [
+      t('work_date_col'), t('project'), t('created_by'),
+      ...defs.filter((f) => f.type !== 'photo').map((f) => f.label_he),
+      t('house_pct'), t('safety_training_q'), t('safety_incident_q'), t('photos_col'),
+    ]
+    const data = rows.map((e) => {
+      const coops = parseCoops(e.values, 'he')
+      const pct = coops.length
+        ? coops.map((c) => `${c.name}: ${c.pct}%`).join(' · ')
+        : ''
+      return [
+        e.work_date, projectName(e.project_id), userName(e.created_by),
+        ...defs.filter((f) => f.type !== 'photo').map((f) => e.values[f.key] ?? ''),
+        pct, e.values[SAFETY_TRAINING_KEY] ?? '', e.values[SAFETY_INCIDENT_KEY] ?? '', e.photos.length,
+      ]
+    })
+    downloadCsv(`work-diary-${from || 'all'}-${to || 'all'}`, headers, data)
+  }
+
   return (
     <div className="report-wrap">
       <div className="report-bar no-print" style={{ flexWrap: 'wrap' }}>
@@ -48,6 +73,9 @@ export default function ExportView() {
         <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
         <Button variant="ghost" onClick={generate} disabled={busy}>{busy ? <><span className="spin" /> {t('search')}</> : <>⌕ {t('search')}</>}</Button>
         {entries && entries.length > 0 && <Button variant="primary" onClick={() => window.print()}>📄 {t('print_pdf')}</Button>}
+        {entries && entries.length > 0 && (
+          <Button variant="ghost" onClick={() => exportCsv(entries)}>⭳ {t('export_csv')}</Button>
+        )}
       </div>
 
       {entries && (

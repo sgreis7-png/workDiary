@@ -82,6 +82,7 @@ export const D = {
   coop_readonly:     { he: '👁 מצב צפייה בלבד — אין לך הרשאת עריכה בניהול ליקויים.', en: '👁 View-only — you have no edit permission in defect management.' },
   coop_delete:         { he: 'מחיקת לול', en: 'Delete coop' },
   coop_kicker:         { he: 'תפיסת סיום שלב', en: 'Stage-gate close-out' },
+  export_csv:          { he: 'ייצוא ל-Excel', en: 'Export to Excel' },
   auto_na:             { he: 'אוטומטי', en: 'Auto' },
 
   // admin form builder

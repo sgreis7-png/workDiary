@@ -7,10 +7,11 @@ import { GATES, SEVERITY_LABELS, DEFECT_STATUS_LABELS } from '../../defects/mode
 import { loadGateDefs, itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, severityLabel, defectStatusLabel, gateShortName } from '../../defects/i18n'
 import { MicButton } from '../../components/MicButton'
+import { downloadCsv } from '../../lib/exportCsv'
 
 /** חיפוש בניהול ליקויים — חופשי / לפי פרויקט / לפי לול. */
 export default function DefectSearch() {
-  const { projects, ready } = useStore()
+  const { projects, ready, projectName } = useStore()
   const nav = useNavigate()
   const { dt, lang } = useDT()
   const [coops, setCoops] = useState<Coop[] | null>(null)
@@ -56,7 +57,21 @@ export default function DefectSearch() {
           <div className="kicker">{dt('coops_title')}</div>
           <h1 className="page-title">{dt('search_title')}</h1>
         </div>
-        <span className="count mono">{results.length} {dt('search_results')}</span>
+        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+          <span className="count mono">{results.length} {dt('search_results')}</span>
+          {results.length > 0 && (
+            <button className="btn btn--ghost" onClick={() => downloadCsv('defects', [
+              dt('sum_gate'), dt('dl_item'), dt('dl_desc'), dt('dl_severity'), dt('dl_assignee'),
+              dt('dl_due'), dt('dl_status'), dt('dl_closed_on'), dt('rep_house'), dt('coops_which_project'),
+            ], results.map((d) => [
+              gateShortName(lang, d.gate),
+              d.item_no ? itemLabel(defs, d.gate, d.item_no) : '',
+              d.description ?? '', d.severity ? severityLabel(lang, d.severity) : '',
+              d.assignee ?? '', d.due_date ?? '', defectStatusLabel(lang, d.status),
+              d.closed_on ?? '', d.coop_name, projectName(d.project_id),
+            ]))}>⭳ {dt('export_csv')}</button>
+          )}
+        </div>
       </div>
 
       {err && <div className="alert">{err}</div>}
