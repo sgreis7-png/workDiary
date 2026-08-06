@@ -45,6 +45,9 @@ export default function DistLists() {
     catch (e) { setErr(String((e as Error).message ?? e)) }
   }
 
+  if (!lists && err) {
+    return <div className="page"><div className="alert">{err}</div></div>
+  }
   if (!lists) return <Loader full />
 
   return (

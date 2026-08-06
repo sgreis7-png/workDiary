@@ -170,7 +170,11 @@ export default function EntryForm() {
     if (deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && !(values[MALFUNCTION_TEXT_KEY] ?? '').trim()) {
       errs.push(MALFUNCTION_TEXT_KEY)
     }
-    // Incident description is required once the incident checkbox is ticked.
+    // Safety training answer is mandatory; incident description is required
+    // once the incident checkbox is ticked.
+    if (!(values[SAFETY_TRAINING_KEY] ?? '').trim()) {
+      errs.push(SAFETY_TRAINING_KEY)
+    }
     if (incidentOpen && !(values[SAFETY_INCIDENT_KEY] ?? '').trim()) {
       errs.push(SAFETY_INCIDENT_KEY)
     }
@@ -332,8 +336,12 @@ export default function EntryForm() {
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('safety_section')}</motion.div>
         <motion.div variants={riseIn} className="form-grid">
           <div>
-            <Field label={t('safety_training_q')} hint={t('optional')}>
-              <select className="input" value={values[SAFETY_TRAINING_KEY] ?? ''} onChange={(e) => set(SAFETY_TRAINING_KEY, e.target.value)}>
+            <Field label={t('safety_training_q')} hint={<span className="req">{t('required_field')}</span>}>
+              <select
+                className="input" value={values[SAFETY_TRAINING_KEY] ?? ''}
+                style={errors.includes(SAFETY_TRAINING_KEY) ? { borderColor: 'var(--clay)' } : undefined}
+                onChange={(e) => set(SAFETY_TRAINING_KEY, e.target.value)}
+              >
                 <option value="">—</option>
                 <option value={lang === 'he' ? 'כן' : 'Yes'}>{lang === 'he' ? 'כן' : 'Yes'}</option>
                 <option value={lang === 'he' ? 'לא' : 'No'}>{lang === 'he' ? 'לא' : 'No'}</option>

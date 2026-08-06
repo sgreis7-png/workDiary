@@ -2,11 +2,13 @@
 // Supabase auth SMTP is not configured (hosted sender is capped at ~2/hour),
 // so we mint the recovery link with the service role and send it ourselves.
 // Always answers { ok: true } for unknown emails to avoid leaking who exists.
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+// pinned: floating @2 resolved to 2.112.2 whose esm.sh build is broken (postgrest submodule 404)
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.108.2'
 import { cors, json } from '../_shared/cors.ts'
 
 const URL = Deno.env.get('SUPABASE_URL')!
 const SERVICE = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+const ANON = Deno.env.get('SUPABASE_ANON_KEY')!
 const RESEND_KEY = Deno.env.get('RESEND_API_KEY') ?? ''
 const RESEND_FROM = Deno.env.get('RESEND_FROM') ?? 'Agrotop Work Diary <onboarding@resend.dev>'
 const APP_URL = Deno.env.get('APP_URL') ?? 'https://work-diary-phi.vercel.app'
@@ -59,7 +61,14 @@ Deno.serve(async (req) => {
     if (!r.ok) {
       const body = await r.text().catch(() => '')
       console.error('resend failed', r.status, body)
-      return json({ error: 'send_failed' }, 502)
+      // Resend refuses arbitrary recipients until a domain is verified — fall
+      // back to Supabase's built-in auth mailer (low hosted cap, but works).
+      const anonClient = createClient(URL, ANON)
+      const { error: fbErr } = await anonClient.auth.resetPasswordForEmail(a.email, {
+        redirectTo: `${APP_URL}/set-password`,
+      })
+      if (fbErr) return json({ error: 'send_failed', reason: `resend: ${body.slice(0, 200)} | supabase: ${fbErr.message}` }, 502)
+      return json({ ok: true, via: 'supabase' })
     }
     return json({ ok: true })
   } catch (e) {
