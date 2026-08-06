@@ -171,6 +171,7 @@ export function Shell() {
             {can('export') && <NavItem to="/export" icon="⭳" label={t('nav_export')} />}
             <NavItem to="/tasks" icon="☑" label={dt('nav_tasks')} />
             {can('dashboard') && <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />}
+            {can('dashboard') && <NavItem to="/digest" icon="📊" label={t('nav_digest')} />}
           </>
         )}
 

@@ -28,6 +28,7 @@ import Tasks from './screens/Tasks'
 import Messages from './screens/Messages'
 import AlertRules from './screens/AlertRules'
 import DistLists from './screens/DistLists'
+import Digest from './screens/Digest'
 import Feedback from './screens/admin/Feedback'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
@@ -76,6 +77,7 @@ export default function App() {
         <Route path="defects/coop/:id" element={<RequirePerm area="defects"><CoopView /></RequirePerm>} />
         <Route path="defects/coop/:id/report" element={<RequirePerm area="defects"><CoopReport /></RequirePerm>} />
         <Route path="dashboard" element={<RequirePerm area="dashboard"><Dashboard /></RequirePerm>} />
+        <Route path="digest" element={<RequirePerm area="dashboard"><Digest /></RequirePerm>} />
         <Route path="calendar" element={<RequirePerm area="calendar"><Calendar /></RequirePerm>} />
         <Route path="new" element={<RequirePerm area="logbook" edit><EntryForm /></RequirePerm>} />
         <Route path="edit/:id" element={<RequirePerm area="logbook" edit><EntryForm /></RequirePerm>} />
