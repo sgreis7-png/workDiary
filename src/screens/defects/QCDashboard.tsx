@@ -11,7 +11,8 @@ import { loadGateDefs, itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, gateShortName } from '../../defects/i18n'
 import { fetchAllCoops, fetchDefectsForSearch, fetchAuditLog, type Coop, type DefectSearchRow, type AuditRow } from '../../defects/api'
 
-const T = {
+// exported so the i18n completeness test covers these strings too
+export const T = {
   kicker: { he: 'תמונת מצב רוחבית · Go / No-Go', en: 'Cross-project overview · Go / No-Go' },
   title: { he: 'דשבורד בקרת איכות', en: 'QC dashboard' },
   open_defects: { he: 'ליקויים פתוחים', en: 'Open defects' },
@@ -28,7 +29,7 @@ const T = {
   none: { he: 'אין נתונים עדיין.', en: 'No data yet.' },
 } as const
 
-const AUDIT_LABELS: Record<string, { he: string; en: string }> = {
+export const AUDIT_LABELS: Record<string, { he: string; en: string }> = {
   gate_signed: { he: 'חתם על שער', en: 'signed gate' },
   gate_unsigned: { he: 'הסיר חתימות משער', en: 'removed gate signatures' },
   defect_open: { he: 'פתח ליקוי', en: 'opened defect' },

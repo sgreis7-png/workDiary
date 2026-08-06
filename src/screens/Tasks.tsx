@@ -9,7 +9,8 @@ import { notifyUser } from '../defects/api'
 import { sendPush } from '../lib/push'
 import type { AppUser } from '../data'
 
-const T = {
+// exported so the i18n completeness test covers these strings too
+export const T = {
   kicker: { he: 'עבודות לביצוע', en: 'Work to do' },
   title: { he: 'משימות', en: 'Tasks' },
   open_n: { he: 'פתוחות', en: 'open' },

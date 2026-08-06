@@ -3,10 +3,18 @@
 import { describe, it, expect } from 'vitest'
 import { STRINGS, translate } from './i18n'
 import { D, dt } from './defects/i18n'
+import { T as TASKS_T } from './screens/Tasks'
+import { T as QCD_T, AUDIT_LABELS } from './screens/defects/QCDashboard'
 
+// Every he/en dictionary in the app, including the per-screen ones — those sat
+// outside this invariant, which is the only thing that catches a key shipped
+// with an empty or still-Hebrew English value.
 const dicts: [string, Record<string, { he: string; en: string }>][] = [
   ['i18n.tsx', STRINGS as Record<string, { he: string; en: string }>],
   ['defects/i18n.ts', D as Record<string, { he: string; en: string }>],
+  ['screens/Tasks.tsx', TASKS_T as Record<string, { he: string; en: string }>],
+  ['screens/defects/QCDashboard.tsx', QCD_T as Record<string, { he: string; en: string }>],
+  ['screens/defects/QCDashboard.tsx AUDIT_LABELS', AUDIT_LABELS],
 ]
 
 describe.each(dicts)('%s dictionary', (_name, dict) => {
