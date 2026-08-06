@@ -123,7 +123,9 @@ export default function Dashboard() {
           <div style={{ marginBottom: 12 }}>
             <select className="input" style={{ maxWidth: 260 }} value={chartProject} onChange={(e) => setChartProject(e.target.value)}>
               <option value="">— {t('choose')} —</option>
-              {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              {/* only projects that actually have entries — an empty project has no line to draw */}
+              {projects.filter((p) => p.active && (raw.by_project[p.id] ?? 0) > 0)
+                .map((p) => <option key={p.id} value={p.id}>{p.name} ({raw.by_project[p.id]})</option>)}
             </select>
           </div>
           {chartProject && chart?.project !== chartProject && <Loader label={t('loading')} />}
