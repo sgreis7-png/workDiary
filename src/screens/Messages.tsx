@@ -132,7 +132,7 @@ export default function Messages() {
       }
       window.dispatchEvent(new Event('messages-changed'))
     }).catch(() => {})
-  }, [activeConv, thread, me, myAcks]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [activeConv, thread, me, myAcks])  
 
   async function onSend() {
     if (!user || !activeConv || !body.trim() || busy) return

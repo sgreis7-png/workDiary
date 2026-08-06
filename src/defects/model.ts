@@ -220,8 +220,6 @@ export const RESP_DOMAINS: { key: string; label: string }[] = [
   { key: 'other', label: 'אחר: ______' },
 ]
 
-export const PROJECT_OPEN_TITLE = 'פתיחת פרויקט — ממלאים פעם אחת'
-export const RESP_MATRIX_TITLE = 'מטריצת אחריות — מי אחראי על מה בפרויקט הזה'
 export const PROJECT_OPEN_FOOTNOTES = [
   '⚠ תחום שסומן "לקוח" או "גורם חיצוני" — הסעיפים המתאימים בשערים מסומנים "לא רלוונטי" עם הפניה לכאן.',
   '⚠ לפי התצורה למעלה: אין חימום → סעיף חימום בשער 5 = לא רלוונטי. אין תריס → סעיף התריס בשער 4 = לא רלוונטי. וכן הלאה.',

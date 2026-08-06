@@ -51,12 +51,6 @@ export interface CoopBundle {
 
 const COOP_COLS = 'id,project_id,name,coop_type,farm_coop_count,equipment_supplier,has_heating,has_cooling_pads,has_tunnel_shutter,execution_manager,field_supervisor,opened_on,created_by,created_at'
 
-export async function fetchCoops(projectId: string): Promise<Coop[]> {
-  const { data, error } = await supabase.from('coops').select(COOP_COLS)
-    .eq('project_id', projectId).order('created_at')
-  if (error) throw error
-  return data as Coop[]
-}
 
 export async function fetchAllCoops(): Promise<Coop[]> {
   try {

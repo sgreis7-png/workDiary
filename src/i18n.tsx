@@ -279,6 +279,16 @@ export const WEEKDAYS: Record<Lang, string[]> = {
 
 type Key = keyof typeof STRINGS
 
+/**
+ * Look up a string. Dynamic keys (edge-function error codes) reach this via
+ * `as never`, so an unknown key must not throw — it used to blow up inside a
+ * catch handler, leaving the user with no error shown at all. Exported so the
+ * provider and its tests exercise the same code.
+ */
+export function translate(lang: Lang, k: Key): string {
+  return STRINGS[k]?.[lang] ?? String(k)
+}
+
 interface I18n { lang: Lang; dir: 'rtl' | 'ltr'; t: (k: Key) => string; setLang: (l: Lang) => void; toggle: () => void }
 const Ctx = createContext<I18n>(null as unknown as I18n)
 export const useI18n = () => useContext(Ctx)
@@ -297,10 +307,7 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<I18n>(() => ({
     lang, dir,
-    // Dynamic keys (server error codes) reach t() via `as never`. An unknown key
-    // must not throw — it used to blow up inside a catch handler, leaving the
-    // user with no error at all — so fall back to the raw key.
-    t: (k) => STRINGS[k]?.[lang] ?? String(k),
+    t: (k) => translate(lang, k),
     setLang,
     toggle: () => setLang((l) => (l === 'he' ? 'en' : 'he')),
   }), [lang, dir])

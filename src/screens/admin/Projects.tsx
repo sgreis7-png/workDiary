@@ -35,7 +35,15 @@ export default function Projects() {
   }, [focusId, projects])
 
   // admins load the full authorized-worker list for the assignment picker
-  useEffect(() => { if (isAdmin) fetchUsers().then(setAllStaff).catch(() => setAllStaff([])) }, [isAdmin])
+  // only active workers are assignable — a deactivated one cannot be notified,
+  // and leaving them assigned breaks the fan-out for everyone on the project
+  useEffect(() => {
+    if (isAdmin) {
+      fetchUsers()
+        .then((us) => setAllStaff(us.filter((u) => u.active)))
+        .catch(() => setAllStaff([]))
+    }
+  }, [isAdmin])
   const staffLabel = (email: string) => allStaff.find((u) => u.email === email)?.name ?? email.split('@')[0]
 
   const toggle = async (id: string, active: boolean) => { await setProjectActive(id, !active); await reloadProjects() }

@@ -2,6 +2,7 @@
 // read the same — only now they're async and hit the real database.
 import { supabase } from './lib/supabase'
 import { signPaths, unwrapFnError } from './lib/storagePaths'
+import { notifyMany } from './lib/notify'
 import { notifyNewEntry } from './lib/notifyNewRecord'
 import { entryMatchesText, hasMalfunction, deptIdOf, MALFUNCTION_DEPT_KEY } from './data'
 import type { AppUser, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
@@ -230,10 +231,11 @@ export async function setProjectStaff(projectId: string, emails: string[]): Prom
 // in-app notifications
 export interface AppNotification { id: string; title: string; body: string | null; link: string | null; read: boolean; created_at: string }
 export async function notifyAssigned(emails: string[], projectName: string, projectId?: string): Promise<void> {
-  if (!emails.length) return
-  const link = projectId ? `/projects?p=${projectId}` : '/projects'
-  const rows = emails.map((email) => ({ recipient_email: email, title: 'שויכת לפרויקט', body: projectName, link }))
-  await supabase.from('notifications').insert(rows) // admin-only via RLS
+  await notifyMany(emails, {
+    title: 'שויכת לפרויקט',
+    body: projectName,
+    link: projectId ? `/projects?p=${projectId}` : '/projects',
+  })
 }
 export async function fetchMyNotifications(): Promise<AppNotification[]> {
   const { data, error } = await supabase.from('notifications')

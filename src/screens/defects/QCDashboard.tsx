@@ -56,7 +56,7 @@ export default function QCDashboard() {
     fetchDefectsForSearch().then(setDefects).catch(() => {})
     loadGateDefs().then(setDefs)
     if (isAdmin) fetchAuditLog(60).then(setAudit).catch(() => {})
-  }, [isAdmin]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isAdmin])  
 
   const today = new Date().toISOString().slice(0, 10)
   const open = defects.filter((d) => d.status === 'open')

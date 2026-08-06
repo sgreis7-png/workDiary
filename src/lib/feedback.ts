@@ -1,6 +1,8 @@
 // "דווח" — user feedback (bug / feature request) filed to admins with reporter identity.
 import { supabase } from './supabase'
 import { sendPush } from './push'
+import { signPaths } from './storagePaths'
+import { notifyMany } from './notify'
 
 export interface FeedbackReport {
   id: string
@@ -41,9 +43,7 @@ export async function submitFeedback(kind: 'bug' | 'request', message: string, f
     if (targets.length) {
       const title = `📢 דיווח חדש — ${name ?? email}`
       const body = message.length > 140 ? message.slice(0, 140) + '…' : message
-      await supabase.from('notifications').insert(
-        targets.map((recipient_email) => ({ recipient_email, title, body, link: '/admin/feedback' })),
-      )
+      await notifyMany(targets, { title, body, link: '/admin/feedback' })
       sendPush(targets, title, body, '/admin/feedback')
     }
   } catch { /* best-effort */ }
@@ -66,6 +66,5 @@ export async function deleteFeedback(id: string): Promise<void> {
 }
 
 export async function feedbackPhotoUrl(path: string): Promise<string | null> {
-  const { data } = await supabase.storage.from('photos').createSignedUrl(path, 3600)
-  return data?.signedUrl ?? null
+  return (await signPaths([path]))[path] ?? null
 }

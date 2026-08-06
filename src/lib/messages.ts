@@ -12,25 +12,7 @@ export interface UserMessage {
   ack_at: string | null
 }
 
-export async function fetchMyMessages(myEmail: string): Promise<{ inbox: UserMessage[]; sent: UserMessage[] }> {
-  const { data, error } = await supabase.from('user_messages')
-    .select('*').order('created_at', { ascending: false }).limit(200)
-  if (error) throw error
-  const all = data as UserMessage[]
-  const me = myEmail.toLowerCase()
-  return {
-    inbox: all.filter((m) => m.to_email.toLowerCase() === me),
-    sent: all.filter((m) => m.from_email.toLowerCase() === me),
-  }
-}
 
-export async function countUnacked(myEmail: string): Promise<number> {
-  const { count, error } = await supabase.from('user_messages')
-    .select('id', { count: 'exact', head: true })
-    .ilike('to_email', myEmail).is('ack_at', null)
-  if (error) return 0
-  return count ?? 0
-}
 
 export async function sendUserMessage(from: { email: string; name: string }, toEmail: string, body: string): Promise<void> {
   const { error } = await supabase.from('user_messages')
@@ -128,17 +110,6 @@ export async function fetchAllChat(): Promise<{ dms: UserMessage[]; groupMsgs: (
   }
 }
 
-/** Unacked badge: DMs awaiting my ack + group messages I haven't acked. */
-export async function countUnackedAll(myEmail: string): Promise<number> {
-  const me = myEmail.toLowerCase()
-  try {
-    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(), fetchAcks()])
-    const myAcks = new Set(acks.filter((a) => a.email.toLowerCase() === me).map((a) => a.message_id))
-    const dmCount = dms.filter((m) => m.to_email?.toLowerCase() === me && !m.ack_at).length
-    const gCount = groupMsgs.filter((m) => m.from_email.toLowerCase() !== me && !myAcks.has(m.id)).length
-    return dmCount + gCount
-  } catch { return 0 }
-}
 
 /** Unacked count + newest unacked incoming message (for the toast). */
 export async function chatUnackedStatus(myEmail: string): Promise<{ count: number; latest: UserMessage | null }> {

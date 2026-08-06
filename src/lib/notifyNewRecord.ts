@@ -3,6 +3,7 @@
 // Fire-and-forget — never blocks or fails a save.
 import { supabase } from './supabase'
 import { sendPush } from './push'
+import { activeRecipients, notifyMany } from './notify'
 
 async function recipients(projectId: string): Promise<string[]> {
   const { data: u } = await supabase.auth.getUser()
@@ -18,16 +19,10 @@ async function recipients(projectId: string): Promise<string[]> {
 }
 
 async function fanOut(emails: string[], title: string, body: string, link: string): Promise<void> {
-  if (!emails.length) return
-  // One row per recipient rather than a single batch: notifications may only
-  // target active members, and project_assignments still lists people an admin
-  // has since deactivated. A batch insert would be rejected as a whole, so a
-  // single stale assignment would silently mute everyone on that project.
-  await Promise.all(emails.map((recipient_email) =>
-    supabase.from('notifications').insert({ recipient_email, title, body, link })
-      .then(() => {}, () => {}),
-  ))
-  sendPush(emails, title, body, link)
+  const to = await activeRecipients(emails)
+  if (!to.length) return
+  await notifyMany(to, { title, body, link })
+  sendPush(to, title, body, link)
 }
 
 /** רשומת יומן עבודה חדשה */

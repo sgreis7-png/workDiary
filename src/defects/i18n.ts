@@ -229,7 +229,7 @@ export const gateShortName = (lang: Lang, g: GateKey) => lang === 'he' ? GATES[g
 // chrome, not checklist content) — EN variants for the English UI.
 import {
   STATUS_SUMMARY_TITLE, STATUS_SUMMARY_FOOTNOTE, DEFECT_LOG_TITLE,
-  DEFECT_LOG_GOLDEN_RULE, PROJECT_OPEN_FOOTNOTES, RESP_DOMAINS, SIGNATURE_ROLES,
+  DEFECT_LOG_GOLDEN_RULE, PROJECT_OPEN_FOOTNOTES, RESP_DOMAINS,
 } from './model'
 
 const RESP_DOMAIN_EN: Record<string, string> = {
@@ -241,19 +241,10 @@ const RESP_DOMAIN_EN: Record<string, string> = {
   grow_equipment: 'Growing equipment — commissioning & supplier approval',
   other: 'Other: ______',
 }
-const SIG_ROLE_EN: Record<string, string> = {
-  manager: 'Execution manager — name, signature and date:',
-  supervisor: 'Supervisor — name, signature and date:',
-}
-
 export const respDomainLabel = (lang: Lang, key: string): string =>
   lang === 'he'
     ? (RESP_DOMAINS.find((d) => d.key === key)?.label ?? key)
     : (RESP_DOMAIN_EN[key] ?? key)
-export const signatureRoleLabel = (lang: Lang, key: string): string =>
-  lang === 'he'
-    ? (SIGNATURE_ROLES.find((r) => r.key === key)?.label ?? key)
-    : (SIG_ROLE_EN[key] ?? key)
 
 export const statusSummaryTitle = (lang: Lang) =>
   lang === 'he' ? STATUS_SUMMARY_TITLE : 'Status summary — house snapshot'
