@@ -29,6 +29,7 @@ export interface Defect {
   description: string | null; severity: Severity | null; assignee: string | null
   assignee_email: string | null
   due_date: string | null; status: DefectStatus; closed_on: string | null; closure_note: string | null
+  created_at: string
 }
 export interface GateSignature {
   coop_id: string; gate: GateKey; role: SignatureRole

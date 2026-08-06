@@ -917,3 +917,16 @@ select.input { cursor: pointer; }
 .cal-chip--deadline i { background: var(--amber) !important; }
 .cal-chip--overdue { border-inline-start-color: var(--clay); }
 .cal-chip--overdue i { background: var(--clay) !important; }
+
+/* ============ dashboard collapsible sections ============ */
+.dash-sec { padding: 0; overflow: hidden; }
+.dash-sec__head { display: flex; align-items: center; gap: 12px; width: 100%;
+  padding: 16px 20px; border: 0; background: none; cursor: pointer;
+  font: inherit; color: var(--ink); text-align: start; transition: background .14s var(--ease); }
+.dash-sec__head:hover { background: var(--paper); }
+.dash-sec__icon { font-size: 17px; flex: none; }
+.dash-sec__title { font-family: var(--font-mono); font-size: 13.5px; font-weight: 700;
+  letter-spacing: .09em; text-transform: uppercase; flex: 1; min-width: 0;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dash-sec__chev { color: var(--ink-3); font-size: 13px; flex: none; }
+.dash-sec__body { padding: 4px 20px 20px; border-top: 1px solid var(--line); padding-top: 16px; }

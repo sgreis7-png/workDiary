@@ -8,6 +8,7 @@ import { fetchDashboardStats, listEntries, type DashboardStats } from '../api'
 import { useStore } from '../store'
 import { parseCoops } from '../lib/reportTables'
 import { ProgressChart, type ProgressSeries } from '../components/ProgressChart'
+import { Section } from '../components/Section'
 import MalfunctionsSection from './Malfunctions'
 
 const STALE_DAYS = 7
@@ -87,8 +88,8 @@ export default function Dashboard() {
         </div>
       </div>
 
-      <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 16 }}>
-        {/* stat cards */}
+      <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 14 }}>
+        {/* headline numbers — always visible, not collapsible */}
         <motion.div variants={riseIn} className="stat-grid">
           <Stat label={t('dash_total')} value={stats.total} />
           <Stat label={t('dash_month')} value={stats.thisMonth} />
@@ -100,23 +101,9 @@ export default function Dashboard() {
           <Stat label={t('dash_needs_update')} value={stats.stale.length} tone={stats.stale.length ? 'clay' : 'green'} />
         </motion.div>
 
-        {/* progress over time */}
-        <motion.div variants={riseIn} className="panel" style={{ padding: 22 }}>
-          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
-            <h3 style={{ margin: 0 }}>📈 {t('dash_progress_chart')}</h3>
-            <select className="input" style={{ maxWidth: 260 }} value={chartProject} onChange={(e) => setChartProject(e.target.value)}>
-              <option value="">— {t('choose')} —</option>
-              {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </div>
-          {chartProject && chart?.project !== chartProject && <Loader label={t('loading')} />}
-          {chartProject && chart?.project === chartProject && <ProgressChart key={chartProject} series={chart.series} />}
-          {!chartProject && <div className="empty" style={{ padding: '18px 0' }}>{t('dash_progress_pick')}</div>}
-        </motion.div>
-
-        {/* stale projects */}
-        <motion.div variants={riseIn} className="panel" style={{ padding: 22 }}>
-          <h3 style={{ marginBottom: 12 }}>⚠ {t('dash_stale')} ({STALE_DAYS}+ {t('days')})</h3>
+        <motion.div variants={riseIn}>
+        <Section id="stale" icon="⚠" title={`${t('dash_stale')} (${STALE_DAYS}+ ${t('days')})`}
+          summary={stats.stale.length || `✓`} tone={stats.stale.length ? 'clay' : 'green'} defaultOpen={stats.stale.length > 0}>
           {stats.stale.length === 0 ? (
             <Tag tone="green">✓ {t('dash_no_stale')}</Tag>
           ) : (
@@ -128,11 +115,25 @@ export default function Dashboard() {
               ))}
             </div>
           )}
+        </Section>
         </motion.div>
 
-        {/* entries per project */}
-        <motion.div variants={riseIn} className="panel" style={{ padding: 22 }}>
-          <h3 style={{ marginBottom: 14 }}>{t('dash_by_project')}</h3>
+        <motion.div variants={riseIn}>
+        <Section id="progress" icon="📈" title={t('dash_progress_chart')} summary={chartProject ? projectName(chartProject) : undefined}>
+          <div style={{ marginBottom: 12 }}>
+            <select className="input" style={{ maxWidth: 260 }} value={chartProject} onChange={(e) => setChartProject(e.target.value)}>
+              <option value="">— {t('choose')} —</option>
+              {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          {chartProject && chart?.project !== chartProject && <Loader label={t('loading')} />}
+          {chartProject && chart?.project === chartProject && <ProgressChart key={chartProject} series={chart.series} />}
+          {!chartProject && <div className="empty" style={{ padding: '18px 0' }}>{t('dash_progress_pick')}</div>}
+        </Section>
+        </motion.div>
+
+        <motion.div variants={riseIn}>
+        <Section id="by-project" icon="▤" title={t('dash_by_project')} summary={stats.topProjects.length}>
           <div style={{ display: 'grid', gap: 10 }}>
             {stats.topProjects.map(([pid, n]) => (
               <div key={pid} style={{ display: 'grid', gridTemplateColumns: '160px 1fr 40px', alignItems: 'center', gap: 12 }}>
@@ -144,34 +145,37 @@ export default function Dashboard() {
               </div>
             ))}
           </div>
+        </Section>
         </motion.div>
 
-        <div className="stat-grid">
-          {/* weather */}
-          <motion.div variants={riseIn} className="panel" style={{ padding: 22 }}>
-            <h3 style={{ marginBottom: 12 }}>{t('dash_weather')}</h3>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-              {Object.entries(stats.byWeather).map(([w, n]) => (
-                <span key={w} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                  <WeatherChip value={w} /> <b className="mono">{n}</b>
-                </span>
-              ))}
-              {Object.keys(stats.byWeather).length === 0 && <span className="count mono">—</span>}
+        <motion.div variants={riseIn}>
+        <Section id="people" icon="👥" title={`${t('dash_by_worker')} · ${t('dash_weather')}`} summary={stats.workers.length} defaultOpen={false}>
+          <div className="stat-grid">
+            <div>
+              <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('dash_by_worker')}</h3>
+              <div style={{ display: 'grid', gap: 8 }}>
+                {stats.workers.map(([uid, n]) => (
+                  <div key={uid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                    <span>{userName(uid)}</span><b className="mono">{n}</b>
+                  </div>
+                ))}
+                {stats.workers.length === 0 && <span className="count mono">—</span>}
+              </div>
             </div>
-          </motion.div>
-          {/* workers */}
-          <motion.div variants={riseIn} className="panel" style={{ padding: 22 }}>
-            <h3 style={{ marginBottom: 12 }}>{t('dash_by_worker')}</h3>
-            <div style={{ display: 'grid', gap: 8 }}>
-              {stats.workers.map(([uid, n]) => (
-                <div key={uid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                  <span>{userName(uid)}</span><b className="mono">{n}</b>
-                </div>
-              ))}
-              {stats.workers.length === 0 && <span className="count mono">—</span>}
+            <div>
+              <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('dash_weather')}</h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {Object.entries(stats.byWeather).map(([w, n]) => (
+                  <span key={w} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                    <WeatherChip value={w} /> <b className="mono">{n}</b>
+                  </span>
+                ))}
+                {Object.keys(stats.byWeather).length === 0 && <span className="count mono">—</span>}
+              </div>
             </div>
-          </motion.div>
-        </div>
+          </div>
+        </Section>
+        </motion.div>
 
         {/* malfunctions (בלת"מ) analytics */}
         <MalfunctionsSection />
