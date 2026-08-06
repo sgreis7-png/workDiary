@@ -10,7 +10,7 @@ import { useStore } from '../store'
 import { useAuth } from '../auth'
 import { SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from '../data'
 import type { Entry, FieldDef } from '../data'
-import { COOPS_KEY, MISSING_KEY, bdActive, defaultCoop, filledMissing, parseCoops, parseMissing, reasonLabel } from '../lib/reportTables'
+import { COOPS_KEY, MISSING_KEY, bdActive, coopLabel, defaultCoop, filledMissing, parseCoops, parseMissing, reasonLabel, taskLabel } from '../lib/reportTables'
 import type { CoopReport } from '../lib/reportTables'
 import { CoopReports } from '../components/ReportTables'
 
@@ -131,7 +131,7 @@ export default function EntryDetail() {
           {!progEdit && coops.map((c, ci) => (
             <motion.div variants={riseIn} key={ci}>
               <div className="detail__subhead">
-                {t('progress_report')} — {c.name}
+                {t('progress_report')} — {coopLabel(c.name, lang)}
                 <span className="detail__subhead-val">{t('house_pct')}: {c.pct}%</span>
               </div>
               <div className="vtable">
@@ -140,7 +140,7 @@ export default function EntryDetail() {
                 </div>
                 {c.rows.map((r, i) => (
                   <div key={i} className="vtable__row vtable__row--progress">
-                    <span>{r.task}</span>
+                    <span>{taskLabel(r.task, lang)}</span>
                     <span className="vbar"><span className="vbar__track"><span className="vbar__fill" style={{ width: `${r.pct}%` }} /></span><b>{r.pct}%</b></span>
                     <span>{r.remarks}</span>
                   </div>
@@ -148,14 +148,14 @@ export default function EntryDetail() {
               </div>
               {c.bd.length > 0 && (
                 <>
-                  <div className="detail__subhead" style={{ marginTop: 14 }}>{t('bd_field')} — {c.name}</div>
+                  <div className="detail__subhead" style={{ marginTop: 14 }}>{t('bd_field')} — {coopLabel(c.name, lang)}</div>
                   <div className="vtable">
                     <div className="vtable__row vtable__row--head vtable__row--progress">
                       <span>{t('col_task')}</span><span>{t('col_pct')}</span><span>{t('col_remarks')}</span>
                     </div>
                     {c.bd.map((r, i) => (
                       <div key={i} className="vtable__row vtable__row--progress">
-                        <span>{r.task}</span>
+                        <span>{taskLabel(r.task, lang)}</span>
                         <span className="vbar"><span className="vbar__track"><span className="vbar__fill" style={{ width: `${r.pct}%` }} /></span><b>{r.pct}%</b></span>
                         <span>{r.remarks}</span>
                       </div>
@@ -202,7 +202,7 @@ export default function EntryDetail() {
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
               {entry.last_sent_at
                 ? <Tag tone="green">✓ {t('last_sent')} {entry.last_sent_at.slice(0, 10)}</Tag>
-                : <Tag tone="clay">לא נשלח</Tag>}
+                : <Tag tone="clay">{t('not_sent')}</Tag>}
             </div>
           </motion.div>
         </div>

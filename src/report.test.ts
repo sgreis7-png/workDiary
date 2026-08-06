@@ -67,7 +67,8 @@ describe('progress-report + missing-material rendering', () => {
   it('renders legacy flat keys as a single coop with total and bars in HTML', () => {
     expect(html).toContain('דו״ח התקדמות — לול 1')
     expect(html).toContain('70%')
-    expect(html).toContain('End set rear')
+    // email report is Hebrew: standard task names stored in English are normalized
+    expect(html).toContain('סט קצה אחורי')
     expect(html).toContain('width:80%')
     expect(html).toContain('Missing material BD')
   })
@@ -80,7 +81,7 @@ describe('progress-report + missing-material rendering', () => {
   })
   it('includes both tables in the plain-text version', () => {
     expect(text).toContain('דו״ח התקדמות — לול 1 — 70%')
-    expect(text).toContain('End set rear: 80% — Missing material BD')
+    expect(text).toContain('סט קצה אחורי: 80% — Missing material BD')
     expect(text).toContain('חומר חסר')
     expect(text).toContain('91-00-1234 · Egg belt · 2 · לא סופק מספיק')
   })

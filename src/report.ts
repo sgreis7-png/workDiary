@@ -3,7 +3,7 @@
 // from their own mail client).
 import type { Entry, FieldDef } from './data'
 import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from './data'
-import { MISSING_KEY, bdActive, filledMissing, parseCoops, parseMissing, reasonLabel } from './lib/reportTables'
+import { MISSING_KEY, bdActive, coopLabel, filledMissing, parseCoops, parseMissing, reasonLabel, taskLabel } from './lib/reportTables'
 
 // Official brand artwork served from the app's own domain — the copy that used
 // to live in Supabase storage (brand/logo.png) is an outdated crude version.
@@ -28,11 +28,16 @@ export function buildReportHtml(o: {
       <td style="padding:14px 18px;color:${MUT};font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">${esc(f.label_he)}</td>
       <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(v[f.key]).replace(/\n/g, '<br>')}</td></tr>`).join('')
 
+  // The email report is Hebrew — normalize standard task/coop names that were
+  // stored in English (entry created with the EN UI).
+  const heRows = (rows: { task: string; pct: number; remarks: string }[]) =>
+    rows.filter((r) => r.task.trim()).map((r) => ({ ...r, task: taskLabel(r.task, 'he') }))
   const coops = parseCoops(v, 'he')
     .map((c) => ({
       ...c,
-      rows: c.rows.filter((r) => r.task.trim()),
-      bd: bdActive(c.bd) ? c.bd.filter((r) => r.task.trim()) : [],
+      name: coopLabel(c.name, 'he'),
+      rows: heRows(c.rows),
+      bd: bdActive(c.bd) ? heRows(c.bd) : [],
     }))
     .filter((c) => c.rows.length > 0 || c.pct > 0 || c.bd.length > 0)
   const th = (s: string, w = '') =>
@@ -105,11 +110,14 @@ export function buildReportText(o: { projectName: string; authorName: string; en
     const val = String(v[f.key] ?? '').trim()
     if (val) lines.push(`${f.label_he}: ${val}`)
   }
+  const heRows = (rows: { task: string; pct: number; remarks: string }[]) =>
+    rows.filter((r) => r.task.trim()).map((r) => ({ ...r, task: taskLabel(r.task, 'he') }))
   const coops = parseCoops(v, 'he')
     .map((c) => ({
       ...c,
-      rows: c.rows.filter((r) => r.task.trim()),
-      bd: bdActive(c.bd) ? c.bd.filter((r) => r.task.trim()) : [],
+      name: coopLabel(c.name, 'he'),
+      rows: heRows(c.rows),
+      bd: bdActive(c.bd) ? heRows(c.bd) : [],
     }))
     .filter((c) => c.rows.length > 0 || c.pct > 0 || c.bd.length > 0)
   for (const c of coops) {

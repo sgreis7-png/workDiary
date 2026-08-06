@@ -76,7 +76,7 @@ export default function Logbook() {
                 <div className="entry-card__meta">
                   <WeatherChip value={e.values.weather} />
                   <Tag tone="muted">{e.values.contractor}</Tag>
-                  {e.last_sent_at ? <Tag tone="green">✓ {t('sent')}</Tag> : <Tag tone="clay">לא נשלח</Tag>}
+                  {e.last_sent_at ? <Tag tone="green">✓ {t('sent')}</Tag> : <Tag tone="clay">{t('not_sent')}</Tag>}
                 </div>
               </div>
               <div className="entry-card__side">

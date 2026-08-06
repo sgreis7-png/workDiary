@@ -63,6 +63,22 @@ export function parseProgress(raw: string | undefined, lang: Lang): ProgressRow[
 
 export const coopName = (lang: Lang, n: number) => (lang === 'he' ? `לול ${n}` : `Coop ${n}`)
 
+// Stored rows keep the task name in whatever language the entry was created in.
+// For read-only display, map known standard names to the viewer's language;
+// custom (user-typed) tasks pass through untouched.
+export function taskLabel(task: string, lang: Lang): string {
+  const s = String(task ?? '').trim()
+  const hit = DEFAULT_TASKS.find((t) => t.he === s || t.en === s)
+    ?? BD_TASKS.find((t) => t.he === s || t.en === s)
+  return hit ? hit[lang] : task
+}
+
+/** "לול 3" ↔ "Coop 3" for display; custom coop names pass through. */
+export function coopLabel(name: string, lang: Lang): string {
+  const m = String(name ?? '').trim().match(/^(?:לול|Coop)\s*(\d+)$/i)
+  return m ? coopName(lang, Number(m[1])) : name
+}
+
 export const defaultBdRows = (lang: Lang): ProgressRow[] =>
   BD_TASKS.map((t) => ({ task: t[lang], pct: 0, remarks: '' }))
 

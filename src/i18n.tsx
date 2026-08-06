@@ -223,6 +223,7 @@ const STRINGS = {
   forgot_sub:       { he: 'הזינו את המייל שלכם ונשלח קישור לקביעת סיסמה חדשה', en: 'Enter your email and we will send a link to set a new password' },
   forgot_cta:       { he: 'שליחת קישור איפוס', en: 'Send reset link' },
   forgot_sent:      { he: 'אם הכתובת רשומה במערכת — נשלח אליה קישור לאיפוס. בדקו את תיבת הדואר (גם בספאם)', en: 'If the address is registered, a reset link is on its way. Check your inbox (and spam)' },
+  not_sent:         { he: 'לא נשלח', en: 'Not sent' },
 
   change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
   update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
