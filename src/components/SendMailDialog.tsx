@@ -4,8 +4,6 @@ import { useAuth } from '../auth'
 import { isPopupBlocked, parseRecipients, sendMailViaOutlook } from '../lib/outlookSend'
 import { fetchLists, type DistList } from '../lib/distLists'
 
-const LS_RECIPIENTS = 'outlook_last_recipients'
-
 /** Modal: send a report straight from the user's Outlook mailbox (Graph). */
 export function SendMailDialog({ subject: initialSubject, html, onClose, onSent }: {
   subject: string
@@ -15,7 +13,7 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
 }) {
   const { t } = useI18n()
   const { user } = useAuth()
-  const [to, setTo] = useState(() => localStorage.getItem(LS_RECIPIENTS) ?? '')
+  const [to, setTo] = useState('')
   const [subject, setSubject] = useState(initialSubject)
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
@@ -37,7 +35,6 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
     setBusy(true); setErr('')
     try {
       await sendMailViaOutlook({ to: recipients, subject: subject.trim(), html, loginHint: user?.email })
-      if (parseRecipients(to).length) localStorage.setItem(LS_RECIPIENTS, parseRecipients(to).join(', '))
       setSent(true)
       onSent?.()
       setTimeout(onClose, 1800)
