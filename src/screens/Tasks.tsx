@@ -24,6 +24,7 @@ export const T = {
   done: { he: 'בוצע', en: 'Done' },
   reopen: { he: 'החזרה לפתוח', en: 'Reopen' },
   del: { he: 'מחיקה', en: 'Delete' },
+  edit_task: { he: 'עריכה', en: 'Edit' },
   assigned_notif: { he: 'הוקצתה לך משימה', en: 'A task was assigned to you' },
   loading: { he: 'טוען משימות…', en: 'Loading tasks…' },
   mine_only: { he: 'רק שלי', en: 'Mine only' },
@@ -42,6 +43,9 @@ export default function Tasks() {
   const [due, setDue] = useState('')
   const [mineOnly, setMineOnly] = useState(false)
   const [err, setErr] = useState('')
+  // inline edit: id of the task being edited + its draft values
+  const [editId, setEditId] = useState<string | null>(null)
+  const [draft, setDraft] = useState({ title: '', project_id: '', assignee_email: '', due_date: '' })
 
   const reload = () => fetchTasks().then(setTasks).catch((e) => setErr(String(e.message ?? e)))
   useEffect(() => {
@@ -79,6 +83,34 @@ export default function Tasks() {
     const status = x.status === 'open' ? 'done' : 'open'
     await updateTask(x.id, { status, done_at: status === 'done' ? new Date().toISOString() : null })
     reload()
+  }
+
+  const startEdit = (x: WorkTask) => {
+    setEditId(x.id)
+    setDraft({
+      title: x.title, project_id: x.project_id ?? '',
+      assignee_email: x.assignee_email ?? '', due_date: x.due_date ?? '',
+    })
+  }
+
+  async function saveEdit(x: WorkTask) {
+    if (!draft.title.trim()) return
+    setErr('')
+    try {
+      await updateTask(x.id, {
+        title: draft.title.trim(),
+        project_id: draft.project_id || null,
+        assignee_email: draft.assignee_email || null,
+        due_date: draft.due_date || null,
+      })
+      // reassignment notifies the new assignee, same as creation does
+      if (draft.assignee_email && draft.assignee_email !== (x.assignee_email ?? '') && draft.assignee_email !== me) {
+        notifyUser(draft.assignee_email, t('assigned_notif'), draft.title, '/tasks')
+        sendPush([draft.assignee_email], t('assigned_notif'), draft.title, '/tasks')
+      }
+      setEditId(null)
+      reload()
+    } catch (e) { setErr(String((e as Error).message ?? e)) }
   }
 
   if (!tasks) return <Loader label={t('loading')} />
@@ -122,20 +154,45 @@ export default function Tasks() {
             return (
               <div key={x.id} className={`task ${x.status === 'done' ? 'task--done' : ''} ${overdue ? 'task--overdue' : ''}`}>
                 <input type="checkbox" className="task__check" checked={x.status === 'done'} onChange={() => toggle(x)} />
-                <div className="task__body">
-                  <b>{x.title}</b>
-                  <small>
-                    {x.project_id && <span className="tag tag--muted">{projectName(x.project_id)}</span>}
-                    {x.assignee_email && <span className="tag tag--green">👤 {nameOf(x.assignee_email)}</span>}
-                    {x.due_date && (
-                      <span className={`tag ${overdue ? 'tag--clay' : 'tag--ink'}`}>
-                        📅 {t('due')} {new Date(x.due_date).toLocaleDateString('he-IL')}{overdue ? ` · ${t('overdue')}` : ''}
-                      </span>
-                    )}
-                  </small>
-                </div>
-                {(isAdmin || x.created_by.toLowerCase() === me) && (
-                  <button className="btn btn--quiet" title={t('del')} onClick={() => deleteTask(x.id).then(reload)}>✕</button>
+                {editId === x.id ? (
+                  <div className="task__body" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
+                    <input className="input" style={{ flex: '2 1 180px' }} value={draft.title}
+                      onChange={(e) => setDraft((d) => ({ ...d, title: e.target.value }))}
+                      onKeyDown={(e) => e.key === 'Enter' && saveEdit(x)} />
+                    <select className="input" style={{ flex: '1 1 120px' }} value={draft.project_id}
+                      onChange={(e) => setDraft((d) => ({ ...d, project_id: e.target.value }))}>
+                      <option value="">{t('no_project')}</option>
+                      {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    </select>
+                    <select className="input" style={{ flex: '1 1 120px' }} value={draft.assignee_email}
+                      onChange={(e) => setDraft((d) => ({ ...d, assignee_email: e.target.value }))}>
+                      <option value="">{t('no_assignee')}</option>
+                      {users.map((u) => <option key={u.email} value={u.email.toLowerCase()}>{u.name}</option>)}
+                    </select>
+                    <input className="input" type="date" style={{ flex: '0 1 150px' }} value={draft.due_date}
+                      onChange={(e) => setDraft((d) => ({ ...d, due_date: e.target.value }))} />
+                    <button className="btn btn--primary" disabled={!draft.title.trim()} onClick={() => saveEdit(x)}>✓</button>
+                    <button className="btn btn--ghost" onClick={() => setEditId(null)}>✕</button>
+                  </div>
+                ) : (
+                  <div className="task__body">
+                    <b>{x.title}</b>
+                    <small>
+                      {x.project_id && <span className="tag tag--muted">{projectName(x.project_id)}</span>}
+                      {x.assignee_email && <span className="tag tag--green">👤 {nameOf(x.assignee_email)}</span>}
+                      {x.due_date && (
+                        <span className={`tag ${overdue ? 'tag--clay' : 'tag--ink'}`}>
+                          📅 {t('due')} {new Date(x.due_date).toLocaleDateString('he-IL')}{overdue ? ` · ${t('overdue')}` : ''}
+                        </span>
+                      )}
+                    </small>
+                  </div>
+                )}
+                {editId !== x.id && (isAdmin || x.created_by.toLowerCase() === me) && (
+                  <>
+                    <button className="btn btn--quiet" title={t('edit_task')} onClick={() => startEdit(x)}>✎</button>
+                    <button className="btn btn--quiet" title={t('del')} onClick={() => deleteTask(x.id).then(reload)}>✕</button>
+                  </>
                 )}
               </div>
             )
