@@ -14,16 +14,18 @@ import { registerSW } from 'virtual:pwa-register'
 import { ensureFresh } from './lib/freshness'
 
 // MSAL popup callback: Microsoft redirects the popup back here with the auth
-// code in the URL fragment. Booting the SPA would let the router rewrite the
-// URL before the opener window reads it (MSAL then fails with timed_out) —
-// so leave the popup page inert; the opener polls the hash and closes it.
+// code in the URL. msal-browser v5 doesn't poll the popup URL — the redirect
+// page must broadcast the response to the opener over a BroadcastChannel, so
+// run the redirect bridge instead of booting the SPA (the router would wipe
+// the code from the URL, and the opener would fail with timed_out).
 const authParams = window.location.hash + window.location.search
 const isMsalPopup = !!window.opener && /[#?&]code=/.test(authParams) && authParams.includes('state=')
 
 if (isMsalPopup) {
-  // Popup page stays inert — no router, no SW; MSAL in the opener polls the
-  // URL, extracts the code and closes this window within a tick.
   document.body.textContent = '…'
+  import('@azure/msal-browser/redirect-bridge')
+    .then(({ broadcastResponseToMainFrame }) => broadcastResponseToMainFrame())
+    .catch(() => {})
 } else {
   initTheme()
   ensureFresh()

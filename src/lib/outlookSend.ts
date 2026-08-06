@@ -23,9 +23,9 @@ function getMsal(): Promise<PublicClientApplication> {
       // localStorage so the Microsoft session survives app restarts —
       // workers should authenticate once, not per report
       cache: { cacheLocation: 'localStorage' },
-      // default popup timeout is 60s — a human typing credentials + MFA takes
-      // longer, and MSAL then fails with timed_out while the user is mid-login
-      system: { windowHashTimeout: 300000 },
+      // default popup bridge timeout is 60s and counts while the user is still
+      // typing credentials/MFA in the popup — give first-time logins 5 minutes
+      system: { popupBridgeTimeout: 300000 },
     })
     await app.initialize()
     return app
