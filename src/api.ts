@@ -293,22 +293,28 @@ export async function reorderFields(orderedIds: string[]): Promise<void> {
 
 export async function fetchUsers(): Promise<AppUser[]> {
   const { data, error } = await supabase
-    .from('allowed_emails').select('email,display_name,role,active,registered').order('created_at')
+    .from('allowed_emails').select('email,display_name,role,active,registered,registration_code').order('created_at')
   if (error) throw error
   return (data as {
-    email: string; display_name: string | null; role: AppUser['role']; active: boolean; registered: boolean
+    email: string; display_name: string | null; role: AppUser['role']; active: boolean
+    registered: boolean; registration_code: string | null
   }[]).map((r) => ({
     id: r.email, email: r.email, name: r.display_name || r.email.split('@')[0],
     role: r.role, active: r.active, registered: r.registered,
+    registration_code: r.registration_code,
   }))
 }
-export async function inviteUser(email: string, display_name: string, role: AppUser['role'] = 'member'): Promise<void> {
-  // No email: just authorize the email on the allowlist. The worker then self-registers
-  // a password in the app (instant, no mail, no rate limit).
-  const { error } = await supabase
+export async function inviteUser(email: string, display_name: string, role: AppUser['role'] = 'member'): Promise<string> {
+  // No email is sent: the row authorizes the address, and the DB default mints a
+  // one-time registration code. The admin passes that code to the worker out of
+  // band — without it, knowing an allowlisted address is not enough to claim the
+  // account. Returns the code so the admin screen can show it.
+  const { data, error } = await supabase
     .from('allowed_emails')
     .upsert({ email: email.trim(), display_name, role }, { onConflict: 'email' })
+    .select('registration_code').single()
   if (error) throw error
+  return (data as { registration_code: string | null }).registration_code ?? ''
 }
 export async function setUserRole(email: string, role: AppUser['role']): Promise<void> {
   const { error } = await supabase.from('allowed_emails').update({ role }).eq('email', email)

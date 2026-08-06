@@ -22,6 +22,8 @@ export type ProjectInput = Omit<Project, 'id'>
 export interface AppUser {
   id: string; name: string; email: string; role: Role; active: boolean
   registered: boolean
+  /** one-time code the admin hands to the worker; null once used */
+  registration_code?: string | null
 }
 
 export interface Entry {

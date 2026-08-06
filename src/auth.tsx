@@ -10,7 +10,7 @@ interface Auth {
   user: SessionUser | null
   loading: boolean
   signIn: (email: string, password: string) => Promise<Result>
-  register: (email: string, password: string) => Promise<Result>
+  register: (email: string, password: string, code: string) => Promise<Result>
   signOut: () => Promise<void>
   isAdmin: boolean
 }
@@ -62,9 +62,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }
 
   // First-time registration goes through the edge function (allowlist gate), then signs in.
-  const register: Auth['register'] = async (email, password) => {
+  const register: Auth['register'] = async (email, password, code) => {
     const { data, error } = await supabase.functions.invoke('register', {
-      body: { email: email.trim(), password },
+      body: { email: email.trim(), password, code },
     })
     // edge function returns a non-2xx with { error: <i18n key> }
     try {

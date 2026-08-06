@@ -9,7 +9,7 @@ Deno.serve(async (req) => {
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405)
 
   try {
-    const { email, password } = await req.json()
+    const { email, password, code } = await req.json()
     if (!email || !password) return json({ error: 'err_bad_login' }, 400)
     if (String(password).length < 8) return json({ error: 'err_pw_short' }, 400)
 
@@ -26,18 +26,31 @@ Deno.serve(async (req) => {
     if (selErr) return json({ error: selErr.message }, 500)
 
     const a = rows?.[0]
-    if (!a) return json({ error: 'err_not_invited' }, 403)
-    if (!a.active) return json({ error: 'err_disabled' }, 403)
-    if (a.registered) return json({ error: 'err_already_reg' }, 409)
+
+    // Knowing an address must not be enough to claim the account: addresses are
+    // guessable (firstname@agrotop.co.il) and the admin authorizes them without
+    // sending mail, so every not-yet-registered row was claimable by whoever
+    // submitted it first. The admin hands the code to the worker out of band.
+    const supplied = String(code ?? '').trim().toUpperCase()
+    const expected = String(a?.registration_code ?? '').trim().toUpperCase()
+    const ok = !!a && a.active && !a.registered && !!expected && supplied === expected
+
+    // One answer for "not invited" / "disabled" / "already registered" / "wrong
+    // code" — distinct codes turned this endpoint into an allowlist oracle,
+    // which is exactly what reset-password goes to trouble to avoid.
+    if (!ok) return json({ error: 'err_register_denied' }, 403)
 
     const { error } = await admin.auth.admin.createUser({
       email, password, email_confirm: true,
     })
     if (error) {
       const msg = error.message ?? ''
-      if (msg.toLowerCase().includes('already')) return json({ error: 'err_already_reg' }, 409)
+      if (msg.toLowerCase().includes('already')) return json({ error: 'err_register_denied' }, 403)
       return json({ error: msg }, 400)
     }
+    // burn the code so the row cannot be claimed twice
+    await admin.from('allowed_emails')
+      .update({ registration_code: null }).ilike('email', email)
     return json({ ok: true })
   } catch (e) {
     return json({ error: String(e) }, 500)

@@ -17,6 +17,7 @@ export default function Login() {
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
   const [pw2, setPw2] = useState('')
+  const [code, setCode] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
   const [resetSent, setResetSent] = useState(false)
@@ -37,13 +38,13 @@ export default function Login() {
       if (pw !== pw2) return setErr(t('err_pw_match'))
     }
     setBusy(true)
-    const { error } = mode === 'register' ? await register(email, pw) : await signIn(email, pw)
+    const { error } = mode === 'register' ? await register(email, pw, code) : await signIn(email, pw)
     setBusy(false)
     if (error) return setErr(t(error as never))
     nav('/')
   }
 
-  const swap = (m: Mode) => { setMode(m); setErr(''); setPw(''); setPw2(''); setResetSent(false); if (m === 'register') setEmail('') }
+  const swap = (m: Mode) => { setMode(m); setErr(''); setPw(''); setPw2(''); setCode(''); setResetSent(false); if (m === 'register') setEmail('') }
 
   return (
     <div className="login">
@@ -88,9 +89,17 @@ export default function Login() {
                 </Field>
               )}
               {mode === 'register' && (
-                <Field label={t('confirm_password')}>
-                  <input className="input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
-                </Field>
+                <>
+                  <Field label={t('confirm_password')}>
+                    <input className="input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
+                  </Field>
+                  <Field label={t('reg_code')} hint={t('reg_code_hint')}>
+                    <input
+                      className="input" dir="ltr" autoComplete="off" placeholder="ABC123"
+                      value={code} onChange={(e) => setCode(e.target.value.toUpperCase())}
+                    />
+                  </Field>
+                </>
               )}
 
               <AnimatePresence>

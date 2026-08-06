@@ -76,6 +76,7 @@ export default function Users() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [permsFor, setPermsFor] = useState<AppUser | null>(null)
+  const [copied, setCopied] = useState('')
 
   const roleLabels = { admin: t('role_admin'), member: t('role_member') }
   const reload = () => fetchUsers().then(setUsers).catch(() => setUsers([]))
@@ -130,6 +131,16 @@ export default function Users() {
               <Button variant="ghost" onClick={() => setPermsFor(u)}>🔑 {t('perm_btn')}</Button>
               {!u.registered ? <Tag tone="amber">⧖ {t('pending_reg')}</Tag>
                 : u.active ? <Tag tone="green">✓ {t('registered_on')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
+              {/* the worker cannot register without this — hand it over directly */}
+              {!u.registered && u.registration_code && (
+                <button
+                  className="tag" dir="ltr" title={t('reg_code_col')}
+                  style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.14em', cursor: 'pointer' }}
+                  onClick={() => { void navigator.clipboard.writeText(u.registration_code!); setCopied(u.email) }}
+                >
+                  {copied === u.email ? `✓ ${t('reg_code_copied')}` : u.registration_code}
+                </button>
+              )}
               <Button variant="ghost" onClick={() => toggleActive(u)}>{u.active ? t('inactive') : t('active')}</Button>
               {me?.email?.toLowerCase() !== u.email.toLowerCase() && (
                 <Button variant="danger" onClick={() => remove(u)} title={t('delete_user')}>🗑</Button>
