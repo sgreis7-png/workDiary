@@ -1,6 +1,7 @@
 // Supabase data access for the defect-management (stage-gate) module.
 // Mirrors src/api.ts conventions: thin async wrappers, throw on error.
 import { supabase } from '../lib/supabase'
+import { signPaths } from '../lib/storagePaths'
 import type { GateKey, ItemStatus, Severity, DefectStatus, CoopType, Responsible, SignatureRole } from './model'
 import { cachePut, cacheGet, queueOp, isNetworkError, replayOutbox, type DefectOp } from './offline'
 import { notifyNewDefect } from '../lib/notifyNewRecord'
@@ -130,11 +131,7 @@ async function fetchCoopBundleRemote(coopId: string): Promise<CoopBundle> {
 }
 
 async function hydrateSignatureUrls(sigs: GateSignature[]): Promise<GateSignature[]> {
-  const paths = sigs.map((s) => s.signature_path).filter(Boolean)
-  if (!paths.length) return sigs
-  const { data } = await supabase.storage.from('photos').createSignedUrls(paths, 3600)
-  const m: Record<string, string> = {}
-  for (const s of data ?? []) if (s.signedUrl && s.path) m[s.path] = s.signedUrl
+  const m = await signPaths(sigs.map((s) => s.signature_path))
   return sigs.map((s) => ({ ...s, signature_url: m[s.signature_path] }))
 }
 
@@ -243,20 +240,10 @@ export async function createConcession(
   if (error) throw error
 }
 
-// ---------- report email ----------
-
-export async function sendCoopReport(coopId: string, emails: string[], subject: string, html: string, text: string): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('send-coop-report', {
-    body: { coop_id: coopId, emails, subject, html, text },
-  })
-  if (error) {
-    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
-    const body = await ctx?.json?.().catch(() => null)
-    throw new Error(body?.error ?? error.message)
-  }
-  const d = data as { error?: string } | null
-  if (d?.error) throw new Error(d.error)
-}
+// Coop reports are emailed from the browser via the user's own Outlook mailbox
+// (SendMailDialog → src/lib/outlookSend.ts). The former Resend relay accepted
+// client-supplied HTML and sent it as company mail to any address, so it was
+// removed together with its edge function.
 
 // ---------- search ----------
 
@@ -289,11 +276,7 @@ export async function fetchDefectPhotos(coopId: string): Promise<DefectPhoto[]> 
 }
 
 async function hydratePhotoUrls<T extends { storage_path: string; url?: string }>(rows: T[]): Promise<T[]> {
-  const paths = rows.map((r) => r.storage_path)
-  if (!paths.length) return rows
-  const { data } = await supabase.storage.from('photos').createSignedUrls(paths, 3600)
-  const m: Record<string, string> = {}
-  for (const s of data ?? []) if (s.signedUrl && s.path) m[s.path] = s.signedUrl
+  const m = await signPaths(rows.map((r) => r.storage_path))
   return rows.map((r) => ({ ...r, url: m[r.storage_path] }))
 }
 

@@ -4,7 +4,7 @@
 import { useI18n, type Lang } from '../i18n'
 import type { ItemStatus, Severity, DefectStatus, CoopType, Responsible, GateKey } from './model'
 
-const D = {
+export const D = {
   // mode select
   mode_q:            { he: 'מה מנהלים היום?', en: 'What are we managing today?' },
   mode_work:         { he: 'ניהול עבודה', en: 'Work management' },

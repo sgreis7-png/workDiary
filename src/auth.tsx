@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from './lib/supabase'
+import { unwrapFnError } from './lib/storagePaths'
 import type { Role } from './data'
 
 export interface SessionUser { id: string; email: string; name: string; role: Role; active: boolean }
@@ -65,14 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.functions.invoke('register', {
       body: { email: email.trim(), password },
     })
-    if (error) {
-      // edge function returns a non-2xx with { error: <i18n key> }
-      const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
-      const body = await ctx?.json?.().catch(() => null)
-      return { error: body?.error ?? 'err_bad_login' }
+    // edge function returns a non-2xx with { error: <i18n key> }
+    try {
+      await unwrapFnError(error, data as { error?: string } | null)
+    } catch (e) {
+      return { error: String((e as Error).message) || 'err_bad_login' }
     }
-    const d = data as { error?: string } | null
-    if (d?.error) return { error: d.error }
     return signIn(email, password)
   }
 

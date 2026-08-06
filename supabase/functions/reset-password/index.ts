@@ -67,8 +67,10 @@ Deno.serve(async (req) => {
       const { error: fbErr } = await anonClient.auth.resetPasswordForEmail(a.email, {
         redirectTo: `${APP_URL}/set-password`,
       })
-      if (fbErr) return json({ error: 'send_failed', reason: `resend: ${body.slice(0, 200)} | supabase: ${fbErr.message}` }, 502)
-      return json({ ok: true, via: 'supabase' })
+      // Answer identically whether or not the address exists: a distinguishable
+      // failure here would turn the endpoint into an account-enumeration oracle.
+      if (fbErr) console.error('reset fallback failed', fbErr.message, body.slice(0, 200))
+      return json({ ok: true })
     }
     return json({ ok: true })
   } catch (e) {

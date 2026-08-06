@@ -29,8 +29,20 @@ export async function getPending(): Promise<PendingEntry[]> {
   return out
 }
 
+// A sync can be triggered by the `online` event, window focus and mount at once.
+// createEntry is not idempotent, so two overlapping runs would read the same
+// pending row and post the entry twice — this guard serializes them.
+let syncing: Promise<number> | null = null
+
 /** Push queued entries to the server. Stops on the first failure (still offline). */
-export async function syncQueue(
+export function syncQueue(
+  create: (project_id: string, values: Record<string, string>, files: File[]) => Promise<unknown>,
+): Promise<number> {
+  syncing ??= runSync(create).finally(() => { syncing = null })
+  return syncing
+}
+
+async function runSync(
   create: (project_id: string, values: Record<string, string>, files: File[]) => Promise<unknown>,
 ): Promise<number> {
   const items = await getPending()

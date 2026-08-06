@@ -22,9 +22,9 @@ searchable record that looks professional when it reaches a client.
   screen lightbox viewer (zoom / swipe) in the app and in reports.
 - **Reports** — print-optimized, branded report per entry: save as PDF (works on
   phones), copy (rich HTML + plain text), or email.
-- **Email delivery** — send an entry to distribution lists and/or ad-hoc addresses
-  via Resend, sent *from the logged-in user's own address* when on the verified
-  domain.
+- **Email delivery** — send a report straight from the user's own Outlook mailbox
+  (MSAL popup + Microsoft Graph `Mail.Send`), to mailing lists and/or addresses
+  picked from the company directory. A copy lands in the sender's Sent Items.
 - **Bulk export** — filter by project, worker, and date range (all combinable) and
   render every matching entry for client billing / handover.
 - **Calendar** — month grid (Israeli Sun–Thu work week by default, Fri/Sat toggle),
@@ -52,7 +52,7 @@ searchable record that looks professional when it reaches a client.
 | Styling | Hand-authored CSS (design tokens), no UI framework |
 | Offline | `idb-keyval` (IndexedDB write queue) + `vite-plugin-pwa` (Workbox) |
 | Backend | Supabase — Postgres, Auth, Storage, Edge Functions (Deno) |
-| Email | Resend (via edge function) |
+| Email | Microsoft Graph from the user's mailbox (reports); Resend (password reset) |
 | Hosting | Vercel (static SPA) |
 
 Fonts: Frank Ruhl Libre (display, Hebrew serif), Assistant (body), JetBrains Mono
@@ -71,8 +71,14 @@ Edge Functions** (Deno) that hold the service-role key server-side:
 
 - `register` — completes allowlist-gated signup.
 - `invite` — admin invites / authorizes a worker email.
-- `send-entry` — renders the branded email and sends via Resend; rate-limited.
+- `reset-password` — mails a recovery link; rate-limited, and answers identically
+  for unknown addresses so it cannot be used to enumerate accounts.
+- `send-push` — web-push fan-out.
 - `delete-user` — admin removes a user (auth + profile).
+
+Report email does **not** go through an edge function: the browser sends it via
+Microsoft Graph using the signed-in user's own mailbox, so no server-side mail
+credentials or second copy of the report template exist.
 
 **Offline write path:** an entry saved without connectivity is serialized to an
 IndexedDB queue; a sync hook drains the queue and replays the writes to Supabase
@@ -112,27 +118,34 @@ never downloads the full entries table.
   their owner or an admin (hardened in migration `0009`).
 - **Rate limiting.** Sensitive actions (e.g. sending email) are throttled via an
   `rl_check` RPC (e.g. 30 sends/hour/user) enforced inside the edge function.
-- **Private photo storage.** The `photos` bucket is **not public**; emails embed
-  **time-limited signed URLs** (7-day expiry) generated server-side.
+- **Membership is enforced in the database.** `is_member()` (allowlist + `active`)
+  gates every broad policy, so an account that never passed `register` — or one an
+  admin deactivated — cannot read or write company data even with a valid token.
+- **Private photo storage, path-scoped.** The `photos` bucket is **not public**, and
+  policies are scoped per prefix: users may delete only their own entries' photos
+  and their own avatar, feedback screenshots are admin-only, and gate signatures
+  cannot be deleted by members at all.
 - **HTML escaping.** All user-supplied values are escaped before being placed into
   report/email HTML.
-- **Verified-sender email.** Mail is sent as the user only when their address is on
-  the Resend-verified domain; otherwise a safe fallback sender is used, with the
-  user set as reply-to.
+- **Report email leaves from the sender's own mailbox** via Microsoft Graph, so the
+  app holds no mail credentials and the message is auditable in their Sent Items.
 
 ## Privacy
 
 - **What is stored:** diary field values (free text the user enters), project
-  metadata, work dates, the authoring user's id, and site photos. No analytics or
-  third-party trackers are bundled.
-- **Who can see it:** authenticated app users (per RLS). Reports/emails are only
+  metadata, work dates, the authoring user's id, site photos, chat messages,
+  handwritten gate signatures, and avatars. No analytics or third-party trackers
+  are bundled.
+- **Who can see it:** active allowlisted users (per RLS). Reports/emails are only
   shared with the recipients the sender explicitly chooses.
-- **Photos** live in a private bucket and are exposed only through short-lived
-  signed URLs when a report is emailed — links expire after 7 days.
-- **Outbound data:** email content (the rendered report + signed photo links) is
-  sent to Resend for delivery to the chosen recipients. That is the only egress of
-  user content to a third party. Anything sent outward is delivered to the
-  addresses the sender selects.
+- **Photos** live in a private bucket and are surfaced only through short-lived
+  (1 hour) signed URLs.
+- **Outbound data — the full list of third parties that can see user content:**
+  Microsoft Graph (report emails, sent from the user's own mailbox), Resend
+  (password-reset mails only — no diary content), the browser's push service
+  (notification titles/bodies), and OpenStreetMap Nominatim (GPS coordinates are
+  sent for reverse geocoding when the user taps the location button). Google Fonts
+  is requested at page load and therefore sees the visitor's IP.
 - **Deletion:** admins can delete entries (cascades to photos) and users.
 - **Offline cache:** queued entries and last-seen data sit in the device's
   IndexedDB / service-worker cache until synced; clearing site data removes them.

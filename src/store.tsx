@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, R
 import { fetchAssignments, fetchFieldDefs, fetchMyPriorities, fetchProjects, fetchUserMap, setMyPriority } from './api'
 import { colorForIndex, FieldDef, Project } from './data'
 import { useAuth } from './auth'
+import { useI18n } from './i18n'
 
 interface Store {
   projects: Project[] // sorted by effective priority (user's own, else company)
@@ -28,12 +29,15 @@ export const useStore = () => useContext(Ctx)
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth()
+  const { t } = useI18n()
   const [rawProjects, setRawProjects] = useState<Project[]>([])
   const [fieldDefs, setFieldDefs] = useState<FieldDef[]>([])
   const [userMap, setUserMap] = useState<Record<string, string>>({})
   const [myPriorities, setMyPriorities] = useState<Record<string, number>>({})
   const [assignments, setAssignments] = useState<Record<string, string[]>>({})
   const [ready, setReady] = useState(false)
+  const [loadError, setLoadError] = useState('')
+  const [reloadKey, setReloadKey] = useState(0)
 
   const reloadProjects = useCallback(async () => setRawProjects(await fetchProjects()), [])
   const reloadFields = useCallback(async () => setFieldDefs(await fetchFieldDefs()), [])
@@ -42,13 +46,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!user) { setReady(false); return }
     let alive = true
+    setLoadError('')
     ;(async () => {
       const [p, f, u, pri, asg] = await Promise.all([fetchProjects(), fetchFieldDefs(), fetchUserMap(), fetchMyPriorities(), fetchAssignments()])
       if (!alive) return
       setRawProjects(p); setFieldDefs(f); setUserMap(u); setMyPriorities(pri); setAssignments(asg); setReady(true)
-    })().catch((e) => console.error('store load failed', e))
+    })().catch((e) => {
+      // previously only console.error — the app then sat on a loader forever
+      if (alive) setLoadError(String((e as Error)?.message ?? e))
+    })
     return () => { alive = false }
-  }, [user])
+  }, [user, reloadKey])
 
   const effectivePriority = useCallback(
     (p: Project) => (p.id in myPriorities ? myPriorities[p.id] : (p.priority ?? 0)),
@@ -69,6 +77,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const projectName = (id: string) => projects.find((p) => p.id === id)?.name ?? '—'
   const projectColor = (id: string) => colorForIndex(projects.findIndex((p) => p.id === id))
   const userName = (id: string) => userMap[id] ?? '—'
+
+  if (loadError && !ready) {
+    return (
+      <div className="page" dir="rtl" style={{ maxWidth: 460, margin: '18vh auto', textAlign: 'center' }}>
+        <div className="alert">⚠ {loadError}</div>
+        <button className="btn btn--primary" style={{ marginTop: 14 }}
+          onClick={() => { setLoadError(''); setReloadKey((k) => k + 1) }}>
+          ↻ {t('retry')}
+        </button>
+      </div>
+    )
+  }
 
   return (
     <Ctx.Provider value={{

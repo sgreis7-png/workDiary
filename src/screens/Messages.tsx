@@ -47,7 +47,7 @@ export default function Messages() {
 
   const reload = () => {
     if (!me) return
-    Promise.all([fetchAllChat(me), fetchMyGroups(), fetchAcks()])
+    Promise.all([fetchAllChat(), fetchMyGroups(), fetchAcks()])
       .then(([{ dms, groupMsgs }, gs, as]) => { setDms(dms); setGroupMsgs(groupMsgs); setGroups(gs); setAcks(as) })
       .catch((e) => setErr(String(e.message ?? e)))
   }

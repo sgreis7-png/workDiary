@@ -1,4 +1,3 @@
-import { useState } from 'react'
 import { Field } from '../../components/ui'
 import {
   COOP_TYPE_LABELS, RESPONSIBLE_LABELS, RESP_DOMAINS,

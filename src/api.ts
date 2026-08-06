@@ -1,6 +1,7 @@
 // All Supabase data access. Function names mirror the old mock helpers so screens
 // read the same — only now they're async and hit the real database.
 import { supabase } from './lib/supabase'
+import { signPaths, unwrapFnError } from './lib/storagePaths'
 import { notifyNewEntry } from './lib/notifyNewRecord'
 import { entryMatchesText, hasMalfunction, deptIdOf, MALFUNCTION_DEPT_KEY } from './data'
 import type { AppUser, Entry, FieldDef, Project, ProjectInput, SearchFilters } from './data'
@@ -32,15 +33,6 @@ export async function fetchUserMap(): Promise<Record<string, string>> {
 }
 
 // ---------- photos ----------
-
-async function signPaths(paths: string[]): Promise<Record<string, string>> {
-  const uniq = [...new Set(paths)].filter(Boolean)
-  if (!uniq.length) return {}
-  const { data } = await supabase.storage.from('photos').createSignedUrls(uniq, 3600)
-  const m: Record<string, string> = {}
-  for (const s of data ?? []) if (s.signedUrl && s.path) m[s.path] = s.signedUrl
-  return m
-}
 
 type EntryRow = Omit<Entry, 'photos'> & { entry_photos: { storage_path: string }[] | null }
 const ENTRY_SELECT = 'id,project_id,created_by,work_date,created_at,last_sent_at,values,entry_photos(storage_path)'
@@ -326,35 +318,22 @@ export async function setUserActive(email: string, active: boolean): Promise<voi
 }
 export async function deleteUser(email: string): Promise<void> {
   const { data, error } = await supabase.functions.invoke('delete-user', { body: { email } })
-  if (error) {
-    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
-    const body = await ctx?.json?.().catch(() => null)
-    throw new Error(body?.error ?? error.message)
-  }
-  const d = data as { error?: string } | null
-  if (d?.error) throw new Error(d.error)
+  await unwrapFnError(error, data as { error?: string } | null)
 }
 
-/** Company addresses registered in the system (for the Outlook-style recipient
- *  picker). Personal-domain accounts (gmail test users) are excluded on request. */
+/** Company addresses for the recipient picker. The company-domain + active-member
+ *  filter lives in the `mail_directory()` definer function, so it is enforced by
+ *  the database rather than by this client. */
 export async function fetchDirectory(): Promise<{ name: string; email: string }[]> {
-  const { data, error } = await supabase.from('profiles').select('name,email').order('name')
+  const { data, error } = await supabase.rpc('mail_directory')
   if (error) throw error
-  return (data as { name: string | null; email: string | null }[])
-    .filter((r) => r.email?.toLowerCase().endsWith('@agrotop.co.il'))
-    .map((r) => ({ name: r.name || r.email!.split('@')[0], email: r.email!.toLowerCase() }))
+  return (data ?? []) as { name: string; email: string }[]
 }
 
 /** "Forgot password" — asks the reset-password edge fn to email a recovery link. */
 export async function requestPasswordReset(email: string): Promise<void> {
   const { data, error } = await supabase.functions.invoke('reset-password', { body: { email } })
-  if (error) {
-    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
-    const body = await ctx?.json?.().catch(() => null)
-    throw new Error(body?.error ?? error.message)
-  }
-  const d = data as { error?: string } | null
-  if (d?.error) throw new Error(d.error)
+  await unwrapFnError(error, data as { error?: string } | null)
 }
 
 /** Current user changes their own password. */
@@ -363,17 +342,7 @@ export async function changeMyPassword(newPassword: string): Promise<void> {
   if (error) throw error
 }
 
-// ---------- send ----------
-
-export async function sendEntry(entry_id: string, list_ids: string[], emails: string[]): Promise<void> {
-  const { data, error } = await supabase.functions.invoke('send-entry', {
-    body: { entry_id, list_ids, emails },
-  })
-  if (error) {
-    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
-    const body = await ctx?.json?.().catch(() => null)
-    throw new Error(body?.error ?? error.message)
-  }
-  const d = data as { error?: string } | null
-  if (d?.error) throw new Error(d.error)
-}
+// Reports are emailed from the browser through the user's own Outlook mailbox
+// (src/lib/outlookSend.ts). The former Resend path (`sendEntry` + the send-entry
+// edge function) carried a second, drifted copy of the report template and was
+// removed — see docs in README.

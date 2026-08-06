@@ -2,7 +2,7 @@ import { createContext, useContext, useEffect, useMemo, useState, ReactNode } fr
 
 export type Lang = 'he' | 'en'
 
-const STRINGS = {
+export const STRINGS = {
   brand_tag:      { he: 'פרויקטים חקלאיים בשיטת עד מפתח', en: 'Agriculture Turnkey Projects' },
   app_title:      { he: 'יומן עבודה', en: 'Work Diary' },
   app_sub:        { he: 'תיעוד יומי מהשטח', en: 'Daily field log' },
@@ -227,6 +227,7 @@ const STRINGS = {
   not_sent:         { he: 'לא נשלח', en: 'Not sent' },
 
   close:            { he: 'סגירה', en: 'Close' },
+  retry:            { he: 'נסה שוב', en: 'Retry' },
   perm_btn:         { he: 'הרשאות', en: 'Permissions' },
   perm_title:       { he: 'הרשאות גישה', en: 'Access permissions' },
   perm_admin_note:  { he: 'משתמש זה אדמין — יש לו גישה מלאה לכל האזורים; ההגדרות כאן ישפיעו רק אם יורד לתפקיד עובד.', en: 'This user is an admin with full access everywhere; these settings only apply if demoted to worker.' },
@@ -296,7 +297,10 @@ export function I18nProvider({ children }: { children: ReactNode }) {
 
   const value = useMemo<I18n>(() => ({
     lang, dir,
-    t: (k) => STRINGS[k][lang],
+    // Dynamic keys (server error codes) reach t() via `as never`. An unknown key
+    // must not throw — it used to blow up inside a catch handler, leaving the
+    // user with no error at all — so fall back to the raw key.
+    t: (k) => STRINGS[k]?.[lang] ?? String(k),
     setLang,
     toggle: () => setLang((l) => (l === 'he' ? 'en' : 'he')),
   }), [lang, dir])

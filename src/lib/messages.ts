@@ -121,8 +121,8 @@ export async function ackGroupMessage(messageId: string, myEmail: string): Promi
   if (error) throw error
 }
 
-/** All messages visible to me (DMs + my groups), split. */
-export async function fetchAllChat(myEmail: string): Promise<{ dms: UserMessage[]; groupMsgs: (UserMessage & { group_id: string })[] }> {
+/** All messages visible to me (DMs + my groups), split. RLS does the filtering. */
+export async function fetchAllChat(): Promise<{ dms: UserMessage[]; groupMsgs: (UserMessage & { group_id: string })[] }> {
   const { data, error } = await supabase.from('user_messages')
     .select('*').order('created_at', { ascending: false }).limit(500)
   if (error) throw error
@@ -137,7 +137,7 @@ export async function fetchAllChat(myEmail: string): Promise<{ dms: UserMessage[
 export async function countUnackedAll(myEmail: string): Promise<number> {
   const me = myEmail.toLowerCase()
   try {
-    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(me), fetchAcks()])
+    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(), fetchAcks()])
     const myAcks = new Set(acks.filter((a) => a.email.toLowerCase() === me).map((a) => a.message_id))
     const dmCount = dms.filter((m) => m.to_email?.toLowerCase() === me && !m.ack_at).length
     const gCount = groupMsgs.filter((m) => m.from_email.toLowerCase() !== me && !myAcks.has(m.id)).length
@@ -149,7 +149,7 @@ export async function countUnackedAll(myEmail: string): Promise<number> {
 export async function chatUnackedStatus(myEmail: string): Promise<{ count: number; latest: UserMessage | null }> {
   const me = myEmail.toLowerCase()
   try {
-    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(me), fetchAcks()])
+    const [{ dms, groupMsgs }, acks] = await Promise.all([fetchAllChat(), fetchAcks()])
     const myAcks = new Set(acks.filter((a) => a.email.toLowerCase() === me).map((a) => a.message_id))
     const unacked = [
       ...dms.filter((m) => m.to_email?.toLowerCase() === me && !m.ack_at),

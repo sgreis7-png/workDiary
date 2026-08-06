@@ -10,7 +10,9 @@ import { MISSING_KEY, bdActive, coopLabel, filledMissing, parseCoops, parseMissi
 export const LOGO_URL = 'https://work-diary-phi.vercel.app/agrotop-logo.png'
 
 const esc = (s: string) =>
-  String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
+  String(s ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!
+  ))
 
 // NOTE: the email edge function (supabase/functions/send-entry) renders a near-
 // identical template; keep them in sync. They can't share code across the

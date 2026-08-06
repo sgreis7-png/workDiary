@@ -11,7 +11,9 @@ import { gateSummary } from './rules'
 const I = '#14181b', MUT = '#6c747a', LINE = '#e0e5e2', GREEN = '#3aaa35', DEEP = '#1f7a1b', BG = '#f2f5f3', CLAY = '#c14a15'
 
 function esc(s: string | null | undefined): string {
-  return String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
+  return String(s ?? '').replace(/[&<>"']/g, (c) => (
+    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!
+  ))
 }
 const fmtDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString('he-IL') : '—')
 
