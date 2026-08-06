@@ -335,12 +335,13 @@ export async function deleteUser(email: string): Promise<void> {
   if (d?.error) throw new Error(d.error)
 }
 
-/** Everyone registered in the system (for the Outlook-style recipient picker). */
+/** Company addresses registered in the system (for the Outlook-style recipient
+ *  picker). Personal-domain accounts (gmail test users) are excluded on request. */
 export async function fetchDirectory(): Promise<{ name: string; email: string }[]> {
   const { data, error } = await supabase.from('profiles').select('name,email').order('name')
   if (error) throw error
   return (data as { name: string | null; email: string | null }[])
-    .filter((r) => r.email)
+    .filter((r) => r.email?.toLowerCase().endsWith('@agrotop.co.il'))
     .map((r) => ({ name: r.name || r.email!.split('@')[0], email: r.email!.toLowerCase() }))
 }
 
