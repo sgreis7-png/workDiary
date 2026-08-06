@@ -41,8 +41,9 @@ describe('parseCoops', () => {
       [PROGRESS_KEY]: JSON.stringify([{ task: 'System', pct: 80, remarks: '' }]),
       [HOUSE_PCT_KEY]: '70',
     }
+    // standard task names are normalized to the requested language ('System' → 'מערכת')
     expect(parseCoops(legacy, 'he')).toEqual([
-      { name: 'לול 1', pct: 70, rows: [{ task: 'System', pct: 80, remarks: '' }], bd: [] },
+      { name: 'לול 1', pct: 70, rows: [{ task: 'מערכת', pct: 80, remarks: '' }], bd: [] },
     ])
   })
   it('names unnamed coops by position and clamps pct', () => {

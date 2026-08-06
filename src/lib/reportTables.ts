@@ -105,13 +105,16 @@ export function parseCoops(values: Record<string, string | undefined>, lang: Lan
     try {
       const a = JSON.parse(raw)
       if (Array.isArray(a)) {
+        // normalize standard task/coop names to the requested language — rows
+        // are stored in whatever language the entry was created in
+        const langRow = (r: ProgressRow): ProgressRow => ({ ...r, task: taskLabel(r.task, lang) })
         return a.map((c, i) => {
           const o = c as Record<string, unknown> | null
           return {
-            name: String(o?.name ?? '') || coopName(lang, i + 1),
+            name: coopLabel(String(o?.name ?? '') || coopName(lang, i + 1), lang),
             pct: clampPct(o?.pct),
-            rows: Array.isArray(o?.rows) ? (o.rows as unknown[]).map(normRow) : [],
-            bd: Array.isArray(o?.bd) ? (o.bd as unknown[]).map(normRow) : [],
+            rows: Array.isArray(o?.rows) ? (o.rows as unknown[]).map(normRow).map(langRow) : [],
+            bd: Array.isArray(o?.bd) ? (o.bd as unknown[]).map(normRow).map(langRow) : [],
           }
         })
       }
@@ -120,7 +123,12 @@ export function parseCoops(values: Record<string, string | undefined>, lang: Lan
   const legacyRows = values[PROGRESS_KEY]
   const legacyPct = String(values[HOUSE_PCT_KEY] ?? '').trim()
   if ((legacyRows === undefined || legacyRows === '') && !legacyPct) return []
-  return [{ name: coopName(lang, 1), pct: clampPct(legacyPct), rows: parseProgress(legacyRows, lang), bd: [] }]
+  return [{
+    name: coopName(lang, 1),
+    pct: clampPct(legacyPct),
+    rows: parseProgress(legacyRows, lang).map((r) => ({ ...r, task: taskLabel(r.task, lang) })),
+    bd: [],
+  }]
 }
 
 export function parseMissing(raw: string | undefined): MissingRow[] {
