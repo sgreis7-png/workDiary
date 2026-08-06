@@ -14,9 +14,9 @@ const esc = (s: string) =>
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!
   ))
 
-// NOTE: the email edge function (supabase/functions/send-entry) renders a near-
-// identical template; keep them in sync. They can't share code across the
-// browser/Deno boundary. logoUrl is a param so this stays pure/testable.
+// This is the only renderer of the diary report: the mail is composed here and
+// sent from the browser through the user's Outlook mailbox, so there is no
+// server-side copy to keep in sync. logoUrl is a param so this stays pure/testable.
 export function buildReportHtml(o: {
   projectName: string; authorName: string; entry: Entry; defs: FieldDef[]
 }, logoUrl: string = LOGO_URL): string {

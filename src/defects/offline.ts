@@ -27,18 +27,35 @@ export type DefectOp =
 interface QueuedOp { id: string; seq: number; op: DefectOp }
 let counter = Date.now()
 
+// guarded like the diary queue's sibling: this module is also exercised outside
+// a DOM (tests, and any future non-browser caller)
+const notifyQueued = () => {
+  if (typeof window !== 'undefined') window.dispatchEvent(new Event('wd-queued'))
+}
+
 export async function queueOp(op: DefectOp): Promise<void> {
   const id = crypto.randomUUID()
   await set(id, { id, seq: ++counter, op } satisfies QueuedOp, outboxStore)
-  window.dispatchEvent(new Event('wd-queued'))
+  notifyQueued()
 }
 
 export async function outboxCount(): Promise<number> {
   try { return (await keys(outboxStore)).length } catch { return 0 }
 }
 
+// Same guard as the diary queue (src/lib/offline.ts): `online`, window focus and
+// mount can each trigger a replay. defect_create retries past duplicate-key
+// collisions by bumping seq, so two overlapping replays would not error — they
+// would silently create the defect twice.
+let replaying: Promise<number> | null = null
+
 /** Replay queued ops in order; stops at the first failure (still offline). */
-export async function replayOutbox(apply: (op: DefectOp) => Promise<void>): Promise<number> {
+export function replayOutbox(apply: (op: DefectOp) => Promise<void>): Promise<number> {
+  replaying ??= runReplay(apply).finally(() => { replaying = null })
+  return replaying
+}
+
+async function runReplay(apply: (op: DefectOp) => Promise<void>): Promise<number> {
   let items: QueuedOp[] = []
   try {
     const ks = await keys(outboxStore)
@@ -53,7 +70,7 @@ export async function replayOutbox(apply: (op: DefectOp) => Promise<void>): Prom
       n++
     } catch { break }
   }
-  if (n) window.dispatchEvent(new Event('wd-queued'))
+  if (n) notifyQueued()
   return n
 }
 

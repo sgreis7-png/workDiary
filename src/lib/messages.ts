@@ -1,5 +1,6 @@
 // User-to-user messages ("סיימת את העבודה?") — persistent until the recipient acks.
 import { supabase } from './supabase'
+import { signPaths } from './storagePaths'
 
 export interface UserMessage {
   id: string
@@ -52,12 +53,7 @@ export async function fetchProfileMetas(): Promise<Record<string, ProfileMeta>> 
   const { data, error } = await supabase.from('profiles').select('id,name,email,avatar_path')
   if (error) throw error
   const rows = data as ProfileMeta[]
-  const paths = rows.map((r) => r.avatar_path).filter(Boolean) as string[]
-  const urls: Record<string, string> = {}
-  if (paths.length) {
-    const { data: signed } = await supabase.storage.from('photos').createSignedUrls(paths, 3600)
-    for (const s of signed ?? []) if (s.signedUrl && s.path) urls[s.path] = s.signedUrl
-  }
+  const urls = await signPaths(rows.map((r) => r.avatar_path))
   const m: Record<string, ProfileMeta> = {}
   for (const r of rows) if (r.email) m[r.email.toLowerCase()] = { ...r, avatar_url: r.avatar_path ? urls[r.avatar_path] : undefined }
   return m
@@ -70,8 +66,7 @@ export async function uploadMyAvatar(userId: string, png: Blob): Promise<string>
   if (upErr) throw upErr
   const { error } = await supabase.from('profiles').update({ avatar_path: path }).eq('id', userId)
   if (error) throw error
-  const { data } = await supabase.storage.from('photos').createSignedUrls([path], 3600)
-  return data?.[0]?.signedUrl ?? ''
+  return (await signPaths([path]))[path] ?? ''
 }
 
 // ---------- group chats ----------

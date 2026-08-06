@@ -72,7 +72,7 @@ export default function CoopReport() {
     const sel = window.getSelection()
     sel?.removeAllRanges()
     sel?.addRange(range)
-    let ok = false
+    let ok: boolean
     try { ok = document.execCommand('copy') } catch { ok = false }
     sel?.removeAllRanges()
     host.remove()

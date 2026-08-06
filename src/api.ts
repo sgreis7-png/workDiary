@@ -92,7 +92,7 @@ export async function createEntry(
   const entryId = ins.id as string
 
   for (const f of files) {
-    const safe = f.name.replace(/[^\w.\-]+/g, '_')
+    const safe = f.name.replace(/[^\w.-]+/g, '_')
     const path = `${entryId}/${crypto.randomUUID()}-${safe}`
     const { error: upErr } = await supabase.storage.from('photos').upload(path, f)
     if (upErr) throw upErr
@@ -125,7 +125,7 @@ export async function updateEntry(
     await supabase.storage.from('photos').remove([path])
   }
   for (const f of newFiles) {
-    const safe = f.name.replace(/[^\w.\-]+/g, '_')
+    const safe = f.name.replace(/[^\w.-]+/g, '_')
     const path = `${id}/${crypto.randomUUID()}-${safe}`
     const { error: upErr } = await supabase.storage.from('photos').upload(path, f)
     if (upErr) throw upErr

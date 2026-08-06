@@ -23,10 +23,21 @@ Deno.serve(async (req) => {
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) return json({ error: 'push_not_configured' }, 500)
 
     const { emails = [], title = '', body = '', link = '/' } = await req.json()
-    const clean = [...new Set((emails as string[]).filter((e) => typeof e === 'string' && e.includes('@')).map((e) => e.toLowerCase()))]
-    if (!clean.length || !title) return json({ error: 'missing_fields' }, 400)
+    const asked = [...new Set((emails as string[]).filter((e) => typeof e === 'string' && e.includes('@')).map((e) => e.toLowerCase()))]
+    if (!asked.length || !title) return json({ error: 'missing_fields' }, 400)
 
     const db = createClient(URL_, SERVICE)
+
+    // A valid session alone is not enough: without this, any account — including
+    // one that never passed `register` — could push arbitrary text and deep links
+    // to every real user's phone. Sender must be an active member, and only
+    // active members can be targeted.
+    const { data: members } = await db.from('allowed_emails').select('email').eq('active', true)
+    const active = new Set((members ?? []).map((m: { email: string }) => m.email.toLowerCase()))
+    if (!active.has(user.email.toLowerCase())) return json({ error: 'forbidden' }, 403)
+    const clean = asked.filter((e) => active.has(e))
+    if (!clean.length) return json({ ok: true, sent: 0 })
+
     const { data: allowed } = await db.rpc('rl_check', { p_actor: user.id, p_action: 'push', p_max: 120, p_window_seconds: 3600 })
     if (allowed === false) return json({ error: 'rate_limited' }, 429)
 

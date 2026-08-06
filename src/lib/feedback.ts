@@ -24,7 +24,7 @@ export async function submitFeedback(kind: 'bug' | 'request', message: string, f
 
   let photo_path: string | null = null
   if (file) {
-    const safe = file.name.replace(/[^\w.\-]+/g, '_')
+    const safe = file.name.replace(/[^\w.-]+/g, '_')
     photo_path = `feedback/${crypto.randomUUID()}-${safe}`
     const { error: upErr } = await supabase.storage.from('photos').upload(photo_path, file)
     if (upErr) throw upErr

@@ -19,9 +19,14 @@ async function recipients(projectId: string): Promise<string[]> {
 
 async function fanOut(emails: string[], title: string, body: string, link: string): Promise<void> {
   if (!emails.length) return
-  await supabase.from('notifications').insert(
-    emails.map((recipient_email) => ({ recipient_email, title, body, link })),
-  )
+  // One row per recipient rather than a single batch: notifications may only
+  // target active members, and project_assignments still lists people an admin
+  // has since deactivated. A batch insert would be rejected as a whole, so a
+  // single stale assignment would silently mute everyone on that project.
+  await Promise.all(emails.map((recipient_email) =>
+    supabase.from('notifications').insert({ recipient_email, title, body, link })
+      .then(() => {}, () => {}),
+  ))
   sendPush(emails, title, body, link)
 }
 

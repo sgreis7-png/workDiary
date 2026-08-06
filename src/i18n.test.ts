@@ -2,7 +2,7 @@
 // present in one language but not the other ships as `undefined` on screen.
 import { describe, it, expect } from 'vitest'
 import { STRINGS } from './i18n'
-import { D } from './defects/i18n'
+import { D, dt } from './defects/i18n'
 
 const dicts: [string, Record<string, { he: string; en: string }>][] = [
   ['i18n.tsx', STRINGS as Record<string, { he: string; en: string }>],
@@ -22,5 +22,23 @@ describe.each(dicts)('%s dictionary', (_name, dict) => {
       .filter(([, v]) => /[֐-׿]/.test(v.en))
       .map(([k]) => k)
     expect(untranslated).toEqual([])
+  })
+})
+
+// t() receives dynamic keys (edge-function error codes) via `as never`. It used
+// to index blindly, so an unmapped code threw — inside a catch handler, which
+// swallowed the real failure and showed the user nothing.
+describe('lookup with an unmapped key', () => {
+  const t = (k: string) => (STRINGS as Record<string, { he: string; en: string }>)[k]?.he ?? String(k)
+
+  it('returns the key instead of throwing', () => {
+    expect(() => t('some_unmapped_server_code')).not.toThrow()
+    expect(t('some_unmapped_server_code')).toBe('some_unmapped_server_code')
+  })
+  it('still resolves real keys', () => {
+    expect(t('cancel')).toBe(STRINGS.cancel.he)
+  })
+  it('defects dt() resolves its own keys', () => {
+    expect(dt('he', 'rep_back')).toBe(D.rep_back.he)
   })
 })

@@ -7,3 +7,6 @@ dist/
 # local reference documents (workbook / decks), not part of the app
 *.xlsx
 *.pptx
+
+# incremental typecheck artifact
+tsconfig.tsbuildinfo

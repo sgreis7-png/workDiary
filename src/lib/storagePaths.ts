@@ -13,12 +13,6 @@ export async function signPaths(paths: (string | null | undefined)[]): Promise<R
   return m
 }
 
-/** Attach a signed `url` to rows carrying a `storage_path`. */
-export async function withSignedUrls<T extends { storage_path: string }>(rows: T[]): Promise<(T & { url?: string })[]> {
-  const signed = await signPaths(rows.map((r) => r.storage_path))
-  return rows.map((r) => ({ ...r, url: signed[r.storage_path] }))
-}
-
 type FnError = { context?: { json?: () => Promise<{ error?: string }> } }
 
 /**
