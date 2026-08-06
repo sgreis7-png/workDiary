@@ -7,8 +7,10 @@ import { fetchUsers } from '../api'
 import {
   fetchAllChat, fetchMyGroups, fetchAcks, fetchProfileMetas,
   sendUserMessage, sendGroupMessage, ackMessage, ackGroupMessage, createGroup,
+  uploadChatAttachment,
   type UserMessage, type ProfileMeta, type ChatGroup, type MessageAck,
 } from '../lib/messages'
+import { supabase } from '../lib/supabase'
 import type { AppUser } from '../data'
 import { useDT } from '../defects/i18n'
 import { sendPush } from '../lib/push'
@@ -40,6 +42,7 @@ export default function Messages() {
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [groupOpen, setGroupOpen] = useState(false)
   const [contactQ, setContactQ] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -54,12 +57,17 @@ export default function Messages() {
 
   useEffect(() => {
     reload()
-    const t = setInterval(reload, 30_000)
+    // realtime INSERTs (RLS-filtered server-side) + a slow fallback poll in
+    // case the socket drops silently
+    const chan = supabase.channel('chat')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_messages' }, reload)
+      .subscribe()
+    const t = setInterval(reload, 120_000)
     fetchUsers()
       .then((us) => setUsers(us.filter((u) => u.active && u.registered && u.email.toLowerCase() !== me)))
       .catch(() => setUsers([]))
     fetchProfileMetas().then(setMetas).catch(() => {})
-    return () => clearInterval(t)
+    return () => { clearInterval(t); void supabase.removeChannel(chan) }
   }, [me]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const myAcks = useMemo(() => new Set(acks.filter((a) => a.email.toLowerCase() === me).map((a) => a.message_id)), [acks, me])
@@ -135,18 +143,21 @@ export default function Messages() {
   }, [activeConv, thread, me, myAcks])  
 
   async function onSend() {
-    if (!user || !activeConv || !body.trim() || busy) return
+    if (!user || !activeConv || busy) return
+    if (!body.trim() && !pendingFile) return
     setBusy(true); setErr('')
     try {
       const text = body.trim()
+      const att = pendingFile ? await uploadChatAttachment(pendingFile) : undefined
+      const pushText = text || (att ? `📎 ${att.name}` : '')
       if (activeConv.isGroup) {
-        await sendGroupMessage({ email: user.email, name: user.name }, activeConv.group!.id, text)
-        sendPush(activeConv.group!.members.filter((em) => em !== me), `${user.name} · ${activeConv.title}`, text, '/messages')
+        await sendGroupMessage({ email: user.email, name: user.name }, activeConv.group!.id, text, att)
+        sendPush(activeConv.group!.members.filter((em) => em !== me), `${user.name} · ${activeConv.title}`, pushText, '/messages')
       } else {
-        await sendUserMessage({ email: user.email, name: user.name }, activeConv.email!, text)
-        sendPush([activeConv.email!], user.name, text, '/messages')
+        await sendUserMessage({ email: user.email, name: user.name }, activeConv.email!, text, att)
+        sendPush([activeConv.email!], user.name, pushText, '/messages')
       }
-      setBody(''); reload()
+      setBody(''); setPendingFile(null); reload()
     } catch (e) { setErr(String((e as Error).message ?? e)) }
     finally { setBusy(false); inputRef.current?.focus() }
   }
@@ -223,7 +234,19 @@ export default function Messages() {
                         <ChatAvatar meta={meta} name={mine ? (user?.name ?? '') : (m.from_name ?? m.from_email)} size={42} />
                         <div className={`bubble ${mine ? 'bubble--mine' : ''}`}>
                           {isGroup && !mine && <div className="bubble__sender">{m.from_name ?? nameOf(m.from_email)}</div>}
-                          <p>{m.body}</p>
+                          {m.attachment_url && (m.attachment_type ?? '').startsWith('image/') && (
+                            <a href={m.attachment_url} target="_blank" rel="noreferrer">
+                              <img src={m.attachment_url} alt={m.attachment_name ?? ''}
+                                style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block', marginBottom: m.body ? 6 : 0 }} />
+                            </a>
+                          )}
+                          {m.attachment_url && !(m.attachment_type ?? '').startsWith('image/') && (
+                            <a href={m.attachment_url} target="_blank" rel="noreferrer" download={m.attachment_name ?? undefined}
+                              style={{ display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: m.body ? 6 : 0, color: 'inherit', fontWeight: 600 }}>
+                              📎 {m.attachment_name ?? dt('chat_file')}
+                            </a>
+                          )}
+                          {m.body && <p>{m.body}</p>}
                           <span className="bubble__time mono">
                             {fmtTime(m.created_at)}
                             {mine && !isGroup && (m.ack_at
@@ -244,18 +267,29 @@ export default function Messages() {
               </div>
 
               <footer className="chat__composer">
+                <label className="msg-emoji" title={dt('chat_attach')} style={{ cursor: 'pointer' }}>
+                  📎
+                  <input type="file" hidden onChange={(e) => { setPendingFile(e.target.files?.[0] ?? null); e.currentTarget.value = '' }} />
+                </label>
                 <div style={{ position: 'relative' }}>
                   <button className="msg-emoji" title="אימוג'ים" onClick={() => setEmojiOpen((o) => !o)}>😀</button>
                   {emojiOpen && (
                     <EmojiPicker onPick={(e) => { setBody((b) => b + e); inputRef.current?.focus() }} onClose={() => setEmojiOpen(false)} />
                   )}
                 </div>
+                {pendingFile && (
+                  <span className="tag tag--green" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, maxWidth: 180, overflow: 'hidden' }}>
+                    📎 <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{pendingFile.name}</span>
+                    <button type="button" onClick={() => setPendingFile(null)}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', padding: 0 }}>✕</button>
+                  </span>
+                )}
                 <input
                   ref={inputRef} className="input" placeholder={dt('chat_placeholder')}
                   value={body} onChange={(e) => setBody(e.target.value)}
                   onKeyDown={(e) => e.key === 'Enter' && onSend()}
                 />
-                <button className="btn btn--primary" disabled={!body.trim() || busy} onClick={onSend}>
+                <button className="btn btn--primary" disabled={(!body.trim() && !pendingFile) || busy} onClick={onSend}>
                   {busy ? '…' : '➤'}
                 </button>
               </footer>

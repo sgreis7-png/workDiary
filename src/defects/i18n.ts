@@ -52,6 +52,8 @@ export const D = {
   grp_cancel:        { he: 'ביטול', en: 'Cancel' },
   grp_create:        { he: 'יצירת קבוצה', en: 'Create group' },
   loading_msgs:      { he: 'טוען הודעות…', en: 'Loading messages…' },
+  chat_attach:       { he: 'צירוף קובץ או תמונה', en: 'Attach a file or photo' },
+  chat_file:         { he: 'קובץ מצורף', en: 'Attached file' },
 
   // coops list
   coops_kicker:      { he: 'תפיסת סיום שלב · Hold Points', en: 'Stage-gate QC · Hold Points' },

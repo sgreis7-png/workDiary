@@ -1,6 +1,7 @@
 // User-to-user messages ("סיימת את העבודה?") — persistent until the recipient acks.
 import { supabase } from './supabase'
 import { signPaths } from './storagePaths'
+import { compressImage } from './compressImage'
 
 export interface UserMessage {
   id: string
@@ -10,13 +11,34 @@ export interface UserMessage {
   body: string
   created_at: string
   ack_at: string | null
+  attachment_path: string | null
+  attachment_name: string | null
+  attachment_type: string | null
+  /** signed URL, hydrated client-side */
+  attachment_url?: string
+}
+
+export interface ChatAttachment { path: string; name: string; type: string }
+
+/** Upload a chat attachment (images are compressed first). Objects live under
+ *  an unguessable chat/<uuid>- prefix and are served via short signed URLs. */
+export async function uploadChatAttachment(file: File): Promise<ChatAttachment> {
+  const small = await compressImage(file)
+  const safe = small.name.replace(/[^\w.-]+/g, '_')
+  const path = `chat/${crypto.randomUUID()}-${safe}`
+  const { error } = await supabase.storage.from('photos').upload(path, small, { contentType: small.type || 'application/octet-stream' })
+  if (error) throw error
+  return { path, name: small.name, type: small.type || 'application/octet-stream' }
 }
 
 
 
-export async function sendUserMessage(from: { email: string; name: string }, toEmail: string, body: string): Promise<void> {
+export async function sendUserMessage(from: { email: string; name: string }, toEmail: string, body: string, att?: ChatAttachment): Promise<void> {
   const { error } = await supabase.from('user_messages')
-    .insert({ from_email: from.email.toLowerCase(), from_name: from.name, to_email: toEmail.toLowerCase(), body })
+    .insert({
+      from_email: from.email.toLowerCase(), from_name: from.name, to_email: toEmail.toLowerCase(), body,
+      attachment_path: att?.path ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null,
+    })
   if (error) throw error
 }
 
@@ -80,9 +102,12 @@ export async function createGroup(name: string, creatorEmail: string, memberEmai
   return id
 }
 
-export async function sendGroupMessage(from: { email: string; name: string }, groupId: string, body: string): Promise<void> {
+export async function sendGroupMessage(from: { email: string; name: string }, groupId: string, body: string, att?: ChatAttachment): Promise<void> {
   const { error } = await supabase.from('user_messages')
-    .insert({ from_email: from.email.toLowerCase(), from_name: from.name, to_email: null, group_id: groupId, body })
+    .insert({
+      from_email: from.email.toLowerCase(), from_name: from.name, to_email: null, group_id: groupId, body,
+      attachment_path: att?.path ?? null, attachment_name: att?.name ?? null, attachment_type: att?.type ?? null,
+    })
   if (error) throw error
 }
 
@@ -104,6 +129,9 @@ export async function fetchAllChat(): Promise<{ dms: UserMessage[]; groupMsgs: (
     .select('*').order('created_at', { ascending: false }).limit(500)
   if (error) throw error
   const all = data as (UserMessage & { group_id: string | null })[]
+  // hydrate attachment URLs in one signing round-trip
+  const urls = await signPaths(all.map((m) => m.attachment_path))
+  for (const m of all) if (m.attachment_path) m.attachment_url = urls[m.attachment_path]
   return {
     dms: all.filter((m) => !m.group_id),
     groupMsgs: all.filter((m) => m.group_id) as (UserMessage & { group_id: string })[],
