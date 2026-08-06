@@ -27,7 +27,7 @@ export default function MalfunctionsSection() {
     setBusy(true)
     let alive = true
     const h = setTimeout(() => {
-      searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, malfunction: 'any' })
+      searchEntries({ projectId: projectId && projectId !== 'all' ? projectId : undefined, from: from || undefined, to: to || undefined, malfunction: 'any' })
         .then((r) => { if (alive) setEntries(r) })
         .catch(() => { if (alive) setEntries([]) })
         .finally(() => { if (alive) setBusy(false) })
@@ -39,7 +39,7 @@ export default function MalfunctionsSection() {
   // captured whenever no project filter is applied, kept while one is
   const [malfProjects, setMalfProjects] = useState<Set<string>>(new Set())
   useEffect(() => {
-    if (projectId || !entries) return
+    if ((projectId && projectId !== 'all') || !entries) return
     setMalfProjects(new Set(entries.map((e) => e.project_id)))
   }, [entries, projectId])
 
@@ -77,7 +77,8 @@ export default function MalfunctionsSection() {
       <div className="search-bar" style={{ marginTop: 0 }}>
         <Field label={t('project')}>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
-            <option value="">{t('all_projects')}</option>
+            <option value="">— {t('choose')} —</option>
+            <option value="all">{t('all_projects')}</option>
             {/* only projects that actually recorded a malfunction */}
             {projects.filter((p) => malfProjects.has(p.id)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
