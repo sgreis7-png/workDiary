@@ -30,7 +30,7 @@ Deno.serve(async (req) => {
     if (allowed === false) return json({ error: 'rate_limited' }, 429)
 
     const { data: rows } = await db.from('allowed_emails')
-      .select('email,active,registered').ilike('email', clean).limit(1)
+      .select('email,active,registered').eq('email', clean).limit(1)
     const a = rows?.[0]
     // Unknown / disabled / never-registered → same success answer, no mail.
     if (!a || !a.active || !a.registered) return json({ ok: true })

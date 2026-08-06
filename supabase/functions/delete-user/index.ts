@@ -19,7 +19,7 @@ Deno.serve(async (req) => {
 
     const db = createClient(URL, SERVICE)
     const { data: caller } = await db
-      .from('allowed_emails').select('role,active').ilike('email', user.email).maybeSingle()
+      .from('allowed_emails').select('role,active').eq('email', user.email.toLowerCase()).maybeSingle()
     if (caller?.role !== 'admin' || !caller.active) return json({ error: 'forbidden' }, 403)
 
     const { data: allowed } = await db.rpc('rl_check', { p_actor: user.email, p_action: 'delete', p_max: 50, p_window_seconds: 3600 })

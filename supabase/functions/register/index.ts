@@ -18,12 +18,14 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     )
 
-    const { data: allowed } = await admin.rpc('rl_check', { p_actor: String(email).toLowerCase(), p_action: 'register', p_max: 5, p_window_seconds: 3600 })
-    if (allowed === false) return json({ error: 'rate_limited' }, 429)
-
     // exact match, not ilike: '%' and '_' are LIKE wildcards and the address is
     // attacker-supplied, so a pattern could match a row the caller never named
     const clean = String(email).trim().toLowerCase()
+
+    // rate-limit on the normalized address — keying on the raw input let
+    // ' pavel@… ' variants each open a fresh 5/hr budget for the same target
+    const { data: allowed } = await admin.rpc('rl_check', { p_actor: clean, p_action: 'register', p_max: 5, p_window_seconds: 3600 })
+    if (allowed === false) return json({ error: 'rate_limited' }, 429)
     const { data: rows, error: selErr } = await admin
       .from('allowed_emails').select('*').eq('email', clean).limit(1)
     if (selErr) return json({ error: selErr.message }, 500)

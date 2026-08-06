@@ -42,7 +42,7 @@ export function resolvePerm(role: Role, overrides: Record<string, PermLevel>, ar
 /** Area→level overrides for a user (own rows for members; any row for admins). */
 export async function fetchPermOverrides(email: string): Promise<Record<string, PermLevel>> {
   const { data, error } = await supabase.from('user_permissions')
-    .select('area,level').ilike('email', email)
+    .select('area,level').eq('email', email.toLowerCase())
   if (error) throw error
   const m: Record<string, PermLevel> = {}
   for (const r of data as { area: string; level: PermLevel }[]) m[r.area] = r.level
@@ -57,6 +57,6 @@ export async function setPermOverride(email: string, area: PermArea, level: Perm
 
 export async function clearPermOverride(email: string, area: PermArea): Promise<void> {
   const { error } = await supabase.from('user_permissions')
-    .delete().ilike('email', email).eq('area', area)
+    .delete().eq('email', email.toLowerCase()).eq('area', area)
   if (error) throw error
 }
