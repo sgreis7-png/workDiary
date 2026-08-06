@@ -282,12 +282,15 @@ const Ctx = createContext<I18n>(null as unknown as I18n)
 export const useI18n = () => useContext(Ctx)
 
 export function I18nProvider({ children }: { children: ReactNode }) {
-  const [lang, setLang] = useState<Lang>('he')
+  // persisted so a refresh / app restart keeps the chosen language
+  const [lang, setLang] = useState<Lang>(() =>
+    localStorage.getItem('app_lang') === 'en' ? 'en' : 'he')
   const dir = lang === 'he' ? 'rtl' : 'ltr'
 
   useEffect(() => {
     document.documentElement.lang = lang
     document.documentElement.dir = dir
+    localStorage.setItem('app_lang', lang)
   }, [lang, dir])
 
   const value = useMemo<I18n>(() => ({
