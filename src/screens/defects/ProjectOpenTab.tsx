@@ -1,12 +1,11 @@
 import { useState } from 'react'
 import { Field } from '../../components/ui'
 import {
-  COOP_TYPE_LABELS, YES_NO_LABELS, RESPONSIBLE_LABELS, RESP_DOMAINS,
-  PROJECT_OPEN_TITLE, RESP_MATRIX_TITLE, PROJECT_OPEN_FOOTNOTES,
+  COOP_TYPE_LABELS, RESPONSIBLE_LABELS, RESP_DOMAINS,
   type CoopType, type Responsible,
 } from '../../defects/model'
 import type { Coop, CoopResponsibility } from '../../defects/api'
-import { useDT, coopTypeLabel, responsibleLabel, yesNoLabel } from '../../defects/i18n'
+import { useDT, coopTypeLabel, responsibleLabel, yesNoLabel, respDomainLabel, projectOpenFootnotes } from '../../defects/i18n'
 import { TextCell } from './TextCell'
 
 export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, onResponsibility }: {
@@ -90,7 +89,7 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
               const r = resp(d.key)
               return (
                 <tr key={d.key}>
-                  <td className="gate-table__item">{d.label}</td>
+                  <td className="gate-table__item">{respDomainLabel(lang, d.key)}</td>
                   <td data-label={dt('po_resp')}>
                     <select
                       className="input" value={r.responsible ?? ''}
@@ -115,7 +114,7 @@ export function ProjectOpenTab({ coop, responsibilities, projectName, onCoop, on
         </table>
       </div>
 
-      {PROJECT_OPEN_FOOTNOTES.map((f, i) => <div key={i} className="gate-footnote">{f}</div>)}
+      {projectOpenFootnotes(lang).map((f, i) => <div key={i} className="gate-footnote">{f}</div>)}
     </div>
   )
 }

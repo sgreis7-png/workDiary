@@ -1,8 +1,8 @@
-import { GATES, GATE_ORDER, type GateKey, STATUS_SUMMARY_TITLE, STATUS_SUMMARY_FOOTNOTE } from '../../defects/model'
+import { GATES, GATE_ORDER, type GateKey } from '../../defects/model'
 import { gateSummary, type ChecklistItemState } from '../../defects/rules'
 import type { GateDefs } from '../../defects/defs'
 import type { ChecklistItem } from '../../defects/api'
-import { useDT, gateShortName } from '../../defects/i18n'
+import { useDT, gateShortName, statusSummaryTitle, statusSummaryFootnote } from '../../defects/i18n'
 
 export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
   items: ChecklistItem[]
@@ -13,7 +13,7 @@ export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
   const state: ChecklistItemState[] = items.map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
   return (
     <div className="gate-panel">
-      <h2 className="gate-panel__title">{STATUS_SUMMARY_TITLE}</h2>
+      <h2 className="gate-panel__title">{statusSummaryTitle(lang)}</h2>
       <div className="gate-table-wrap">
         <table className="gate-table summary-table m-cards m-cards--stats">
           <thead>
@@ -42,7 +42,7 @@ export function StatusSummaryTab({ items, defs = GATES, onGoGate }: {
           </tbody>
         </table>
       </div>
-      <div className="gate-footnote">{STATUS_SUMMARY_FOOTNOTE}</div>
+      <div className="gate-footnote">{statusSummaryFootnote(lang)}</div>
     </div>
   )
 }

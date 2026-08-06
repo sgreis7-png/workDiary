@@ -67,7 +67,7 @@ export function GateTab({ gate, defs, bundle, onItem, onSign, onUnsign, onConces
                   <td className="gate-table__item">
                     <span className="m-no mono">{it.no} · </span>
                     {it.text}
-                    {row?.auto_na_reason && <span className="auto-na-chip" title={row.auto_na_reason}>אוטומטי: {row.auto_na_reason}</span>}
+                    {row?.auto_na_reason && <span className="auto-na-chip" title={row.auto_na_reason}>{dt('auto_na')}: {row.auto_na_reason}</span>}
                   </td>
                   <td data-label={dt('col_status')}>
                     <select

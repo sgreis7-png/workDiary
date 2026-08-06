@@ -1,11 +1,10 @@
 import { useState } from 'react'
 import {
   GATES, GATE_ORDER, SEVERITY_LABELS, DEFECT_STATUS_LABELS,
-  DEFECT_LOG_TITLE, DEFECT_LOG_GOLDEN_RULE,
   type GateKey, type Severity, type DefectStatus,
 } from '../../defects/model'
 import { itemLabel, type GateDefs } from '../../defects/defs'
-import { useDT, severityLabel, defectStatusLabel, gateShortName } from '../../defects/i18n'
+import { useDT, severityLabel, defectStatusLabel, gateShortName, defectLogTitle, defectLogGoldenRule } from '../../defects/i18n'
 import type { Defect, DefectPhoto } from '../../defects/api'
 import type { AppUser } from '../../data'
 import { TextCell } from './TextCell'
@@ -25,7 +24,7 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
   const [newGate, setNewGate] = useState<GateKey>('gate1')
   return (
     <div className="gate-panel">
-      <h2 className="gate-panel__title">{DEFECT_LOG_TITLE}</h2>
+      <h2 className="gate-panel__title">{defectLogTitle(lang)}</h2>
 
       <div className="coop-new" style={{ marginBottom: 16 }}>
         <select className="input" value={newGate} onChange={(e) => setNewGate(e.target.value as GateKey)}>
@@ -151,7 +150,7 @@ export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], o
         </div>
       )}
 
-      <div className="gate-footnote">{DEFECT_LOG_GOLDEN_RULE}</div>
+      <div className="gate-footnote">{defectLogGoldenRule(lang)}</div>
     </div>
   )
 }

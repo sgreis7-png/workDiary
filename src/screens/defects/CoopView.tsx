@@ -229,7 +229,7 @@ export default function CoopView() {
     <div className="page coop-view">
       <div className="page__head">
         <div>
-          <div className="kicker">{projectName(bundle.coop.project_id)} · תפיסת סיום שלב</div>
+          <div className="kicker">{projectName(bundle.coop.project_id)} · {dt('coop_kicker')}</div>
           <h1 className="page-title">{bundle.coop.name}</h1>
         </div>
         <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

@@ -81,6 +81,8 @@ const D = {
   coop_back_all:     { he: '→ כל הלולים', en: '→ All houses' },
   coop_readonly:     { he: '👁 מצב צפייה בלבד — אין לך הרשאת עריכה בניהול ליקויים.', en: '👁 View-only — you have no edit permission in defect management.' },
   coop_delete:         { he: 'מחיקת לול', en: 'Delete coop' },
+  coop_kicker:         { he: 'תפיסת סיום שלב', en: 'Stage-gate close-out' },
+  auto_na:             { he: 'אוטומטי', en: 'Auto' },
   coop_delete_confirm: { he: 'למחוק את הלול? כל הליקויים, הצ\'קליסטים והחתימות שלו יימחקו.', en: 'Delete this coop? All its defects, checklists and signatures will be deleted.' },
   tab_project_open:  { he: 'פתיחת פרויקט', en: 'Project setup' },
   tab_summary:       { he: 'ריכוז סטטוס', en: 'Status summary' },
@@ -208,3 +210,47 @@ export const coopTypeLabel = (lang: Lang, s: CoopType) => lang === 'he' ? COOP_T
 export const responsibleLabel = (lang: Lang, s: Responsible) => lang === 'he' ? RESPONSIBLE_LABELS[s] : RESP_EN[s]
 export const yesNoLabel = (lang: Lang, v: boolean) => lang === 'he' ? YES_NO_LABELS[v ? 'yes' : 'no'] : (v ? 'Yes' : 'No')
 export const gateShortName = (lang: Lang, g: GateKey) => lang === 'he' ? GATES[g].shortName : GATE_SHORT_EN[g]
+
+// Section titles / footnotes that live as Hebrew constants in model.ts (workbook
+// chrome, not checklist content) — EN variants for the English UI.
+import {
+  STATUS_SUMMARY_TITLE, STATUS_SUMMARY_FOOTNOTE, DEFECT_LOG_TITLE,
+  DEFECT_LOG_GOLDEN_RULE, PROJECT_OPEN_FOOTNOTES, RESP_DOMAINS, SIGNATURE_ROLES,
+} from './model'
+
+const RESP_DOMAIN_EN: Record<string, string> = {
+  gas: 'Gas — connection, commissioning & approval',
+  generator: 'Emergency generator & ATS',
+  water_main: 'Main water line up to the system head',
+  power_feed: 'Electricity — feed up to the main panel',
+  electrician: 'Certified electrical inspector',
+  grow_equipment: 'Growing equipment — commissioning & supplier approval',
+  other: 'Other: ______',
+}
+const SIG_ROLE_EN: Record<string, string> = {
+  manager: 'Execution manager — name, signature and date:',
+  supervisor: 'Supervisor — name, signature and date:',
+}
+
+export const respDomainLabel = (lang: Lang, key: string): string =>
+  lang === 'he'
+    ? (RESP_DOMAINS.find((d) => d.key === key)?.label ?? key)
+    : (RESP_DOMAIN_EN[key] ?? key)
+export const signatureRoleLabel = (lang: Lang, key: string): string =>
+  lang === 'he'
+    ? (SIGNATURE_ROLES.find((r) => r.key === key)?.label ?? key)
+    : (SIG_ROLE_EN[key] ?? key)
+
+export const statusSummaryTitle = (lang: Lang) =>
+  lang === 'he' ? STATUS_SUMMARY_TITLE : 'Status summary — house snapshot'
+export const statusSummaryFootnote = (lang: Lang) =>
+  lang === 'he' ? STATUS_SUMMARY_FOOTNOTE : '⚠ The summary updates automatically from the gate sheets. An item marked "Not done" opens a row in the defect log (pick a gate ← the item list adjusts to it).'
+export const defectLogTitle = (lang: Lang) =>
+  lang === 'he' ? DEFECT_LOG_TITLE : 'Defect log — every item marked "Not done" is recorded here'
+export const defectLogGoldenRule = (lang: Lang) =>
+  lang === 'he' ? DEFECT_LOG_GOLDEN_RULE : '⚠ Golden rule: no gate is signed with an open 🔴 defect. A 🟠 defect — only with a double-signed concession form. Gate 6 is not signed with any material defect open.'
+export const projectOpenFootnotes = (lang: Lang): string[] =>
+  lang === 'he' ? PROJECT_OPEN_FOOTNOTES : [
+    '⚠ A domain marked "Client" or "External party" — the matching gate items are set "N/A" with a reference here.',
+    '⚠ Per the configuration above: no heating → the heating item in Gate 5 = N/A. No shutter → the shutter item in Gate 4 = N/A. And so on.',
+  ]
