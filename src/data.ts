@@ -94,3 +94,11 @@ export function deptLabel(id: string, lang: 'he' | 'en'): string {
   const d = MALFUNCTION_DEPTS.find((x) => x.id === id)
   return d ? d[lang] : id
 }
+
+// ---------- safety (בטיחות) ----------
+// Fixed keys rendered in their own form section (not field_definitions rows).
+// safety_training holds the localized yes/no label; safety_incident holds the
+// incident description — empty string means "no incident" and is kept out of
+// the report entirely.
+export const SAFETY_TRAINING_KEY = 'safety_training'
+export const SAFETY_INCIDENT_KEY = 'safety_incident'

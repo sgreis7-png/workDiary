@@ -203,6 +203,11 @@ const STRINGS = {
   send_popup_blocked:{ he: 'הדפדפן חסם את חלון ההתחברות של Microsoft — אפשרו חלונות קופצים ונסו שוב', en: 'The browser blocked the Microsoft sign-in popup — allow popups and retry' },
   send_failed:      { he: 'השליחה נכשלה', en: 'Send failed' },
 
+  safety_section:   { he: 'בטיחות', en: 'Safety' },
+  safety_training_q:{ he: 'האם כולם באתר עברו הדרכת בטיחות?', en: 'Has everyone on site completed safety training?' },
+  safety_incident_q:{ he: 'ארעה תקרית בטיחות באתר', en: 'A safety incident occurred on site' },
+  safety_incident_detail: { he: 'פירוט תקרית הבטיחות', en: 'Safety incident details' },
+
   change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
   update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
   password_changed: { he: 'הסיסמה עודכנה ✓', en: 'Password updated ✓' },

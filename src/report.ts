@@ -2,7 +2,7 @@
 // "Open in Outlook" copy-paste flow (no email provider needed; the user sends it
 // from their own mail client).
 import type { Entry, FieldDef } from './data'
-import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY } from './data'
+import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from './data'
 import { MISSING_KEY, bdActive, filledMissing, parseCoops, parseMissing, reasonLabel } from './lib/reportTables'
 
 // Official brand artwork served from the app's own domain — the copy that used
@@ -50,6 +50,20 @@ export function buildReportHtml(o: {
     <div style="font-size:18px;font-weight:800;color:${I};margin:26px 0 6px">דו״ח התקדמות — ${esc(c.name)} · <span style="color:${GREEN}">${c.pct}%</span></div>
     ${progressRowsHtml(c.rows)}
     ${c.bd.length ? `<div style="font-size:16px;font-weight:800;color:${I};margin:16px 0 6px">ציוד BD — ${esc(c.name)}</div>${progressRowsHtml(c.bd)}` : ''}`).join('')
+  // Safety block: training answer only when answered; incident row only when an
+  // incident was recorded (empty = nothing happened → stays out of the report).
+  const training = String(v[SAFETY_TRAINING_KEY] ?? '').trim()
+  const incident = String(v[SAFETY_INCIDENT_KEY] ?? '').trim()
+  const safetyHtml = (training || incident) ? `
+    <div style="font-size:18px;font-weight:800;color:${I};margin:26px 0 6px">בטיחות</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;overflow:hidden">
+      ${training ? `<tr style="background:#ffffff">
+        <td style="padding:14px 18px;color:${MUT};font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">הדרכת בטיחות לכל העובדים באתר</td>
+        <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(training)}</td></tr>` : ''}
+      ${incident ? `<tr style="background:#fdf1ea">
+        <td style="padding:14px 18px;color:#c14a15;font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">⚠ תקרית בטיחות</td>
+        <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(incident).replace(/\n/g, '<br>')}</td></tr>` : ''}
+    </table>` : ''
   const missing = filledMissing(parseMissing(v[MISSING_KEY]))
   const missingHtml = missing.length ? `
     <div style="font-size:18px;font-weight:800;color:${I};margin:26px 0 6px">חומר חסר</div>
@@ -73,7 +87,7 @@ export function buildReportHtml(o: {
         <div style="font-size:16px;color:${MUT};margin-top:6px">מנהל עבודה: ${esc(o.authorName)}</div></td></tr>
       <tr><td style="padding:14px 32px 8px">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;overflow:hidden">${rows}</table>
-        ${progressHtml}${missingHtml}${photos}</td></tr>
+        ${safetyHtml}${progressHtml}${missingHtml}${photos}</td></tr>
       <tr><td style="padding:22px 32px 28px"><div style="border-top:1px solid ${LINE};padding-top:16px;font-size:13px;color:#94a094">דוח יומן עבודה · <span style="color:${GREEN};font-weight:700">Agrotop Work Diary</span></div></td></tr>
     </table>
   </div>`
@@ -105,6 +119,13 @@ export function buildReportText(o: { projectName: string; authorName: string; en
       lines.push(`  ציוד BD:`)
       for (const r of c.bd) lines.push(`    ${r.task}: ${r.pct}%${r.remarks ? ` — ${r.remarks}` : ''}`)
     }
+  }
+  const training = String(v[SAFETY_TRAINING_KEY] ?? '').trim()
+  const incident = String(v[SAFETY_INCIDENT_KEY] ?? '').trim()
+  if (training || incident) {
+    lines.push('', 'בטיחות')
+    if (training) lines.push(`  הדרכת בטיחות לכל העובדים באתר: ${training}`)
+    if (incident) lines.push(`  ⚠ תקרית בטיחות: ${incident}`)
   }
   const missing = filledMissing(parseMissing(v[MISSING_KEY]))
   if (missing.length) {

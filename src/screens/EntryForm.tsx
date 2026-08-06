@@ -12,7 +12,7 @@ import { applyPrefill, fetchPrefill, savePrefill, fetchProjectLocation, saveProj
 import { getLocationName } from '../lib/geo'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
-import { MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, deptIdOf, deptLabel } from '../data'
+import { MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY, deptIdOf, deptLabel } from '../data'
 import type { FieldDef } from '../data'
 import { COOPS_KEY, MISSING_KEY, defaultCoop, parseCoops, parseMissing } from '../lib/reportTables'
 import type { CoopReport, MissingRow } from '../lib/reportTables'
@@ -49,6 +49,13 @@ export default function EntryForm() {
   const [restored, setRestored] = useState(false)
   // "שמור נתונים" — server-saved name/phone; on by default once the user saved once
   const [savePrefs, setSavePrefs] = useState(false)
+  // safety incident: checkbox opens the description field; unchecking clears it
+  const [incidentOpen, setIncidentOpen] = useState(false)
+
+  // sync the checkbox with loaded/restored/copied values (edit mode, drafts)
+  useEffect(() => {
+    if ((values[SAFETY_INCIDENT_KEY] ?? '').trim()) setIncidentOpen(true)
+  }, [values[SAFETY_INCIDENT_KEY]])
 
   // restore a pending draft (new entry); no draft → apply server prefill
   useEffect(() => {
@@ -162,6 +169,10 @@ export default function EntryForm() {
     // Malfunction description is required only when a real department is selected.
     if (deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && !(values[MALFUNCTION_TEXT_KEY] ?? '').trim()) {
       errs.push(MALFUNCTION_TEXT_KEY)
+    }
+    // Incident description is required once the incident checkbox is ticked.
+    if (incidentOpen && !(values[SAFETY_INCIDENT_KEY] ?? '').trim()) {
+      errs.push(SAFETY_INCIDENT_KEY)
     }
     setErrors(errs)
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
@@ -316,6 +327,44 @@ export default function EntryForm() {
               </div>
             )
           })}
+        </motion.div>
+
+        <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('safety_section')}</motion.div>
+        <motion.div variants={riseIn} className="form-grid">
+          <div>
+            <Field label={t('safety_training_q')} hint={t('optional')}>
+              <select className="input" value={values[SAFETY_TRAINING_KEY] ?? ''} onChange={(e) => set(SAFETY_TRAINING_KEY, e.target.value)}>
+                <option value="">—</option>
+                <option value={lang === 'he' ? 'כן' : 'Yes'}>{lang === 'he' ? 'כן' : 'Yes'}</option>
+                <option value={lang === 'he' ? 'לא' : 'No'}>{lang === 'he' ? 'לא' : 'No'}</option>
+              </select>
+            </Field>
+          </div>
+          <div className="span-2">
+            <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, cursor: 'pointer', marginBottom: incidentOpen ? 10 : 0 }}>
+              <input
+                type="checkbox" checked={incidentOpen}
+                onChange={(e) => { setIncidentOpen(e.target.checked); if (!e.target.checked) set(SAFETY_INCIDENT_KEY, '') }}
+              />
+              {t('safety_incident_q')}
+            </label>
+            <AnimatePresence>
+              {incidentOpen && (
+                <motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+                  <Field label={t('safety_incident_detail')} hint={<span className="req">{t('required_field')}</span>}>
+                    <div className="input-affix">
+                      <textarea
+                        className="input" rows={3} value={values[SAFETY_INCIDENT_KEY] ?? ''}
+                        style={errors.includes(SAFETY_INCIDENT_KEY) ? { borderColor: 'var(--clay)' } : undefined}
+                        onChange={(e) => set(SAFETY_INCIDENT_KEY, e.target.value)}
+                      />
+                      <MicButton onText={(txt) => appendText(SAFETY_INCIDENT_KEY, txt)} />
+                    </div>
+                  </Field>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
         </motion.div>
 
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('progress_report')}</motion.div>

@@ -8,6 +8,7 @@ import { useI18n } from '../i18n'
 import { getEntry, deleteEntry, updateEntry } from '../api'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
+import { SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from '../data'
 import type { Entry, FieldDef } from '../data'
 import { COOPS_KEY, MISSING_KEY, bdActive, defaultCoop, filledMissing, parseCoops, parseMissing, reasonLabel } from '../lib/reportTables'
 import type { CoopReport } from '../lib/reportTables'
@@ -92,6 +93,18 @@ export default function EntryDetail() {
                 <dd>{f.key === 'weather' ? <WeatherChip value={entry.values[f.key]} /> : entry.values[f.key]}</dd>
               </motion.div>
             ))}
+            {(entry.values[SAFETY_TRAINING_KEY] ?? '').trim() && (
+              <motion.div className="dl__row" variants={riseIn}>
+                <dt>{t('safety_training_q')}</dt>
+                <dd>{entry.values[SAFETY_TRAINING_KEY]}</dd>
+              </motion.div>
+            )}
+            {(entry.values[SAFETY_INCIDENT_KEY] ?? '').trim() && (
+              <motion.div className="dl__row" variants={riseIn}>
+                <dt style={{ color: 'var(--clay)' }}>⚠ {t('safety_incident_q')}</dt>
+                <dd>{entry.values[SAFETY_INCIDENT_KEY]}</dd>
+              </motion.div>
+            )}
           </dl>
 
           {canManage && (

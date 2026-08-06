@@ -154,3 +154,26 @@ describe('malfunction rendering', () => {
     expect(realText).toContain('מחלקת בלת"מ')
   })
 })
+
+describe('safety rendering', () => {
+  it('omits the safety block entirely when nothing was filled', () => {
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs }, 'https://logo.png')
+    expect(html).not.toContain('בטיחות')
+    const text = buildReportText({ projectName: 'p', authorName: 'a', entry, defs })
+    expect(text).not.toContain('בטיחות')
+  })
+  it('shows training answer without incident row when no incident recorded', () => {
+    const e: Entry = { ...entry, values: { ...entry.values, safety_training: 'כן', safety_incident: '' } }
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs }, 'https://logo.png')
+    expect(html).toContain('הדרכת בטיחות')
+    expect(html).not.toContain('תקרית בטיחות')
+  })
+  it('shows the incident row when an incident was recorded', () => {
+    const e: Entry = { ...entry, values: { ...entry.values, safety_incident: 'נפילת פיגום ליד לול 3' } }
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs }, 'https://logo.png')
+    expect(html).toContain('תקרית בטיחות')
+    expect(html).toContain('נפילת פיגום ליד לול 3')
+    const text = buildReportText({ projectName: 'p', authorName: 'a', entry: e, defs })
+    expect(text).toContain('נפילת פיגום ליד לול 3')
+  })
+})
