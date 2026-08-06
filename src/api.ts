@@ -335,6 +335,15 @@ export async function deleteUser(email: string): Promise<void> {
   if (d?.error) throw new Error(d.error)
 }
 
+/** Everyone registered in the system (for the Outlook-style recipient picker). */
+export async function fetchDirectory(): Promise<{ name: string; email: string }[]> {
+  const { data, error } = await supabase.from('profiles').select('name,email').order('name')
+  if (error) throw error
+  return (data as { name: string | null; email: string | null }[])
+    .filter((r) => r.email)
+    .map((r) => ({ name: r.name || r.email!.split('@')[0], email: r.email!.toLowerCase() }))
+}
+
 /** "Forgot password" — asks the reset-password edge fn to email a recovery link. */
 export async function requestPasswordReset(email: string): Promise<void> {
   const { data, error } = await supabase.functions.invoke('reset-password', { body: { email } })

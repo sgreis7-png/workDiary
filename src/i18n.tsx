@@ -217,6 +217,7 @@ const STRINGS = {
   lists_empty:      { he: 'אין רשימות עדיין — צרו רשימה ותוכלו לבחור אותה בשליחת דוח במייל', en: 'No lists yet — create one and pick it when emailing a report' },
   list_need_name_emails: { he: 'יש להזין שם רשימה ולפחות כתובת מייל אחת', en: 'Enter a list name and at least one email' },
   send_pick_lists:  { he: 'רשימות תפוצה', en: 'Mailing lists' },
+  send_search_ph:   { he: 'חיפוש עובד או הקלדת כתובת מייל…', en: 'Search a person or type an email…' },
 
   forgot_q:         { he: 'שכחתי סיסמה', en: 'Forgot password' },
   forgot_title:     { he: 'איפוס סיסמה', en: 'Reset password' },
