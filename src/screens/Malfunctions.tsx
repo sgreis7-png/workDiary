@@ -35,6 +35,14 @@ export default function MalfunctionsSection() {
     return () => { alive = false; clearTimeout(h) }
   }, [projectId, from, to])
 
+  // projects that have at least one malfunction in the CURRENT unfiltered view:
+  // captured whenever no project filter is applied, kept while one is
+  const [malfProjects, setMalfProjects] = useState<Set<string>>(new Set())
+  useEffect(() => {
+    if (projectId || !entries) return
+    setMalfProjects(new Set(entries.map((e) => e.project_id)))
+  }, [entries, projectId])
+
   const stats = useMemo(() => {
     const list = entries ?? []
     const byDept: Record<string, number> = {}
@@ -70,7 +78,8 @@ export default function MalfunctionsSection() {
         <Field label={t('project')}>
           <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
             <option value="">{t('all_projects')}</option>
-            {projects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            {/* only projects that actually recorded a malfunction */}
+            {projects.filter((p) => malfProjects.has(p.id)).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
         </Field>
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
