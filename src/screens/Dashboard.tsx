@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Tag, WeatherChip, stagger, riseIn } from '../components/ui'
+import { Tag, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
 import { fetchDashboardStats, listEntries, type DashboardStats } from '../api'
@@ -73,7 +73,7 @@ export default function Dashboard() {
       total: raw.total, thisWeek: raw.this_week, thisMonth: raw.this_month ?? 0,
       totalPhotos: raw.total_photos ?? 0, unsent: raw.unsent ?? 0,
       malfunctionsMonth: raw.malfunctions_this_month ?? 0,
-      activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, byWeather: raw.by_weather, workers,
+      activeProjects: projects.filter((p) => p.active).length, stale, topProjects, maxProj, workers,
     }
   }, [raw, projects])
 
@@ -149,30 +149,14 @@ export default function Dashboard() {
         </motion.div>
 
         <motion.div variants={riseIn}>
-        <Section id="people" icon="👥" title={`${t('dash_by_worker')} · ${t('dash_weather')}`} summary={stats.workers.length} defaultOpen={false}>
-          <div className="stat-grid">
-            <div>
-              <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('dash_by_worker')}</h3>
-              <div style={{ display: 'grid', gap: 8 }}>
-                {stats.workers.map(([uid, n]) => (
-                  <div key={uid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
-                    <span>{userName(uid)}</span><b className="mono">{n}</b>
-                  </div>
-                ))}
-                {stats.workers.length === 0 && <span className="count mono">—</span>}
+        <Section id="people" icon="👥" title={t('dash_by_worker')} summary={stats.workers.length} defaultOpen={false}>
+          <div style={{ display: 'grid', gap: 8, maxWidth: 420 }}>
+            {stats.workers.map(([uid, n]) => (
+              <div key={uid} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14 }}>
+                <span>{userName(uid)}</span><b className="mono">{n}</b>
               </div>
-            </div>
-            <div>
-              <h3 style={{ margin: '0 0 12px', fontSize: 15 }}>{t('dash_weather')}</h3>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                {Object.entries(stats.byWeather).map(([w, n]) => (
-                  <span key={w} style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-                    <WeatherChip value={w} /> <b className="mono">{n}</b>
-                  </span>
-                ))}
-                {Object.keys(stats.byWeather).length === 0 && <span className="count mono">—</span>}
-              </div>
-            </div>
+            ))}
+            {stats.workers.length === 0 && <span className="count mono">—</span>}
           </div>
         </Section>
         </motion.div>
