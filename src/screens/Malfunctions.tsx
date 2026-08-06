@@ -164,6 +164,7 @@ export default function MalfunctionsSection() {
           </div>
         </motion.div>
       </motion.div>
+      )}
     </motion.div>
   )
 }
