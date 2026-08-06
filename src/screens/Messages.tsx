@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader } from '../components/Loader'
+import { Lightbox } from '../components/Lightbox'
 import { Avatar } from '../components/ui'
 import { EmojiPicker } from '../components/EmojiPicker'
 import { useAuth } from '../auth'
@@ -43,6 +44,7 @@ export default function Messages() {
   const [err, setErr] = useState('')
   const [emojiOpen, setEmojiOpen] = useState(false)
   const [pendingFile, setPendingFile] = useState<File | null>(null)
+  const [lightbox, setLightbox] = useState<number | null>(null)
   const [groupOpen, setGroupOpen] = useState(false)
   const [contactQ, setContactQ] = useState('')
   const scrollRef = useRef<HTMLDivElement>(null)
@@ -118,6 +120,11 @@ export default function Messages() {
         || m.to_email?.toLowerCase() === activeConv.email && m.from_email.toLowerCase() === me)
     return [...msgs].sort((a, b) => +new Date(a.created_at) - +new Date(b.created_at))
   }, [activeConv, groupMsgs, dms, me])
+
+  const threadImages = useMemo(
+    () => thread.filter((m) => m.attachment_url && (m.attachment_type ?? '').startsWith('image/')).map((m) => m.attachment_url!),
+    [thread],
+  )
 
   useEffect(() => { scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight }) }, [thread.length, active])
   // images finish loading after that effect ran and add height below the
@@ -241,10 +248,11 @@ export default function Messages() {
                         <div className={`bubble ${mine ? 'bubble--mine' : ''}`}>
                           {isGroup && !mine && <div className="bubble__sender">{m.from_name ?? nameOf(m.from_email)}</div>}
                           {m.attachment_url && (m.attachment_type ?? '').startsWith('image/') && (
-                            <a href={m.attachment_url} target="_blank" rel="noreferrer">
-                              <img src={m.attachment_url} alt={m.attachment_name ?? ''} onLoad={onImgLoad}
-                                style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block', marginBottom: m.body ? 6 : 0 }} />
-                            </a>
+                            <img
+                              src={m.attachment_url} alt={m.attachment_name ?? ''} onLoad={onImgLoad}
+                              onClick={() => setLightbox(threadImages.indexOf(m.attachment_url!))}
+                              style={{ maxWidth: 240, maxHeight: 240, borderRadius: 10, display: 'block', marginBottom: m.body ? 6 : 0, cursor: 'zoom-in' }}
+                            />
                           )}
                           {m.attachment_url && !(m.attachment_type ?? '').startsWith('image/') && (
                             <a href={m.attachment_url} target="_blank" rel="noreferrer" download={m.attachment_name ?? undefined}
@@ -314,6 +322,14 @@ export default function Messages() {
               setGroupOpen(false); reload(); setActive(`g:${id}`)
             } catch (e) { setErr(String((e as Error).message ?? e)) }
           }}
+        />
+      )}
+      {lightbox !== null && threadImages.length > 0 && (
+        <Lightbox
+          photos={threadImages}
+          index={Math.max(0, Math.min(lightbox, threadImages.length - 1))}
+          onClose={() => setLightbox(null)}
+          onIndex={setLightbox}
         />
       )}
     </div>
