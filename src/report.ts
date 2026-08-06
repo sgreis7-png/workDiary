@@ -5,8 +5,9 @@ import type { Entry, FieldDef } from './data'
 import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY } from './data'
 import { MISSING_KEY, bdActive, filledMissing, parseCoops, parseMissing, reasonLabel } from './lib/reportTables'
 
-const SUPA = import.meta.env.VITE_SUPABASE_URL as string
-export const LOGO_URL = `${SUPA}/storage/v1/object/public/brand/logo.png`
+// Official brand artwork served from the app's own domain — the copy that used
+// to live in Supabase storage (brand/logo.png) is an outdated crude version.
+export const LOGO_URL = 'https://work-diary-phi.vercel.app/agrotop-logo.png'
 
 const esc = (s: string) =>
   String(s ?? '').replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]!))
@@ -65,7 +66,7 @@ export function buildReportHtml(o: {
 
   return `<div dir="rtl" style="font-family:Arial,Helvetica,sans-serif;max-width:680px">
     <table role="presentation" width="680" cellpadding="0" cellspacing="0" style="width:680px;max-width:100%;background:#fff;border:1px solid ${LINE};border-radius:16px;overflow:hidden">
-      <tr><td style="padding:28px 32px 18px;border-bottom:4px solid ${GREEN}"><img src="${logoUrl}" height="44" style="height:44px;display:block" alt="Agrotop" /></td></tr>
+      <tr><td style="padding:28px 32px 18px;border-bottom:4px solid ${GREEN}"><img src="${logoUrl}" height="64" style="height:64px;display:block" alt="Agrotop" /></td></tr>
       <tr><td style="padding:26px 32px 8px">
         <div style="font-size:15px;color:${MUT}">יומן עבודה · ${esc(o.entry.work_date)}</div>
         <div style="font-size:30px;font-weight:800;color:${I};margin-top:6px">${esc(o.projectName)}</div>
