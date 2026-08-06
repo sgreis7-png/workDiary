@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { sendPush } from './push'
 import { signPaths } from './storagePaths'
 import { notifyMany } from './notify'
+import { compressImage } from './compressImage'
 
 export interface FeedbackReport {
   id: string
@@ -26,9 +27,10 @@ export async function submitFeedback(kind: 'bug' | 'request', message: string, f
 
   let photo_path: string | null = null
   if (file) {
-    const safe = file.name.replace(/[^\w.-]+/g, '_')
+    const small = await compressImage(file)
+    const safe = small.name.replace(/[^\w.-]+/g, '_')
     photo_path = `feedback/${crypto.randomUUID()}-${safe}`
-    const { error: upErr } = await supabase.storage.from('photos').upload(photo_path, file)
+    const { error: upErr } = await supabase.storage.from('photos').upload(photo_path, small)
     if (upErr) throw upErr
   }
 

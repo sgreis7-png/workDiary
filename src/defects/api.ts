@@ -3,6 +3,7 @@
 import { supabase } from '../lib/supabase'
 import { signPaths } from '../lib/storagePaths'
 import { notifyMany } from '../lib/notify'
+import { compressImage } from '../lib/compressImage'
 import type { GateKey, ItemStatus, Severity, DefectStatus, CoopType, Responsible, SignatureRole } from './model'
 import { cachePut, cacheGet, queueOp, isNetworkError, replayOutbox, type DefectOp } from './offline'
 import { notifyNewDefect } from '../lib/notifyNewRecord'
@@ -276,8 +277,11 @@ async function hydratePhotoUrls<T extends { storage_path: string; url?: string }
 }
 
 export async function addDefectPhoto(defectId: string, file: Blob, uploadedBy: string): Promise<DefectPhoto> {
+  const small = file instanceof File
+    ? await compressImage(file)
+    : await compressImage(new File([file], 'photo.jpg', { type: file.type || 'image/jpeg' }))
   const path = `defects/${defectId}/${Date.now()}.jpg`
-  const { error: upErr } = await supabase.storage.from('photos').upload(path, file, { contentType: 'image/jpeg', upsert: true })
+  const { error: upErr } = await supabase.storage.from('photos').upload(path, small, { contentType: 'image/jpeg', upsert: true })
   if (upErr) throw upErr
   const { data, error } = await supabase.from('defect_photos')
     .insert({ defect_id: defectId, storage_path: path, uploaded_by: uploadedBy })

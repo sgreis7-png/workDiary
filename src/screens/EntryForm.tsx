@@ -10,6 +10,7 @@ import { queueEntry } from '../lib/offline'
 import { clearDraft, loadDraft, saveDraft } from '../lib/draft'
 import { applyPrefill, fetchPrefill, savePrefill, fetchProjectLocation, saveProjectLocation } from '../lib/prefill'
 import { getLocationName } from '../lib/geo'
+import { compressImages } from '../lib/compressImage'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import { MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY, deptIdOf, deptLabel } from '../data'
@@ -147,9 +148,13 @@ export default function EntryForm() {
   const setCoops = (c: CoopReport[]) => set(COOPS_KEY, JSON.stringify(c))
   const setMissing = (rows: MissingRow[]) => set(MISSING_KEY, JSON.stringify(rows))
 
+  // compressed at ingestion so the draft, the offline queue and the upload all
+  // carry the small file
   const addPhotos = (files: FileList | null) => {
-    const next = Array.from(files ?? []).map((f) => ({ file: f, url: URL.createObjectURL(f) }))
-    setPhotos((p) => [...p, ...next])
+    void compressImages(Array.from(files ?? [])).then((small) => {
+      const next = small.map((f) => ({ file: f, url: URL.createObjectURL(f) }))
+      setPhotos((p) => [...p, ...next])
+    })
   }
   const removePhoto = (i: number) => setPhotos((ps) => {
     const p = ps[i]
