@@ -8,6 +8,8 @@ import { buildCoopReportHtml, buildCoopReportText } from '../../defects/report'
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { GATES } from '../../defects/model'
 import { useDT } from '../../defects/i18n'
+import { useI18n } from '../../i18n'
+import { SendMailDialog } from '../../components/SendMailDialog'
 
 export default function CoopReport() {
   const { id = '' } = useParams()
@@ -15,9 +17,11 @@ export default function CoopReport() {
   const { projectName } = useStore()
   const { user } = useAuth()
   const { dt } = useDT()
+  const { t } = useI18n()
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
   const [err, setErr] = useState('')
   const [copyMsg, setCopyMsg] = useState('')
+  const [sendOpen, setSendOpen] = useState(false)
 
   const [defs, setDefs] = useState<GateDefs>(GATES)
 
@@ -106,9 +110,17 @@ export default function CoopReport() {
         <div className="report-toolbar__btns">
           <button className="btn btn--ghost" onClick={() => nav(`/defects/coop/${id}`)}>{dt('rep_back')}</button>
           <button className="btn btn--ghost" onClick={onCopy}>{dt('rep_copy')}</button>
+          <button className="btn btn--ghost" onClick={() => setSendOpen(true)}>{t('send_outlook')}</button>
           <button className="btn btn--primary" onClick={() => window.print()}>{dt('rep_print')}</button>
         </div>
       </div>
+      {sendOpen && (
+        <SendMailDialog
+          subject={`תפיסת סיום שלב · ${pName} · לול ${bundle.coop.name}`}
+          html={html}
+          onClose={() => setSendOpen(false)}
+        />
+      )}
 
       {err && <div className="alert">{err}</div>}
       {copyMsg && <div className="alert alert--ok">{copyMsg}</div>}

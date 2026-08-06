@@ -192,6 +192,17 @@ const STRINGS = {
   report_copied:    { he: 'הדוח הועתק ✓ — פתח מייל חדש (Outlook/Gmail), הדבק (Ctrl+V), הוסף נמענים ושלח', en: 'Report copied ✓ — open a new email, paste (Ctrl+V), add recipients, send' },
   copy_failed:      { he: 'ההעתקה נכשלה — נפתח דוח בכרטיסייה, בחר הכל והעתק', en: 'Copy failed — opened the report in a tab; select all and copy' },
 
+  send_outlook:     { he: '📧 שליחה מ-Outlook', en: '📧 Send from Outlook' },
+  send_title:       { he: 'שליחת הדוח במייל', en: 'Send the report by email' },
+  send_intro:       { he: 'הדוח יישלח ישירות מחשבון ה-Outlook שלך', en: 'The report is sent directly from your Outlook account' },
+  send_to:          { he: 'נמענים — מופרדים בפסיק', en: 'Recipients — comma separated' },
+  send_subject:     { he: 'נושא', en: 'Subject' },
+  send_now:         { he: 'שליחה', en: 'Send' },
+  send_sent:        { he: 'הדוח נשלח מהחשבון שלך — עותק נשמר ב"פריטים שנשלחו"', en: 'Sent from your account — a copy is in Sent Items' },
+  send_no_recipients:{ he: 'יש להזין לפחות כתובת מייל אחת', en: 'Enter at least one email address' },
+  send_popup_blocked:{ he: 'הדפדפן חסם את חלון ההתחברות של Microsoft — אפשרו חלונות קופצים ונסו שוב', en: 'The browser blocked the Microsoft sign-in popup — allow popups and retry' },
+  send_failed:      { he: 'השליחה נכשלה', en: 'Send failed' },
+
   change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
   update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
   password_changed: { he: 'הסיסמה עודכנה ✓', en: 'Password updated ✓' },

@@ -7,6 +7,8 @@ import { useI18n } from '../i18n'
 import { getEntry } from '../api'
 import { buildReportHtml, buildReportText } from '../report'
 import { useStore } from '../store'
+import { supabase } from '../lib/supabase'
+import { SendMailDialog } from '../components/SendMailDialog'
 import type { Entry } from '../data'
 
 // Standalone, print-optimized report. Same layout on every device. Save as PDF
@@ -18,6 +20,7 @@ export default function ReportView() {
   const { fieldDefs, projectName, userName } = useStore()
   const [entry, setEntry] = useState<Entry | null | undefined>(undefined)
   const [copyMsg, setCopyMsg] = useState('')
+  const [sendOpen, setSendOpen] = useState(false)
   const [lightbox, setLightbox] = useState<number | null>(null)
 
   useEffect(() => {
@@ -55,9 +58,23 @@ export default function ReportView() {
         <button className="btn btn--ghost" onClick={() => nav(`/entry/${entry.id}`)}>→ {t('back')}</button>
         <div style={{ display: 'flex', gap: 10, marginInlineStart: 'auto', flexWrap: 'wrap' }}>
           <button className="btn btn--ghost" onClick={copy}>📋 {t('copy_report')}</button>
+          <button className="btn btn--ghost" onClick={() => setSendOpen(true)}>{t('send_outlook')}</button>
           <button className="btn btn--primary" onClick={() => window.print()}>📄 {t('print_pdf')}</button>
         </div>
       </div>
+      {sendOpen && (
+        <SendMailDialog
+          subject={`יומן עבודה · ${projectName(entry.project_id)} · ${entry.work_date}`}
+          html={`<!doctype html><html dir="rtl" lang="he"><body dir="rtl">${html}</body></html>`}
+          onClose={() => setSendOpen(false)}
+          onSent={() => {
+            // keep the "last sent" badge in EntryDetail meaningful; RLS may
+            // reject non-author updates — the send itself already succeeded
+            supabase.from('entries').update({ last_sent_at: new Date().toISOString() })
+              .eq('id', entry.id).then(() => {}, () => {})
+          }}
+        />
+      )}
       {copyMsg && <div className="tag tag--green no-print" style={{ display: 'block', padding: '12px 16px', margin: '0 auto 16px', maxWidth: 680 }}>{copyMsg}</div>}
       <div className="report-paper" onClickCapture={onPaperClick} dangerouslySetInnerHTML={{ __html: html }} />
       <AnimatePresence>
