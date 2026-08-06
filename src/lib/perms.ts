@@ -34,24 +34,19 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   alert_rules: 'none',  // כללי התראות אישיים — לאדמין, אלא אם הוענקה
 }
 
-export interface PermOverride { email: string; area: PermArea; level: PermLevel }
-
 export function resolvePerm(role: Role, overrides: Record<string, PermLevel>, area: PermArea): PermLevel {
   if (role === 'admin') return 'edit'
   return overrides[area] ?? MEMBER_DEFAULTS[area]
 }
 
-export async function fetchMyPermOverrides(email: string): Promise<Record<string, PermLevel>> {
+/** Area→level overrides for a user (own rows for members; any row for admins). */
+export async function fetchPermOverrides(email: string): Promise<Record<string, PermLevel>> {
   const { data, error } = await supabase.from('user_permissions')
     .select('area,level').ilike('email', email)
   if (error) throw error
   const m: Record<string, PermLevel> = {}
   for (const r of data as { area: string; level: PermLevel }[]) m[r.area] = r.level
   return m
-}
-
-export async function fetchPermOverridesFor(email: string): Promise<Record<string, PermLevel>> {
-  return fetchMyPermOverrides(email)
 }
 
 export async function setPermOverride(email: string, area: PermArea, level: PermLevel): Promise<void> {

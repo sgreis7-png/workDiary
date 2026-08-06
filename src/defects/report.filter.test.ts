@@ -59,3 +59,21 @@ describe('report skips empty content', () => {
     expect(txt).not.toMatch(/טרם \d/)
   })
 })
+
+// The coop report is emitted by string concatenation into an email client, so
+// values coming from user input must not be able to inject markup. The diary
+// report has had this test since the start; this is the missing twin.
+describe('coop report escaping', () => {
+  const injected = {
+    ...emptyBundle,
+    coop: { ...emptyCoop, name: '<img src=x onerror=alert(1)>' },
+  } as unknown as CoopBundle
+
+  it('escapes markup in a coop name', () => {
+    const html = buildCoopReportHtml(injected, 'p')
+    expect(html).not.toContain('<img src=x')
+    expect(html).toContain('&lt;img src=x')
+  })
+  // the text variant is the text/plain part of the mail — escaping there would
+  // be wrong, so it is deliberately not asserted
+})

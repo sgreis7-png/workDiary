@@ -8,15 +8,22 @@ const state = {
   active: ['alon@agrotop.co.il', 'zohar@agrotop.co.il'],
   inserts: [] as unknown[],
   failBatch: false,
+  selectError: null as { message: string } | null,
 }
 
 vi.mock('./supabase', () => ({
   supabase: {
     from(table: string) {
       if (table === 'allowed_emails') {
+        // mirrors the real query: .select('email').eq('active', true).in('email', wanted)
         return {
           select: () => ({
-            eq: () => Promise.resolve({ data: state.active.map((email) => ({ email })) }),
+            eq: () => ({
+              in: (_col: string, wanted: string[]) => Promise.resolve({
+                data: state.active.filter((e) => wanted.includes(e)).map((email) => ({ email })),
+                error: state.selectError,
+              }),
+            }),
           }),
         }
       }
@@ -38,7 +45,7 @@ vi.mock('./supabase', () => ({
 const { activeRecipients, notifyMany } = await import('./notify')
 
 describe('activeRecipients', () => {
-  beforeEach(() => { state.inserts = []; state.failBatch = false })
+  beforeEach(() => { state.inserts = []; state.failBatch = false; state.selectError = null })
 
   it('drops addresses that are no longer active members', async () => {
     const out = await activeRecipients(['alon@agrotop.co.il', 'gone@agrotop.co.il'])
@@ -55,7 +62,7 @@ describe('activeRecipients', () => {
 })
 
 describe('notifyMany', () => {
-  beforeEach(() => { state.inserts = []; state.failBatch = false })
+  beforeEach(() => { state.inserts = []; state.failBatch = false; state.selectError = null })
 
   it('writes one batch containing only active recipients', async () => {
     await notifyMany(['alon@agrotop.co.il', 'gone@agrotop.co.il'], { title: 'x' })
@@ -77,8 +84,15 @@ describe('notifyMany', () => {
     expect(state.inserts.every((r) => !Array.isArray(r))).toBe(true)
   })
 
-  it('does not throw when the insert fails outright', async () => {
-    state.failBatch = true
-    await expect(notifyMany(['alon@agrotop.co.il'], { title: 'x' })).resolves.toBeUndefined()
+  it('returns the addresses it wrote, so push does not re-filter', async () => {
+    const to = await notifyMany(['alon@agrotop.co.il', 'gone@agrotop.co.il'], { title: 'x' })
+    expect(to).toEqual(['alon@agrotop.co.il'])
+  })
+
+  it('does not throw, and notifies nobody, when the member lookup fails', async () => {
+    state.selectError = { message: 'network' }
+    await expect(activeRecipients(['alon@agrotop.co.il'])).rejects.toBeTruthy()
+    await expect(notifyMany(['alon@agrotop.co.il'], { title: 'x' })).resolves.toEqual([])
+    expect(state.inserts).toHaveLength(0)
   })
 })

@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react'
 import { useAuth } from '../auth'
-import { fetchMyPermOverrides, resolvePerm, type PermArea, type PermLevel } from './perms'
+import { fetchPermOverrides, resolvePerm, type PermArea, type PermLevel } from './perms'
 
 interface Perms {
   perm: (area: PermArea) => PermLevel
@@ -23,7 +23,7 @@ export function PermsProvider({ children }: { children: ReactNode }) {
 
   const load = useCallback(async () => {
     if (!user?.email) { setOverrides({}); setReady(false); return }
-    try { setOverrides(await fetchMyPermOverrides(user.email)) }
+    try { setOverrides(await fetchPermOverrides(user.email)) }
     catch { setOverrides({}) }
     setReady(true)
   }, [user?.email])

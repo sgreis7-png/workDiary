@@ -3,7 +3,7 @@
 // Fire-and-forget — never blocks or fails a save.
 import { supabase } from './supabase'
 import { sendPush } from './push'
-import { activeRecipients, notifyMany } from './notify'
+import { notifyMany } from './notify'
 
 async function recipients(projectId: string): Promise<string[]> {
   const { data: u } = await supabase.auth.getUser()
@@ -19,10 +19,10 @@ async function recipients(projectId: string): Promise<string[]> {
 }
 
 async function fanOut(emails: string[], title: string, body: string, link: string): Promise<void> {
-  const to = await activeRecipients(emails)
-  if (!to.length) return
-  await notifyMany(to, { title, body, link })
-  sendPush(to, title, body, link)
+  // notifyMany reports who it actually wrote to, so push reuses that list
+  // instead of resolving the active allowlist a second time
+  const notified = await notifyMany(emails, { title, body, link })
+  if (notified.length) sendPush(notified, title, body, link)
 }
 
 /** רשומת יומן עבודה חדשה */

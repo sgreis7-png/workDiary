@@ -122,7 +122,11 @@ export async function updateEntry(
   if (error) throw error
 
   for (const path of removedPaths) {
-    await supabase.from('entry_photos').delete().eq('storage_path', path)
+    // The row is the source of truth for what the report shows, so a failure
+    // here must surface: silently keeping a photo the user deleted is worse
+    // than failing the save. A leftover storage object is only wasted bytes.
+    const { error: rowErr } = await supabase.from('entry_photos').delete().eq('storage_path', path)
+    if (rowErr) throw rowErr
     await supabase.storage.from('photos').remove([path])
   }
   for (const f of newFiles) {
@@ -293,28 +297,36 @@ export async function reorderFields(orderedIds: string[]): Promise<void> {
 
 export async function fetchUsers(): Promise<AppUser[]> {
   const { data, error } = await supabase
-    .from('allowed_emails').select('email,display_name,role,active,registered,registration_code').order('created_at')
+    .from('allowed_emails').select('email,display_name,role,active,registered').order('created_at')
   if (error) throw error
   return (data as {
-    email: string; display_name: string | null; role: AppUser['role']; active: boolean
-    registered: boolean; registration_code: string | null
+    email: string; display_name: string | null; role: AppUser['role']; active: boolean; registered: boolean
   }[]).map((r) => ({
     id: r.email, email: r.email, name: r.display_name || r.email.split('@')[0],
     role: r.role, active: r.active, registered: r.registered,
-    registration_code: r.registration_code,
   }))
+}
+
+/** Pending registration codes, keyed by lowercase email. Admin-only by RLS —
+ *  members get an empty map rather than an error. */
+export async function fetchRegistrationCodes(): Promise<Record<string, string>> {
+  const { data } = await supabase.from('registration_codes').select('email,code')
+  const m: Record<string, string> = {}
+  for (const r of (data ?? []) as { email: string; code: string }[]) m[r.email.toLowerCase()] = r.code
+  return m
 }
 export async function inviteUser(email: string, display_name: string, role: AppUser['role'] = 'member'): Promise<string> {
   // No email is sent: the row authorizes the address, and the DB default mints a
   // one-time registration code. The admin passes that code to the worker out of
   // band — without it, knowing an allowlisted address is not enough to claim the
   // account. Returns the code so the admin screen can show it.
-  const { data, error } = await supabase
+  const { error } = await supabase
     .from('allowed_emails')
     .upsert({ email: email.trim(), display_name, role }, { onConflict: 'email' })
-    .select('registration_code').single()
   if (error) throw error
-  return (data as { registration_code: string | null }).registration_code ?? ''
+  const { data, error: cErr } = await supabase.rpc('issue_registration_code', { p_email: email.trim() })
+  if (cErr) throw cErr
+  return (data as string) ?? ''
 }
 export async function setUserRole(email: string, role: AppUser['role']): Promise<void> {
   const { error } = await supabase.from('allowed_emails').update({ role }).eq('email', email)

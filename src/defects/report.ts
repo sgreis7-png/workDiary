@@ -7,14 +7,11 @@ import {
 } from './model'
 import { itemLabel, type GateDefs } from './defs'
 import { gateSummary } from './rules'
+import { escapeHtml } from '../lib/html'
 
 const I = '#14181b', MUT = '#6c747a', LINE = '#e0e5e2', GREEN = '#3aaa35', DEEP = '#1f7a1b', BG = '#f2f5f3', CLAY = '#c14a15'
 
-function esc(s: string | null | undefined): string {
-  return String(s ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!
-  ))
-}
+const esc = escapeHtml
 const fmtDate = (d: string | null | undefined) => (d ? new Date(d).toLocaleDateString('he-IL') : '—')
 
 // Copy-to-email variant doubles sizes (Outlook paste renders small); preview stays 1x.

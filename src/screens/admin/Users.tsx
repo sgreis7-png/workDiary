@@ -3,11 +3,11 @@ import { motion } from 'framer-motion'
 import { Button, Avatar, Tag, RoleBadge, stagger, riseIn } from '../../components/ui'
 import { Loader } from '../../components/Loader'
 import { useI18n } from '../../i18n'
-import { deleteUser, fetchUsers, inviteUser, setUserActive, setUserRole } from '../../api'
+import { deleteUser, fetchUsers, fetchRegistrationCodes, inviteUser, setUserActive, setUserRole } from '../../api'
 import { useAuth } from '../../auth'
 import type { AppUser, Role } from '../../data'
 import {
-  PERM_AREAS, fetchPermOverridesFor, setPermOverride, clearPermOverride,
+  PERM_AREAS, fetchPermOverrides, setPermOverride, clearPermOverride,
   type PermArea, type PermLevel,
 } from '../../lib/perms'
 
@@ -20,7 +20,7 @@ function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => vo
   const [err, setErr] = useState('')
 
   useEffect(() => {
-    fetchPermOverridesFor(user.email).then(setOverrides).catch((e) => setErr(String(e.message ?? e)))
+    fetchPermOverrides(user.email).then(setOverrides).catch((e) => setErr(String(e.message ?? e)))
   }, [user.email])
 
   async function change(area: PermArea, value: PermLevel | 'default') {
@@ -77,9 +77,13 @@ export default function Users() {
   const [err, setErr] = useState('')
   const [permsFor, setPermsFor] = useState<AppUser | null>(null)
   const [copied, setCopied] = useState('')
+  const [codes, setCodes] = useState<Record<string, string>>({})
 
   const roleLabels = { admin: t('role_admin'), member: t('role_member') }
-  const reload = () => fetchUsers().then(setUsers).catch(() => setUsers([]))
+  const reload = () => Promise.all([
+    fetchUsers().then(setUsers).catch(() => setUsers([])),
+    fetchRegistrationCodes().then(setCodes).catch(() => setCodes({})),
+  ])
   useEffect(() => { reload() }, [])
 
   const setRole = async (email: string, role: Role) => { await setUserRole(email, role); reload() }
@@ -132,13 +136,13 @@ export default function Users() {
               {!u.registered ? <Tag tone="amber">⧖ {t('pending_reg')}</Tag>
                 : u.active ? <Tag tone="green">✓ {t('registered_on')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               {/* the worker cannot register without this — hand it over directly */}
-              {!u.registered && u.registration_code && (
+              {!u.registered && codes[u.email.toLowerCase()] && (
                 <button
                   className="tag" dir="ltr" title={t('reg_code_col')}
                   style={{ fontFamily: 'var(--font-mono)', letterSpacing: '.14em', cursor: 'pointer' }}
-                  onClick={() => { void navigator.clipboard.writeText(u.registration_code!); setCopied(u.email) }}
+                  onClick={() => { void navigator.clipboard.writeText(codes[u.email.toLowerCase()]); setCopied(u.email) }}
                 >
-                  {copied === u.email ? `✓ ${t('reg_code_copied')}` : u.registration_code}
+                  {copied === u.email ? `✓ ${t('reg_code_copied')}` : codes[u.email.toLowerCase()]}
                 </button>
               )}
               <Button variant="ghost" onClick={() => toggleActive(u)}>{u.active ? t('inactive') : t('active')}</Button>

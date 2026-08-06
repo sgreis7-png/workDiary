@@ -195,10 +195,12 @@ export const D = {
 } as const
 
 export type DKey = keyof typeof D
-export const dt = (lang: Lang, k: DKey): string => D[k][lang]
+/** Same contract as translate() in ../i18n: never throw on an unmapped key. */
+export const dt = (lang: Lang, k: DKey): string => D[k]?.[lang] ?? String(k)
 export function useDT() {
   const { lang } = useI18n()
-  return { lang, dt: (k: DKey) => D[k][lang] }
+  // delegate rather than re-implement, so tests of dt() cover the hook too
+  return { lang, dt: (k: DKey) => dt(lang, k) }
 }
 
 // ---------- localized option labels (stored ids stay canonical) ----------

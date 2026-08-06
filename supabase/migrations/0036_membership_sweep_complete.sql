@@ -108,8 +108,19 @@ create policy granted_write_defect_overrides on defect_item_overrides for all
 -- Wrapped rather than rewritten: the bodies are long (defects + work tasks,
 -- each with its own dedup window) and re-typing them risks dropping a branch.
 -- The originals are renamed and kept verbatim; the public name becomes a guard.
-alter function notify_due_dates() rename to notify_due_dates_impl;
-alter function check_alert_rules() rename to check_alert_rules_impl;
+-- guarded: a bare ALTER ... RENAME aborts the whole migration on a re-run, and
+-- "fix" it by dropping the _impl first and the wrapper gets renamed onto itself,
+-- giving a self-recursive cron function
+do $$ begin
+  if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                 where n.nspname = 'public' and p.proname = 'notify_due_dates_impl') then
+    alter function public.notify_due_dates() rename to notify_due_dates_impl;
+  end if;
+  if not exists (select 1 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+                 where n.nspname = 'public' and p.proname = 'check_alert_rules_impl') then
+    alter function public.check_alert_rules() rename to check_alert_rules_impl;
+  end if;
+end $$;
 
 create or replace function notify_due_dates() returns void
 language plpgsql security definer set search_path = public as $$

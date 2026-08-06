@@ -2,6 +2,7 @@
 // Mirrors src/api.ts conventions: thin async wrappers, throw on error.
 import { supabase } from '../lib/supabase'
 import { signPaths } from '../lib/storagePaths'
+import { notifyMany } from '../lib/notify'
 import type { GateKey, ItemStatus, Severity, DefectStatus, CoopType, Responsible, SignatureRole } from './model'
 import { cachePut, cacheGet, queueOp, isNetworkError, replayOutbox, type DefectOp } from './offline'
 import { notifyNewDefect } from '../lib/notifyNewRecord'
@@ -311,10 +312,10 @@ export async function fetchAuditLog(limit = 200): Promise<AuditRow[]> {
 // ---------- notify helper (in-app bell for assignment) ----------
 
 export async function notifyUser(recipientEmail: string, title: string, body: string, link: string): Promise<void> {
-  // insert may be blocked by RLS for non-admins — best-effort
-  await supabase.from('notifications')
-    .insert({ recipient_email: recipientEmail.toLowerCase(), title, body, link })
-    .then(() => {})
+  // routed through notifyMany so the "recipient must be an active member" rule
+  // lives in exactly one place — this used to insert directly and could notify
+  // someone an admin had already deactivated
+  await notifyMany([recipientEmail], { title, body, link })
 }
 
 

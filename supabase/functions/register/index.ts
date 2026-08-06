@@ -21,9 +21,14 @@ Deno.serve(async (req) => {
     const { data: allowed } = await admin.rpc('rl_check', { p_actor: String(email).toLowerCase(), p_action: 'register', p_max: 5, p_window_seconds: 3600 })
     if (allowed === false) return json({ error: 'rate_limited' }, 429)
 
+    // exact match, not ilike: '%' and '_' are LIKE wildcards and the address is
+    // attacker-supplied, so a pattern could match a row the caller never named
+    const clean = String(email).trim().toLowerCase()
     const { data: rows, error: selErr } = await admin
-      .from('allowed_emails').select('*').ilike('email', email).limit(1)
+      .from('allowed_emails').select('*').eq('email', clean).limit(1)
     if (selErr) return json({ error: selErr.message }, 500)
+    const { data: codeRow } = await admin
+      .from('registration_codes').select('code').eq('email', clean).maybeSingle()
 
     const a = rows?.[0]
 
@@ -32,7 +37,7 @@ Deno.serve(async (req) => {
     // sending mail, so every not-yet-registered row was claimable by whoever
     // submitted it first. The admin hands the code to the worker out of band.
     const supplied = String(code ?? '').trim().toUpperCase()
-    const expected = String(a?.registration_code ?? '').trim().toUpperCase()
+    const expected = String(codeRow?.code ?? '').trim().toUpperCase()
     const ok = !!a && a.active && !a.registered && !!expected && supplied === expected
 
     // One answer for "not invited" / "disabled" / "already registered" / "wrong
@@ -49,8 +54,7 @@ Deno.serve(async (req) => {
       return json({ error: msg }, 400)
     }
     // burn the code so the row cannot be claimed twice
-    await admin.from('allowed_emails')
-      .update({ registration_code: null }).ilike('email', email)
+    await admin.from('registration_codes').delete().eq('email', clean)
     return json({ ok: true })
   } catch (e) {
     return json({ error: String(e) }, 500)

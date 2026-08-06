@@ -4,15 +4,13 @@
 import type { Entry, FieldDef } from './data'
 import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from './data'
 import { MISSING_KEY, bdActive, coopLabel, filledMissing, parseCoops, parseMissing, reasonLabel, taskLabel } from './lib/reportTables'
+import { escapeHtml } from './lib/html'
 
 // Official brand artwork served from the app's own domain — the copy that used
 // to live in Supabase storage (brand/logo.png) is an outdated crude version.
 export const LOGO_URL = 'https://work-diary-phi.vercel.app/agrotop-logo.png'
 
-const esc = (s: string) =>
-  String(s ?? '').replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!
-  ))
+const esc = escapeHtml
 
 // This is the only renderer of the diary report: the mail is composed here and
 // sent from the browser through the user's Outlook mailbox, so there is no
