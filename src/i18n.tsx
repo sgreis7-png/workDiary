@@ -208,6 +208,16 @@ const STRINGS = {
   safety_incident_q:{ he: 'ארעה תקרית בטיחות באתר', en: 'A safety incident occurred on site' },
   safety_incident_detail: { he: 'פירוט תקרית הבטיחות', en: 'Safety incident details' },
 
+  nav_lists:        { he: 'רשימות תפוצה', en: 'Mailing lists' },
+  list_add:         { he: 'רשימה חדשה', en: 'New list' },
+  list_name:        { he: 'שם הרשימה', en: 'List name' },
+  list_shared:      { he: 'רשימה משותפת — כל המשתמשים יוכלו לשלוח אליה', en: 'Shared list — every user can send to it' },
+  list_shared_tag:  { he: 'משותפת', en: 'Shared' },
+  list_delete_confirm: { he: 'למחוק את הרשימה?', en: 'Delete this list?' },
+  lists_empty:      { he: 'אין רשימות עדיין — צרו רשימה ותוכלו לבחור אותה בשליחת דוח במייל', en: 'No lists yet — create one and pick it when emailing a report' },
+  list_need_name_emails: { he: 'יש להזין שם רשימה ולפחות כתובת מייל אחת', en: 'Enter a list name and at least one email' },
+  send_pick_lists:  { he: 'רשימות תפוצה', en: 'Mailing lists' },
+
   change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
   update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
   password_changed: { he: 'הסיסמה עודכנה ✓', en: 'Password updated ✓' },

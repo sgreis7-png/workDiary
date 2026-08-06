@@ -27,6 +27,7 @@ import QCDashboard from './screens/defects/QCDashboard'
 import Tasks from './screens/Tasks'
 import Messages from './screens/Messages'
 import AlertRules from './screens/AlertRules'
+import DistLists from './screens/DistLists'
 import Feedback from './screens/admin/Feedback'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
@@ -83,6 +84,7 @@ export default function App() {
         <Route path="account" element={<Account />} />
         <Route path="messages" element={<Messages />} />
         <Route path="alert-rules" element={<RequirePerm area="alert_rules"><AlertRules /></RequirePerm>} />
+        <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />

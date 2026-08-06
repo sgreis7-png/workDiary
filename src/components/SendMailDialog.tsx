@@ -1,7 +1,8 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { isPopupBlocked, parseRecipients, sendMailViaOutlook } from '../lib/outlookSend'
+import { fetchLists, type DistList } from '../lib/distLists'
 
 const LS_RECIPIENTS = 'outlook_last_recipients'
 
@@ -19,15 +20,24 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
   const [busy, setBusy] = useState(false)
   const [err, setErr] = useState('')
   const [sent, setSent] = useState(false)
+  // mailing lists: own + shared, picked via chips and merged with the manual field
+  const [lists, setLists] = useState<DistList[]>([])
+  const [picked, setPicked] = useState<Set<string>>(new Set())
+
+  useEffect(() => { fetchLists().then(setLists).catch(() => {}) }, [])
+  const toggleList = (id: string) => setPicked((p) => {
+    const n = new Set(p); if (n.has(id)) n.delete(id); else n.add(id); return n
+  })
 
   async function onSend() {
     if (busy) return
-    const recipients = parseRecipients(to)
+    const listEmails = lists.filter((l) => picked.has(l.id)).flatMap((l) => l.emails)
+    const recipients = [...new Set([...parseRecipients(to), ...listEmails.map((e) => e.toLowerCase())])]
     if (!recipients.length) { setErr(t('send_no_recipients')); return }
     setBusy(true); setErr('')
     try {
       await sendMailViaOutlook({ to: recipients, subject: subject.trim(), html, loginHint: user?.email })
-      localStorage.setItem(LS_RECIPIENTS, recipients.join(', '))
+      if (parseRecipients(to).length) localStorage.setItem(LS_RECIPIENTS, parseRecipients(to).join(', '))
       setSent(true)
       onSent?.()
       setTimeout(onClose, 1800)
@@ -49,6 +59,24 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
               {t('send_intro')}{user?.email ? ` (${user.email})` : ''}
             </p>
             {err && <div className="alert">{err}</div>}
+            {lists.length > 0 && (
+              <>
+                <label className="field__label" style={{ display: 'block', marginBottom: 6 }}>{t('send_pick_lists')}</label>
+                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
+                  {lists.map((l) => (
+                    <button
+                      key={l.id} type="button"
+                      className={`btn ${picked.has(l.id) ? 'btn--primary' : 'btn--ghost'}`}
+                      style={{ padding: '6px 12px', fontSize: 13.5 }}
+                      title={l.emails.join(', ')}
+                      onClick={() => toggleList(l.id)}
+                    >
+                      {picked.has(l.id) ? '✓ ' : ''}{l.name} ({l.emails.length})
+                    </button>
+                  ))}
+                </div>
+              </>
+            )}
             <label className="field__label">{t('send_to')}</label>
             <textarea
               className="input" rows={2} dir="ltr" placeholder="name@agrotop.co.il, name2@..."

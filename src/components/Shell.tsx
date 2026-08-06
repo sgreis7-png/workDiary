@@ -182,6 +182,7 @@ export function Shell() {
           {unacked > 0 && <span className="coop-tab__badge" style={{ marginInlineStart: 'auto' }}>{unacked}</span>}
         </NavLink>
         {can('alert_rules') && <NavItem to="/alert-rules" icon="⚑" label={t('nav_alert_rules')} />}
+        <NavItem to="/lists" icon="✉" label={t('nav_lists')} />
         <button className="nav__item" onClick={() => setFeedbackOpen(true)}>
           <span className="ic" aria-hidden>🛈</span>
           {t('nav_feedback')}
