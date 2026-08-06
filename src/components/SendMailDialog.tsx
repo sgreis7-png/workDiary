@@ -132,6 +132,9 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
             <div style={{ position: 'relative' }}>
               <input
                 ref={inputRef} className="input" dir="ltr" placeholder={t('send_search_ph')}
+                // block the browser's own "recent emails" autofill — only the
+                // in-app directory below may suggest addresses
+                autoComplete="off" name="wd-recipient-search" type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
                 onKeyDown={onQueryKey}
