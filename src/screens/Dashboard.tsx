@@ -4,8 +4,10 @@ import { motion } from 'framer-motion'
 import { Tag, WeatherChip, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
-import { fetchDashboardStats, type DashboardStats } from '../api'
+import { fetchDashboardStats, listEntries, type DashboardStats } from '../api'
 import { useStore } from '../store'
+import { parseCoops } from '../lib/reportTables'
+import { ProgressChart, type ProgressSeries } from '../components/ProgressChart'
 import MalfunctionsSection from './Malfunctions'
 
 const STALE_DAYS = 7
@@ -16,12 +18,45 @@ export default function Dashboard() {
   const nav = useNavigate()
   const { projects, projectName, projectColor, userName } = useStore()
   const [raw, setRaw] = useState<DashboardStats | null>(null)
+  // progress-over-time: pick a project, series are its coops. The loaded data
+  // carries the project it belongs to, so "loading" is derived by comparison
+  // instead of resetting state synchronously inside the effect.
+  const [chartProject, setChartProject] = useState('')
+  const [chart, setChart] = useState<{ project: string; series: ProgressSeries[] } | null>(null)
 
   useEffect(() => {
     let alive = true
     fetchDashboardStats().then((s) => { if (alive) setRaw(s) }).catch(() => { if (alive) setRaw(null) })
     return () => { alive = false }
   }, [])
+
+  useEffect(() => {
+    if (!chartProject) return
+    let alive = true
+    listEntries(chartProject).then((entries) => {
+      if (!alive) return
+      // per coop: the pct recorded on each work date (last entry of a day wins,
+      // list arrives newest-first so the first value seen per date is kept)
+      const byCoop = new Map<string, Map<string, number>>()
+      for (const e of entries) {
+        if (!e.work_date) continue
+        for (const c of parseCoops(e.values, 'he')) {
+          const m = byCoop.get(c.name) ?? new Map<string, number>()
+          if (!m.has(e.work_date)) m.set(e.work_date, c.pct)
+          byCoop.set(c.name, m)
+        }
+      }
+      const series: ProgressSeries[] = [...byCoop.entries()]
+        .map(([name, m]) => ({
+          name,
+          points: [...m.entries()].map(([date, pct]) => ({ date, pct })).sort((a, b) => a.date.localeCompare(b.date)),
+        }))
+        .filter((s) => s.points.length >= 2)
+        .sort((a, b) => a.name.localeCompare(b.name, 'he', { numeric: true }))
+      setChart({ project: chartProject, series })
+    }).catch(() => { if (alive) setChart({ project: chartProject, series: [] }) })
+    return () => { alive = false }
+  }, [chartProject])
 
   const stats = useMemo(() => {
     if (!raw) return null
@@ -63,6 +98,20 @@ export default function Dashboard() {
           <Stat label={t('dash_malfunctions')} value={stats.malfunctionsMonth} tone={stats.malfunctionsMonth ? 'clay' : 'green'} clickable onClick={() => document.getElementById('malfunctions')?.scrollIntoView({ behavior: 'smooth' })} />
           <Stat label={t('dash_unsent')} value={stats.unsent} tone={stats.unsent ? 'clay' : 'green'} clickable onClick={() => nav('/export')} />
           <Stat label={t('dash_needs_update')} value={stats.stale.length} tone={stats.stale.length ? 'clay' : 'green'} />
+        </motion.div>
+
+        {/* progress over time */}
+        <motion.div variants={riseIn} className="panel" style={{ padding: 22 }}>
+          <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap', marginBottom: 12 }}>
+            <h3 style={{ margin: 0 }}>📈 {t('dash_progress_chart')}</h3>
+            <select className="input" style={{ maxWidth: 260 }} value={chartProject} onChange={(e) => setChartProject(e.target.value)}>
+              <option value="">— {t('choose')} —</option>
+              {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+            </select>
+          </div>
+          {chartProject && chart?.project !== chartProject && <Loader label={t('loading')} />}
+          {chartProject && chart?.project === chartProject && <ProgressChart key={chartProject} series={chart.series} />}
+          {!chartProject && <div className="empty" style={{ padding: '18px 0' }}>{t('dash_progress_pick')}</div>}
         </motion.div>
 
         {/* stale projects */}
