@@ -11,15 +11,11 @@ import {
   type PermArea, type PermLevel,
 } from '../../lib/perms'
 
-const LEVEL_LABELS: { value: PermLevel | 'default'; label: string }[] = [
-  { value: 'default', label: 'ברירת מחדל' },
-  { value: 'none', label: 'אין גישה' },
-  { value: 'view', label: 'צפייה בלבד' },
-  { value: 'edit', label: 'צפייה ועריכה' },
-]
+const LEVELS: (PermLevel | 'default')[] = ['default', 'none', 'view', 'edit']
 
 /** הרשאות פר-משתמש: שורה לכל אזור, בחירה גוברת על ברירת המחדל של התפקיד. */
 function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => void }) {
+  const { t, lang } = useI18n()
   const [overrides, setOverrides] = useState<Record<string, PermLevel> | null>(null)
   const [err, setErr] = useState('')
 
@@ -43,30 +39,28 @@ function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => vo
   return (
     <div className="modal-backdrop" onClick={onClose}>
       <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
-        <h2>הרשאות גישה — {user.name}</h2>
+        <h2>{t('perm_title')} — {user.name}</h2>
         <p className="coop-intro" style={{ margin: '8px 0 14px' }}>
-          {user.role === 'admin'
-            ? 'משתמש זה אדמין — יש לו גישה מלאה לכל האזורים; ההגדרות כאן ישפיעו רק אם יורד לתפקיד עובד.'
-            : 'בחירה כאן גוברת על ברירת המחדל של תפקיד "עובד". "ברירת מחדל" מחזירה למצב הרגיל.'}
+          {user.role === 'admin' ? t('perm_admin_note') : t('perm_member_note')}
         </p>
         {err && <div className="alert">{err}</div>}
-        {!overrides ? <Loader label="טוען…" /> : (
+        {!overrides ? <Loader label={t('loading')} /> : (
           <div className="perm-grid">
             {PERM_AREAS.map((a) => (
               <div key={a.key} className="perm-row">
-                <span className="perm-row__label">{a.label}</span>
+                <span className="perm-row__label">{lang === 'he' ? a.label : a.label_en}</span>
                 <select
                   className="input" value={overrides[a.key] ?? 'default'}
                   onChange={(e) => change(a.key, e.target.value as PermLevel | 'default')}
                 >
-                  {LEVEL_LABELS.map((l) => <option key={l.value} value={l.value}>{l.label}</option>)}
+                  {LEVELS.map((l) => <option key={l} value={l}>{t(`perm_${l === 'default' ? 'default' : l}` as never)}</option>)}
                 </select>
               </div>
             ))}
           </div>
         )}
         <div className="form-actions" style={{ marginTop: 18 }}>
-          <button className="btn btn--primary" onClick={onClose}>סגירה</button>
+          <button className="btn btn--primary" onClick={onClose}>{t('close')}</button>
         </div>
       </div>
     </div>
@@ -133,7 +127,7 @@ export default function Users() {
                 <button className={u.role === 'admin' ? 'on' : ''} onClick={() => setRole(u.email, 'admin')}>{t('role_admin')}</button>
               </div>
 
-              <Button variant="ghost" onClick={() => setPermsFor(u)}>🔑 הרשאות</Button>
+              <Button variant="ghost" onClick={() => setPermsFor(u)}>🔑 {t('perm_btn')}</Button>
               {!u.registered ? <Tag tone="amber">⧖ {t('pending_reg')}</Tag>
                 : u.active ? <Tag tone="green">✓ {t('registered_on')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               <Button variant="ghost" onClick={() => toggleActive(u)}>{u.active ? t('inactive') : t('active')}</Button>

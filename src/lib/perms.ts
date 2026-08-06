@@ -7,17 +7,17 @@ export type PermArea =
   | 'dashboard' | 'logbook' | 'calendar' | 'search' | 'projects' | 'export'
   | 'defects' | 'form_builder' | 'coops_manage' | 'alert_rules'
 
-export const PERM_AREAS: { key: PermArea; label: string }[] = [
-  { key: 'logbook', label: 'יומן עבודה' },
-  { key: 'calendar', label: 'לוח שנה' },
-  { key: 'search', label: 'חיפוש' },
-  { key: 'projects', label: 'פרויקטים' },
-  { key: 'export', label: 'ייצוא דוחות' },
-  { key: 'dashboard', label: 'סקירה / סטטיסטיקות' },
-  { key: 'defects', label: 'ניהול ליקויים' },
-  { key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה' },
-  { key: 'alert_rules', label: 'כללי התראות' },
-  { key: 'form_builder', label: 'בוני טפסים' },
+export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = [
+  { key: 'logbook', label: 'יומן עבודה', label_en: 'Work diary' },
+  { key: 'calendar', label: 'לוח שנה', label_en: 'Calendar' },
+  { key: 'search', label: 'חיפוש', label_en: 'Search' },
+  { key: 'projects', label: 'פרויקטים', label_en: 'Projects' },
+  { key: 'export', label: 'ייצוא דוחות', label_en: 'Report export' },
+  { key: 'dashboard', label: 'סקירה / סטטיסטיקות', label_en: 'Overview / statistics' },
+  { key: 'defects', label: 'ניהול ליקויים', label_en: 'Defect management' },
+  { key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה', label_en: 'Coop management — edit & delete' },
+  { key: 'alert_rules', label: 'כללי התראות', label_en: 'Alert rules' },
+  { key: 'form_builder', label: 'בוני טפסים', label_en: 'Form builders' },
 ]
 
 /** Role defaults — an explicit user_permissions row overrides these. */

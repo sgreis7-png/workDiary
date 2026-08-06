@@ -12,6 +12,7 @@ function AvatarCropDialog({ file, onCancel, onSave }: {
   onCancel: () => void
   onSave: (png: Blob) => void
 }) {
+  const { t } = useI18n()
   const VIEW = 280
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<ImageBitmap | null>(null)
@@ -79,8 +80,8 @@ function AvatarCropDialog({ file, onCancel, onSave }: {
   return (
     <div className="modal-backdrop" onClick={onCancel}>
       <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 360 }}>
-        <h2>התאמת תמונת פרופיל</h2>
-        <p className="coop-intro" style={{ margin: '6px 0 12px' }}>גררו למיקום, והשתמשו בסליידר להגדלה — מה שבתוך העיגול יישמר.</p>
+        <h2>{t('avatar_title')}</h2>
+        <p className="coop-intro" style={{ margin: '6px 0 12px' }}>{t('avatar_hint')}</p>
         <canvas
           ref={canvasRef}
           style={{ width: VIEW, height: VIEW, borderRadius: 14, cursor: 'grab', touchAction: 'none', display: 'block', margin: '0 auto' }}
@@ -94,8 +95,8 @@ function AvatarCropDialog({ file, onCancel, onSave }: {
           onChange={(e) => { setZoom(Number(e.target.value)); setOff((o) => clampOff(o)) }}
         />
         <div className="form-actions" style={{ marginTop: 14 }}>
-          <button className="btn btn--ghost" onClick={onCancel}>ביטול</button>
-          <button className="btn btn--primary" disabled={!ready} onClick={save}>✔ שמירה</button>
+          <button className="btn btn--ghost" onClick={onCancel}>{t('cancel')}</button>
+          <button className="btn btn--primary" disabled={!ready} onClick={save}>✔ {t('save')}</button>
         </div>
       </div>
     </div>

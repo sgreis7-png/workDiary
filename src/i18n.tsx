@@ -225,6 +225,18 @@ const STRINGS = {
   forgot_sent:      { he: 'אם הכתובת רשומה במערכת — נשלח אליה קישור לאיפוס. בדקו את תיבת הדואר (גם בספאם)', en: 'If the address is registered, a reset link is on its way. Check your inbox (and spam)' },
   not_sent:         { he: 'לא נשלח', en: 'Not sent' },
 
+  close:            { he: 'סגירה', en: 'Close' },
+  perm_btn:         { he: 'הרשאות', en: 'Permissions' },
+  perm_title:       { he: 'הרשאות גישה', en: 'Access permissions' },
+  perm_admin_note:  { he: 'משתמש זה אדמין — יש לו גישה מלאה לכל האזורים; ההגדרות כאן ישפיעו רק אם יורד לתפקיד עובד.', en: 'This user is an admin with full access everywhere; these settings only apply if demoted to worker.' },
+  perm_member_note: { he: 'בחירה כאן גוברת על ברירת המחדל של תפקיד "עובד". "ברירת מחדל" מחזירה למצב הרגיל.', en: 'A choice here overrides the "worker" role default. "Default" restores the normal behavior.' },
+  perm_default:     { he: 'ברירת מחדל', en: 'Default' },
+  perm_none:        { he: 'אין גישה', en: 'No access' },
+  perm_view:        { he: 'צפייה בלבד', en: 'View only' },
+  perm_edit:        { he: 'צפייה ועריכה', en: 'View & edit' },
+  avatar_title:     { he: 'התאמת תמונת פרופיל', en: 'Adjust profile photo' },
+  avatar_hint:      { he: 'גררו למיקום, והשתמשו בסליידר להגדלה — מה שבתוך העיגול יישמר.', en: 'Drag to position and zoom with the slider — what is inside the circle is kept.' },
+
   change_password:  { he: 'שינוי סיסמה', en: 'Change password' },
   update_password:  { he: 'עדכון סיסמה', en: 'Update password' },
   password_changed: { he: 'הסיסמה עודכנה ✓', en: 'Password updated ✓' },

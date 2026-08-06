@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { Loader } from '../../components/Loader'
 import { GATES, GATE_ORDER, type GateKey } from '../../defects/model'
+import { useDT, gateShortName } from '../../defects/i18n'
 import {
   fetchItemOverrides, saveItemOverride, deleteItemOverride,
   type ItemOverride,
@@ -9,6 +10,7 @@ import {
 /** בונה טופס — עריכת סעיפי הצ'קליסט של תפיסת סיום שלב (אדמין).
  *  שינוי נוסח, השבתה/החזרה של סעיפים קיימים, והוספת סעיפים חדשים לכל שער. */
 export default function DefectFormBuilder() {
+  const { dt, lang } = useDT()
   const [overrides, setOverrides] = useState<ItemOverride[] | null>(null)
   const [gate, setGate] = useState<GateKey>('pre_pour')
   const [err, setErr] = useState('')
@@ -52,20 +54,17 @@ export default function DefectFormBuilder() {
     setNewText('')
   }
 
-  if (!overrides) return err ? <div className="page"><div className="alert">{err}</div></div> : <Loader label="טוען…" />
+  if (!overrides) return err ? <div className="page"><div className="alert">{err}</div></div> : <Loader label={dt('fb_loading')} />
 
   return (
     <div className="page">
       <div className="page__head">
         <div>
-          <div className="kicker">ניהול · תפיסת סיום שלב</div>
-          <h1 className="page-title">בונה טופס ליקויים</h1>
+          <div className="kicker">{dt('fb_kicker')}</div>
+          <h1 className="page-title">{dt('fb_title')}</h1>
         </div>
       </div>
-      <p className="coop-intro">
-        עריכת סעיפי הצ'קליסט לכל השערים: שינוי נוסח, השבתת סעיף או הוספת סעיף חדש.
-        השינויים חלים על כל הלולים (חדשים וקיימים).
-      </p>
+      <p className="coop-intro">{dt('fb_intro')}</p>
 
       {err && <div className="alert">{err}</div>}
 
@@ -73,7 +72,7 @@ export default function DefectFormBuilder() {
         {GATE_ORDER.map((g) => (
           <button key={g} role="tab" aria-selected={gate === g}
             className={`coop-tab ${gate === g ? 'on' : ''}`} onClick={() => setGate(g)}>
-            {GATES[g].shortName}
+            {gateShortName(lang, g)}
           </button>
         ))}
       </div>
@@ -98,12 +97,12 @@ export default function DefectFormBuilder() {
                   }}
                 />
                 <div className="fb-row__ops">
-                  {changed && <button className="btn btn--quiet" title="חזרה לנוסח המקורי" onClick={() => removeOverride(gate, it.no)}>↺ מקורי</button>}
+                  {changed && <button className="btn btn--quiet" title={dt('fb_restore_title')} onClick={() => removeOverride(gate, it.no)}>{dt('fb_restore')}</button>}
                   <button
                     className={`btn ${disabled ? 'btn--primary' : 'btn--danger'}`}
                     onClick={() => upsert({ gate, item_no: it.no, text: o?.text ?? null, active: disabled, is_custom: false })}
                   >
-                    {disabled ? 'הפעלה' : 'השבתה'}
+                    {disabled ? dt('fb_enable') : dt('fb_disable')}
                   </button>
                 </div>
               </div>
@@ -118,8 +117,8 @@ export default function DefectFormBuilder() {
                 onBlur={(e) => { const v = e.target.value.trim(); if (v && v !== o.text) upsert({ ...o, text: v }) }}
               />
               <div className="fb-row__ops">
-                <span className="tag tag--green">נוסף</span>
-                <button className="btn btn--danger" onClick={() => removeOverride(gate, o.item_no)}>מחיקה</button>
+                <span className="tag tag--green">{dt('fb_added')}</span>
+                <button className="btn btn--danger" onClick={() => removeOverride(gate, o.item_no)}>{dt('fb_delete')}</button>
               </div>
             </div>
           ))}
@@ -127,11 +126,11 @@ export default function DefectFormBuilder() {
 
         <div className="fb-add">
           <input
-            className="input" placeholder="נוסח סעיף חדש לשער הזה…" value={newText}
+            className="input" placeholder={dt('fb_new_ph')} value={newText}
             onChange={(e) => setNewText(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && addCustom()}
           />
-          <button className="btn btn--primary" disabled={!newText.trim()} onClick={addCustom}>✛ הוספת סעיף</button>
+          <button className="btn btn--primary" disabled={!newText.trim()} onClick={addCustom}>{dt('fb_add')}</button>
         </div>
       </div>
     </div>
