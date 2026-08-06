@@ -5,8 +5,9 @@ import { Logo } from '../components/Logo'
 import { Button, Field } from '../components/ui'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
+import { requestPasswordReset } from '../api'
 
-type Mode = 'signin' | 'register'
+type Mode = 'signin' | 'register' | 'forgot'
 
 export default function Login() {
   const { t } = useI18n()
@@ -18,10 +19,19 @@ export default function Login() {
   const [pw2, setPw2] = useState('')
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault()
     setErr('')
+    if (mode === 'forgot') {
+      if (!email.trim()) return setErr(t('err_bad_login'))
+      setBusy(true)
+      try { await requestPasswordReset(email); setResetSent(true) }
+      catch (e2) { setErr(t(String((e2 as Error).message) as never) || String((e2 as Error).message)) }
+      finally { setBusy(false) }
+      return
+    }
     if (mode === 'register') {
       if (pw.length < 8) return setErr(t('err_pw_short'))
       if (pw !== pw2) return setErr(t('err_pw_match'))
@@ -33,7 +43,7 @@ export default function Login() {
     nav('/')
   }
 
-  const swap = (m: Mode) => { setMode(m); setErr(''); setPw(''); setPw2(''); if (m === 'register') setEmail('') }
+  const swap = (m: Mode) => { setMode(m); setErr(''); setPw(''); setPw2(''); setResetSent(false); if (m === 'register') setEmail('') }
 
   return (
     <div className="login">
@@ -60,16 +70,23 @@ export default function Login() {
 
         <AnimatePresence mode="wait">
           <motion.div key={mode} initial={{ opacity: 0, x: 14 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -14 }} transition={{ duration: 0.28 }}>
-            <h1>{mode === 'register' ? t('set_password') : t('login_title')}</h1>
-            <p className="sub">{mode === 'register' ? t('authorize_hint') : t('login_sub')}</p>
+            <h1>{mode === 'register' ? t('set_password') : mode === 'forgot' ? t('forgot_title') : t('login_title')}</h1>
+            <p className="sub">{mode === 'register' ? t('authorize_hint') : mode === 'forgot' ? t('forgot_sub') : t('login_sub')}</p>
 
+            {mode === 'forgot' && resetSent ? (
+              <div className="tag tag--green" style={{ display: 'block', padding: '14px 16px', marginTop: 8 }}>
+                ✓ {t('forgot_sent')}
+              </div>
+            ) : (
             <form className="login__fields" onSubmit={submit}>
               <Field label={t('email')}>
                 <input className="input" type="email" value={email} onChange={(e) => setEmail(e.target.value)} autoComplete="username" placeholder="name@agrotop.co.il" />
               </Field>
-              <Field label={mode === 'register' ? t('set_password') : t('password')}>
-                <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
-              </Field>
+              {mode !== 'forgot' && (
+                <Field label={mode === 'register' ? t('set_password') : t('password')}>
+                  <input className="input" type="password" value={pw} onChange={(e) => setPw(e.target.value)} autoComplete={mode === 'register' ? 'new-password' : 'current-password'} />
+                </Field>
+              )}
               {mode === 'register' && (
                 <Field label={t('confirm_password')}>
                   <input className="input" type="password" value={pw2} onChange={(e) => setPw2(e.target.value)} autoComplete="new-password" />
@@ -87,13 +104,20 @@ export default function Login() {
               <Button type="submit" disabled={busy} variant="primary">
                 {busy
                   ? <><span className="spin" /> {mode === 'register' ? t('registering') : t('signing_in')}</>
-                  : (mode === 'register' ? t('register_cta') : t('sign_in'))}
+                  : (mode === 'register' ? t('register_cta') : mode === 'forgot' ? t('forgot_cta') : t('sign_in'))}
               </Button>
             </form>
+            )}
 
-            <button type="button" className="btn btn--quiet" style={{ marginTop: 16, paddingInline: 0 }}
-              onClick={() => swap(mode === 'register' ? 'signin' : 'register')}>
-              {mode === 'register' ? '← ' + t('have_account_q') : t('first_time_q') + ' →'}
+            {mode === 'signin' && (
+              <button type="button" className="btn btn--quiet" style={{ marginTop: 16, paddingInline: 0 }}
+                onClick={() => swap('forgot')}>
+                {t('forgot_q')}
+              </button>
+            )}
+            <button type="button" className="btn btn--quiet" style={{ marginTop: mode === 'signin' ? 4 : 16, paddingInline: 0, display: 'block' }}
+              onClick={() => swap(mode === 'signin' ? 'register' : 'signin')}>
+              {mode !== 'signin' ? '← ' + t('have_account_q') : t('first_time_q') + ' →'}
             </button>
           </motion.div>
         </AnimatePresence>

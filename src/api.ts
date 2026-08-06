@@ -335,6 +335,18 @@ export async function deleteUser(email: string): Promise<void> {
   if (d?.error) throw new Error(d.error)
 }
 
+/** "Forgot password" — asks the reset-password edge fn to email a recovery link. */
+export async function requestPasswordReset(email: string): Promise<void> {
+  const { data, error } = await supabase.functions.invoke('reset-password', { body: { email } })
+  if (error) {
+    const ctx = (error as { context?: { json?: () => Promise<{ error?: string }> } }).context
+    const body = await ctx?.json?.().catch(() => null)
+    throw new Error(body?.error ?? error.message)
+  }
+  const d = data as { error?: string } | null
+  if (d?.error) throw new Error(d.error)
+}
+
 /** Current user changes their own password. */
 export async function changeMyPassword(newPassword: string): Promise<void> {
   const { error } = await supabase.auth.updateUser({ password: newPassword })
