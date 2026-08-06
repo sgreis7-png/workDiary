@@ -102,7 +102,9 @@ select.input { cursor: pointer; }
 .lang-toggle { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 99px; padding: 3px; background: var(--panel); }
 .lang-toggle button { border: none; background: transparent; padding: 5px 13px; border-radius: 99px; font-weight: 700;
   font-size: 13px; color: var(--ink-3); transition: all .16s var(--ease); }
-.lang-toggle button.on { background: var(--ink); color: #fff; }
+/* var(--panel), not #fff: --ink inverts per theme, so a fixed white label
+   vanished on the near-white pill in dark mode (role/lang toggles) */
+.lang-toggle button.on { background: var(--ink); color: var(--panel); }
 .sidebar .lang-toggle { background: rgba(233,242,236,.08); border-color: var(--shell-line); }
 .sidebar .lang-toggle button { color: var(--shell-faint); }
 .sidebar .lang-toggle button.on { background: var(--shell-ink); color: var(--shell); }
