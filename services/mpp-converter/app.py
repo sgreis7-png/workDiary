@@ -71,27 +71,60 @@ def _post_rpc(name: str, token: str):
         return None
 
 
-def caller_is_member() -> bool:
-    """True when the request carries a token for an active allowlisted member."""
+class Denied(Exception):
+    """Refusal to convert, carrying the i18n key and status to report."""
+
+    def __init__(self, key: str, status: int):
+        super().__init__(key)
+        self.key = key
+        self.status = status
+
+
+def check_caller() -> None:
+    """Pass when the request carries a token for an active allowlisted member.
+
+    Each way this can fail gets its own key: "we could not verify you" and "we verified
+    you and you are not allowed" need different answers from whoever hits them.
+    """
     if not SUPABASE_URL or not SUPABASE_ANON_KEY:
         raise RuntimeError("SUPABASE_URL and SUPABASE_ANON_KEY must be set")
 
     auth = request.headers.get("Authorization", "")
     if not auth.lower().startswith("bearer "):
-        return False
-    return _post_rpc("is_member", auth[7:].strip()) is True
+        raise Denied("err_no_session", 401)
+
+    verdict = _post_rpc("is_member", auth[7:].strip())
+    if verdict is None:
+        # the token was rejected, or Supabase did not answer
+        raise Denied("err_verify_failed", 401)
+    if verdict is not True:
+        raise Denied("err_not_member", 403)
 
 
 @app.get("/health")
 def health():
-    return jsonify({"ok": True, "java": find_java_home()})
+    """Liveness, plus whether this instance is configured well enough to verify anyone.
+
+    `supabase_reachable` calls the same RPC the upload path calls, using the anon key as
+    the token: a correctly configured instance gets a clean `false` back (the anon role
+    is nobody), so False here means the key or URL is wrong — the one misconfiguration
+    that otherwise only shows up as a refused upload.
+    """
+    probe = _post_rpc("is_member", SUPABASE_ANON_KEY) if SUPABASE_ANON_KEY else None
+    return jsonify({
+        "ok": True,
+        "java": find_java_home(),
+        "supabase_configured": bool(SUPABASE_URL and SUPABASE_ANON_KEY),
+        "supabase_reachable": probe is not None,
+    })
 
 
 @app.post("/convert")
 def convert_endpoint():
     try:
-        if not caller_is_member():
-            return jsonify({"error": "err_forbidden"}), 403
+        check_caller()
+    except Denied as denied:
+        return jsonify({"error": denied.key}), denied.status
     except RuntimeError as exc:
         log.error("misconfigured: %s", exc)
         return jsonify({"error": "err_converter_config"}), 500

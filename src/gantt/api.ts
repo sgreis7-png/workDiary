@@ -128,7 +128,8 @@ export async function convertFile(file: File): Promise<ConvertedProject> {
 
   const { data: sessionData } = await supabase.auth.getSession()
   const token = sessionData.session?.access_token
-  if (!token) throw new GanttError('err_forbidden')
+  // distinct from the converter's own refusals: this one means the browser is signed out
+  if (!token) throw new GanttError('err_no_session')
 
   const send = () => fetch(endpoint, {
     method: 'POST',
@@ -160,7 +161,12 @@ export async function convertFile(file: File): Promise<ConvertedProject> {
   }
 
   const body = (await res.json().catch(() => null)) as ConvertedProject | { error?: string } | null
-  if (!res.ok || !body) throw new GanttError((body as { error?: string })?.error || 'err_convert_failed')
+  if (!res.ok || !body) {
+    const code = (body as { error?: string })?.error
+    // the status is the only clue left when the body is not ours (a gateway page, say)
+    console.warn(`[gantt] converter refused the upload: ${res.status} ${code ?? '(no error code)'}`)
+    throw new GanttError(code || 'err_convert_failed')
+  }
   const payload = body as ConvertedProject
   if (!Array.isArray(payload.tasks) || !payload.tasks.length) throw new GanttError('err_schedule_empty')
   return payload
