@@ -67,6 +67,7 @@ export const G = {
   g_edit_slip:      { he: 'סטייה מהתכנון המקורי',           en: 'Drift from the imported plan' },
   g_edit_days:      { he: 'ימים',                          en: 'days' },
   g_edit_readonly:  { he: 'אין לך הרשאת עריכה ללוח הזמנים.', en: 'You do not have permission to edit the schedule.' },
+  g_edit_phone:     { he: 'בטלפון הלוח לצפייה בלבד. לעריכת תאריכים פתח אותו במחשב.', en: 'View only on a phone — open it on a computer to change dates.' },
   g_edit_hint:      { he: 'גרור בר כדי להזיז, גרור קצה כדי לשנות משך. משימות עוקבות נדחות בהתאם.', en: 'Drag a bar to move it, drag an edge to change its length. Successors are pushed out to match.' },
   g_edit_summary:   { he: 'שורת סיכום מחושבת מהמשימות שתחתיה.', en: 'A summary row is derived from the tasks beneath it.' },
   g_saving:         { he: 'שומר…',                         en: 'Saving…' },

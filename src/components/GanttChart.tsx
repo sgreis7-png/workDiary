@@ -6,6 +6,7 @@
 // and the parent decides what to write.
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n'
+import { useMediaQuery } from '../lib/useMediaQuery'
 import { gt } from '../gantt/i18n'
 import {
   DAY_MS, DEFAULT_FINISH_TIME, DEFAULT_START_TIME,
@@ -54,9 +55,18 @@ function localDate(): string {
 const coarsePointer = () => typeof matchMedia === 'function' && !matchMedia('(hover: hover)').matches
 const narrowScreen = () => typeof innerWidth === 'number' && innerWidth < 760
 
+/** Matches the breakpoint the stylesheet treats as a phone. */
+const PHONE = '(max-width: 760px)'
+
 export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props) {
   const { lang } = useI18n()
   const g = (k: string) => gt(lang, k)
+
+  // Read-only on a phone whatever the permission says: the bars are a few pixels wide at
+  // this zoom, so a drag is as likely to reschedule the wrong task as the right one, and
+  // an accidental one writes to the live plan for everybody.
+  const phone = useMediaQuery(PHONE)
+  const mayEdit = canEdit && !phone
 
   // a phone starts zoomed out: at 6px/day only six weeks fit beside the task column
   const [px, setPx] = useState(() => (narrowScreen() ? 3 : 6))
@@ -187,7 +197,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
   }
 
   function beginDrag(ev: React.PointerEvent, task: GanttTask, mode: DragMode) {
-    if (!canEdit || busy || task.is_summary) return
+    if (!mayEdit || busy || task.is_summary) return
     ev.preventDefault()
     ev.stopPropagation()
     setSelected(task.ext_uid)
@@ -489,7 +499,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
               const { startDay, finishDay } = preview(t)
               const left = x(startDay)
               const parent = hasChildren(tree, t.ext_uid)
-              const editable = canEdit && !busy && !t.is_summary
+              const editable = mayEdit && !busy && !t.is_summary
               const dragging = drag?.uid === t.ext_uid
               const isSel = selected === t.ext_uid
               const pay = pays.find((p) => p.ext_uid === t.ext_uid)
@@ -560,7 +570,8 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
       <TaskEditor
         task={selectedTask}
         isSummary={selectedTask ? hasChildren(tree, selectedTask.ext_uid) : false}
-        canEdit={canEdit && !busy}
+        canEdit={mayEdit && !busy}
+        phone={phone}
         deps={selectedTask ? links.filter((l) => l.succ_ext_uid === selectedTask.ext_uid) : []}
         nameOf={(uid) => byUid.get(uid)?.name ?? String(uid)}
         onEdit={onEdit}
@@ -663,11 +674,13 @@ function Stat({ label, value, tone }: { label: string; value: string; tone?: 'wa
 
 /** Keyboard-and-touch path to the same edits the drag gesture makes. */
 function TaskEditor({
-  task, isSummary, canEdit, deps, nameOf, onEdit, allTasks, allLinks,
+  task, isSummary, canEdit, phone, deps, nameOf, onEdit, allTasks, allLinks,
 }: {
   task: GanttTask | null
   isSummary: boolean
   canEdit: boolean
+  /** view-only because of the screen, not because of a permission */
+  phone: boolean
   deps: GanttLink[]
   nameOf: (uid: number) => string
   onEdit: (changes: TaskChange[]) => void
@@ -771,7 +784,7 @@ function TaskEditor({
       )}
 
       <p className="gantt__hint" style={{ flex: '1 1 100%', margin: 0 }}>
-        {!canEdit ? g('g_edit_readonly') : isSummary ? g('g_edit_summary') : g('g_edit_hint')}
+        {phone ? g('g_edit_phone') : !canEdit ? g('g_edit_readonly') : isSummary ? g('g_edit_summary') : g('g_edit_hint')}
       </p>
     </div>
   )
