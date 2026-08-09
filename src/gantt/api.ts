@@ -67,8 +67,36 @@ export async function archiveChart(chartId: string): Promise<void> {
  */
 const DEFAULT_CONVERTER_URL = 'https://mpp-converter-dhm3.onrender.com/convert'
 
+/**
+ * An override is only honoured if it is actually a reachable-looking http(s) URL.
+ *
+ * A typo'd or half-pasted value would otherwise beat the working default and fail at
+ * upload time with a network error, which reads as "the converter is down" rather than
+ * "this setting is wrong". Ignoring it keeps the app working; the console line is for
+ * whoever set it.
+ */
+export function resolveConverterUrl(raw: string | undefined): string {
+  const value = raw?.trim()
+  if (!value) return DEFAULT_CONVERTER_URL
+  try {
+    const url = new URL(value)
+    const host = url.hostname
+    const usable = (url.protocol === 'https:' || url.protocol === 'http:')
+      // a placeholder such as 'https://<render host>/convert' can still parse
+      && /^[a-z0-9]([a-z0-9.-]*[a-z0-9])?$/i.test(host)
+      // a dotless host means a truncated paste ('https:///convert' parses as host
+      // 'convert'), with localhost the one legitimate exception
+      && (host === 'localhost' || host.includes('.'))
+    if (usable) return url.toString()
+  } catch {
+    // falls through to the default
+  }
+  console.warn(`[gantt] ignoring unusable VITE_MPP_CONVERTER_URL (${value}); using ${DEFAULT_CONVERTER_URL}`)
+  return DEFAULT_CONVERTER_URL
+}
+
 const converterEndpoint = (): string =>
-  (import.meta.env.VITE_MPP_CONVERTER_URL as string | undefined)?.trim() || DEFAULT_CONVERTER_URL
+  resolveConverterUrl(import.meta.env.VITE_MPP_CONVERTER_URL as string | undefined)
 
 /**
  * Nudge the converter awake, and report whether it answered.
