@@ -50,11 +50,17 @@ function localDate(): string {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
 }
 
+/** A phone has no pointer to hover with, and a narrow window cannot show four months. */
+const coarsePointer = () => typeof matchMedia === 'function' && !matchMedia('(hover: hover)').matches
+const narrowScreen = () => typeof innerWidth === 'number' && innerWidth < 760
+
 export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props) {
   const { lang } = useI18n()
   const g = (k: string) => gt(lang, k)
 
-  const [px, setPx] = useState(6)
+  // a phone starts zoomed out: at 6px/day only six weeks fit beside the task column
+  const [px, setPx] = useState(() => (narrowScreen() ? 3 : 6))
+  const [canHover] = useState(() => !coarsePointer())
   const [collapsed, setCollapsed] = useState<ReadonlySet<number>>(new Set())
   const [showDeps, setShowDeps] = useState(false)
   const [openOnly, setOpenOnly] = useState(false)
@@ -268,7 +274,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
       </div>
 
       {pays.length > 0 && (
-        <div className="panel" style={{ padding: '12px 14px', display: 'grid', gap: 8 }}>
+        <div className="panel gantt__pay" style={{ padding: '12px 14px', display: 'grid', gap: 8 }}>
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'baseline', justifyContent: 'space-between' }}>
             <span className="gantt__label">{g('g_pay_title')}</span>
             <span style={{ fontSize: 12.5, color: 'var(--ink-3)' }}>
@@ -297,7 +303,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
               </div>
             ))}
           </div>
-          <ul style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 18px', margin: 0, padding: 0, fontSize: 12.5, color: 'var(--ink-3)' }}>
+          <ul className="gantt__pay-list" style={{ display: 'flex', flexWrap: 'wrap', gap: '3px 18px', margin: 0, padding: 0, fontSize: 12.5, color: 'var(--ink-3)' }}>
             {pays.map((p) => (
               <li key={p.ext_uid} style={{ listStyle: 'none', display: 'flex', gap: 7, alignItems: 'baseline' }}>
                 <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--ink)', minWidth: 29 }}>{p.pct}%</span>
@@ -359,6 +365,10 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
         className={`gantt__board${drag ? ' gantt__board--dragging' : ''}`}
         ref={boardRef}
         onMouseMove={(ev) => {
+          // Touch devices synthesize a mousemove on tap, which would flash a card that
+          // then has nothing to dismiss it; they read the selected-task panel instead,
+          // which sits above the board on a narrow screen.
+          if (!canHover) return
           // one handler for the whole board rather than two per row: 63 rows of
           // enter/leave listeners re-render the dependency overlay on every crossing
           const host = (ev.target as HTMLElement).closest<HTMLElement>('[data-uid]')
@@ -390,7 +400,8 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
                   data-uid={t.ext_uid}
                   onClick={() => setSelected(t.ext_uid)}
                 >
-                  <span style={{ flex: 'none', width: Math.min(tree.depthOf.get(t.ext_uid) ?? 0, 6) * 13 }} />
+                  {/* step comes from CSS so a phone can indent less and leave room for the name */}
+                  <span style={{ flex: 'none', width: `calc(var(--gantt-indent) * ${Math.min(tree.depthOf.get(t.ext_uid) ?? 0, 6)})` }} />
                   {parent ? (
                     <button
                       type="button"

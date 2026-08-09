@@ -8,6 +8,7 @@
   --gantt-row: 30px;
   --gantt-head: 58px;
   --gantt-tasks: 340px;
+  --gantt-indent: 13px;
   --gantt-weekend: rgba(104, 118, 111, 0.1);
   --gantt-todo: #64798a;
   --gantt-pay: #7a3e86;
@@ -516,7 +517,80 @@ html[data-theme='dark'] .gantt {
   .gantt * { transition: none !important; }
 }
 
+/* ---------- phones ---------- */
+
+/* Vertical gestures stay with the browser so the board still scrolls when a finger lands
+   on a bar; horizontal ones are ours, and horizontal is the only axis a drag uses.
+   `touch-action: none` made the board unscrollable wherever a bar happened to be. */
+.gantt__bar-shape,
+.gantt__ms { touch-action: pan-y; }
+
+@media (pointer: coarse) {
+  .gantt { --gantt-row: 34px; }
+  .gantt__grip { width: 20px; }
+  .gantt__grip--start { left: -10px; }
+  .gantt__grip--end { right: -10px; }
+  /* there is no hover to reveal the resize handles on a touch screen */
+  .gantt__bar-shape.is-editable .gantt__grip::after {
+    content: '';
+    position: absolute;
+    inset: 5px 8px;
+    border-radius: 1px;
+    background: var(--ink);
+    opacity: .32;
+  }
+}
+
 @media (max-width: 760px) {
-  .gantt { --gantt-tasks: 200px; }
+  /* Narrow enough to leave a usable timeline, wide enough that a task name is still a
+     name: at 142px the column rendered "הגעת …" and nothing else. Everything around the
+     name gives up room for it — smaller indent step, tighter percentage column. */
+  .gantt { --gantt-tasks: 182px; --gantt-indent: 8px; }
+  .gantt__pct { width: 30px; font-size: 10.5px; }
+  .gantt__twist, .gantt__twig { width: 13px; }
+  .gantt__row { gap: 4px; }
+
+  /* the segmented control speaks for itself; the label was a whole line of chrome */
+  .gantt__label { display: none; }
+  .gantt input[type='search'] { flex: 1 1 130px; }
+
+  /* The selected task's detail moves above the board: with sixty-odd rows the panel would
+     otherwise sit far below the fold, and touch has no hover card to fall back on. */
+  .gantt__editor { order: -1; }
+  .gantt__editor h4 { flex: 1 1 100%; }
+
   .gantt__date { display: none; }
+  .gantt__col--end { display: none; }
+  .gantt__legend { display: none; }
+  /* owner names beside each bar cost more width than they earn here */
+  .gantt__chip { display: none; }
+
+  .gantt__board { max-height: 60vh; }
+  .gantt__row { font-size: 12px; padding: 0 8px; }
+  .gantt__bar { gap: 8px 10px; }
+  .gantt__seg button { padding: 6px 9px; font-size: 12px; }
+  .gantt input[type='search'] { max-width: none !important; }
+
+  /* Eight tiles at two columns is four rows of cards, which pushed the chart itself off
+     the screen. One scrollable row instead: the numbers stay available, the board stays
+     the thing you opened. */
+  .gantt__stats {
+    display: flex;
+    grid-template-columns: none;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    scroll-snap-type: x proximity;
+  }
+  .gantt__stats .stat {
+    flex: 0 0 auto;
+    min-width: 88px;
+    padding: 9px 11px;
+    scroll-snap-align: start;
+  }
+  .gantt__stats .stat__value { font-size: 18px; }
+  .gantt__stats .stat__label { font-size: 10.5px; margin-top: 3px; white-space: nowrap; }
+
+  /* the bar already says how much is released; the itemised list does not fit */
+  .gantt__pay-list { display: none !important; }
 }
