@@ -1,0 +1,672 @@
+<title>יומן עבודה אגרוטופ — היכרות עם המערכת</title>
+<style>
+  :root {
+    --paper:      #eef2f0;
+    --panel:      #ffffff;
+    --edge:       #d7dfdb;
+    --ink:        #0b1210;
+    --ink-2:      #26312c;
+    --ink-3:      #47554e;
+    --faint:      #68766f;
+    --green:      #3aaa35;
+    --green-deep: #008540;
+    --green-tint: #e1f3df;
+    --forest:     #0d1f15;
+    --forest-2:   #143024;
+    --clay:       #c14a15;
+    --clay-tint:  #fbe8dc;
+    --amber:      #d8a01a;
+
+    --sans: "Segoe UI", "Noto Sans Hebrew", "Arial Hebrew", Arial, system-ui, sans-serif;
+    --mono: "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+  }
+
+  html { direction: rtl; scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--sans);
+    font-size: 16px;
+    line-height: 1.55;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ---------- deck mechanics ---------- */
+
+  .deck { scroll-snap-type: y mandatory; overflow-y: auto; height: 100vh; }
+
+  .slide {
+    scroll-snap-align: start;
+    min-height: 100vh;
+    box-sizing: border-box;
+    padding: clamp(28px, 4vh, 56px) clamp(20px, 5vw, 76px) 76px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    position: relative;
+    border-bottom: 1px solid var(--edge);
+  }
+
+  .slide--dark {
+    background: linear-gradient(168deg, var(--forest-2), var(--forest) 70%);
+    color: #eaf3ee;
+    border-bottom: 0;
+  }
+  .slide--dark .eyebrow { color: #8fb7a0; }
+  .slide--dark h2, .slide--dark h1 { color: #ffffff; }
+  .slide--dark p, .slide--dark li { color: #cfe0d6; }
+
+  .eyebrow {
+    margin: 0;
+    font-family: var(--mono);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    color: var(--faint);
+  }
+
+  h1 { margin: 0; font-size: clamp(34px, 5.6vw, 62px); line-height: 1.06; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
+  h2 { margin: 0; font-size: clamp(25px, 3.4vw, 40px); line-height: 1.14; font-weight: 800; letter-spacing: -.015em; text-wrap: balance; }
+  h3 { margin: 0 0 6px; font-size: 17px; font-weight: 750; }
+  p  { margin: 0; color: var(--ink-2); max-width: 68ch; }
+  .lead { font-size: clamp(17px, 1.5vw, 20px); color: var(--ink-2); }
+
+  .num {
+    position: absolute;
+    inset-block-start: clamp(24px, 3.4vh, 44px);
+    inset-inline-start: clamp(20px, 5vw, 76px);
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--faint);
+  }
+  .slide--dark .num { color: #7ba38c; }
+
+  /* ---------- shots ---------- */
+
+  .shot {
+    display: block;
+    width: 100%;
+    height: auto;
+    border-radius: 10px;
+    border: 1px solid var(--edge);
+    background: #fff;
+    box-shadow: 0 2px 6px rgba(11, 18, 16, .06), 0 22px 60px -28px rgba(11, 18, 16, .34);
+  }
+  .shot--plain { border: 0; box-shadow: none; background: none; }
+  .shot-wrap { flex: 1; min-height: 0; display: flex; align-items: flex-start; justify-content: center; }
+  .shot-wrap .shot { max-height: 100%; width: auto; max-width: 100%; object-fit: contain; }
+  figcaption { margin-top: 9px; font-size: 13.5px; color: var(--faint); text-align: center; }
+  figure { margin: 0; width: 100%; }
+
+  .phone-row { display: flex; gap: clamp(20px, 4vw, 54px); align-items: center; flex-wrap: wrap; }
+  .phone-row figure { flex: 0 0 min(300px, 42vw); }
+  .phone-row .copy { flex: 1 1 300px; display: grid; gap: 14px; }
+
+  /* ---------- blocks ---------- */
+
+  .grid { display: grid; gap: 14px; }
+  .grid--2 { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .grid--3 { grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); }
+
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 12px;
+    padding: 18px 20px;
+  }
+  .slide--dark .card { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .16); }
+  .card p { font-size: 14.5px; color: var(--ink-3); }
+  .slide--dark .card p { color: #b9cfc2; }
+  .card .ic { font-size: 22px; display: block; margin-bottom: 8px; }
+
+  .stat-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: 12px; }
+  .stat {
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-radius: 12px;
+    padding: 16px 14px;
+    text-align: center;
+  }
+  .slide--dark .stat { background: rgba(255, 255, 255, .06); border-color: rgba(255, 255, 255, .16); }
+  .stat b { display: block; font-size: 30px; font-weight: 800; letter-spacing: -.02em; }
+  .stat span { font-size: 12.5px; color: var(--faint); }
+  .slide--dark .stat span { color: #9dbcab; }
+
+  ul.ticks { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; }
+  ul.ticks li { display: flex; gap: 10px; font-size: 15.5px; color: var(--ink-2); }
+  ul.ticks li::before { content: '✓'; color: var(--green-deep); font-weight: 800; flex: none; }
+  .slide--dark ul.ticks li::before { color: #6fd06a; }
+
+  .table-wrap { overflow-x: auto; }
+  table { border-collapse: collapse; width: 100%; font-size: 14.5px; }
+  th, td { text-align: start; padding: 11px 13px; border-bottom: 1px solid var(--edge); vertical-align: top; }
+  thead th { font-size: 12.5px; letter-spacing: .04em; color: var(--faint); font-weight: 700; }
+  tbody th { font-weight: 700; width: 22%; }
+  td.old { color: var(--ink-3); }
+  td.new { color: var(--ink); background: var(--green-tint); }
+  .slide--dark td.new { background: rgba(111, 208, 106, .14); color: #e9f6ec; }
+
+  .kbd {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--panel);
+    border: 1px solid var(--edge);
+    border-bottom-width: 2px;
+    border-radius: 5px;
+    padding: 2px 7px;
+  }
+
+  .tag {
+    display: inline-flex; align-items: center; gap: 6px;
+    padding: 3px 10px; border-radius: 99px;
+    font-size: 12.5px; font-weight: 650;
+    background: var(--green-tint); color: var(--green-deep);
+  }
+  .tag--clay { background: var(--clay-tint); color: var(--clay); }
+
+  /* ---------- cover ---------- */
+
+  .cover { justify-content: center; gap: 26px; text-align: start; }
+  /* The official logo as vectors (same paths the app ships), so it sits on the dark
+     cover with no white plate behind it and stays crisp at any size. */
+  .logo { width: clamp(210px, 24vw, 300px); height: auto; display: block; }
+  /* light first: both selectors have equal specificity, so the dark override must come
+     after or the wordmark would render near-black on the near-black cover */
+  .slide { --logo-word: var(--ink); --logo-green: #008540; --logo-tag: var(--ink-3); }
+  .slide--dark { --logo-word: #ffffff; --logo-green: #55c94f; --logo-tag: rgba(255,255,255,.82); }
+  .cover .meta { display: flex; gap: 8px 22px; flex-wrap: wrap; font-family: var(--mono); font-size: 12.5px; color: #8fb7a0; }
+
+  /* ---------- chrome ---------- */
+
+  .hint {
+    position: fixed;
+    inset-block-end: 16px;
+    inset-inline-start: 50%;
+    transform: translateX(50%);
+    z-index: 30;
+    display: flex; gap: 10px; align-items: center;
+    padding: 7px 14px;
+    background: rgba(13, 31, 21, .88);
+    color: #dbeae1;
+    border-radius: 99px;
+    font-size: 12.5px;
+    backdrop-filter: blur(6px);
+  }
+  .hint b { font-family: var(--mono); font-weight: 600; }
+
+  /* One slide, one page. Without a fixed page box and a matching slide height the
+     content overflowed and every slide printed across two pages. */
+  @page { size: 13.333in 7.5in; margin: 0; }
+
+  @media print {
+    html, body { height: auto; }
+    .deck { height: auto; overflow: visible; scroll-snap-type: none; }
+    .slide {
+      width: 13.333in;
+      height: 7.5in;
+      min-height: 0;
+      overflow: hidden;
+      border: 0;
+      break-after: page;
+      break-inside: avoid;
+      padding: 0.5in 0.62in;
+    }
+    .slide:last-child { break-after: auto; }
+    .hint { display: none; }
+    body { background: #fff; }
+    /* vw/vh resolve against the page box in print, so pin the fluid sizes */
+    h1 { font-size: 46pt; }
+    h2 { font-size: 26pt; }
+    .lead { font-size: 13pt; }
+    .logo { width: 2.6in; }
+  }
+
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+
+  @media (max-width: 720px) {
+    .slide { padding-bottom: 62px; }
+    h1 { font-size: 30px; }
+    h2 { font-size: 23px; }
+  }
+</style>
+
+<div class="deck" id="deck">
+
+  <!-- 1 · cover -->
+  <section class="slide slide--dark cover">
+    <svg class="logo" viewBox="13 45 285 164" fill="none" role="img" aria-label="Agrotop" style="direction:ltr">
+      <path d="M 84.989 110.250 C 83.899 112.037, 83.006 113.778, 83.004 114.117 C 83 114.682, 75.193 131.280, 63.069 156.500 C 60.425 162, 58.454 166.838, 58.690 167.250 C 58.925 167.662, 60.610 168, 62.433 168 C 65.529 168, 65.953 167.569, 68.868 161.467 L 71.988 154.934 83.244 155.217 L 94.500 155.500 95.529 161.500 L 96.558 167.500 100.529 167.500 C 102.872 167.500, 104.418 167.049, 104.300 166.400 C 104.190 165.795, 103.633 161.745, 103.062 157.400 C 102.491 153.055, 101.347 145.225, 100.520 140 C 99.694 134.775, 98.322 125.775, 97.472 120 C 95.478 106.444, 95.754 107, 91.017 107 C 87.525 107, 86.699 107.445, 84.989 110.250 M 82.966 130.250 C 80.039 136.988, 77.274 142.928, 76.822 143.450 C 76.370 143.973, 76 145.210, 76 146.200 C 76 147.792, 76.981 148, 84.500 148 L 93 148 92.968 144.250 C 92.951 142.188, 92.285 136, 91.488 130.500 C 90.691 125, 90.030 119.938, 90.019 119.250 C 89.965 115.763, 87.781 119.169, 82.966 130.250 M 119.604 124.063 C 112.068 126.254, 106.021 137.204, 106.006 148.685 C 105.987 162.424, 116.014 167.439, 125.878 158.625 L 128.256 156.500 127.549 161.500 C 126.527 168.722, 124.176 172.231, 119.193 173.972 C 115.336 175.321, 114.694 175.290, 111.576 173.611 C 107.670 171.507, 106.492 171.906, 105.553 175.646 C 104.660 179.203, 106.108 179.966, 113.782 179.985 C 121.339 180.003, 125.688 178.348, 129.270 174.091 C 132.586 170.150, 133.226 167.788, 136.984 145.595 C 140.686 123.733, 140.680 124, 137.500 124 C 135.534 124, 135 124.508, 135 126.378 C 135 129.675, 132.390 131.804, 131.559 129.185 C 130.187 124.864, 124.796 122.554, 119.604 124.063 M 179.865 123.676 C 175.704 124.362, 169.524 130.365, 166.964 136.206 C 163.384 144.372, 162.974 158.264, 166.174 162.964 C 172.471 172.217, 185.602 169.554, 192.408 157.645 C 198.675 146.676, 197.997 129.602, 191.123 125.309 C 188.827 123.875, 183.417 123.090, 179.865 123.676 M 147.319 125.190 C 145.617 126.012, 144.888 127.701, 144.002 132.872 C 143.377 136.517, 141.823 145.575, 140.548 153 C 139.272 160.425, 138.429 166.838, 138.674 167.250 C 139.391 168.461, 143.668 168.110, 144.752 166.750 C 145.301 166.063, 146.552 160.425, 147.533 154.223 C 149.258 143.321, 149.444 142.831, 153.146 139.487 C 155.559 137.307, 158.438 135.794, 160.930 135.395 C 164.735 134.787, 164.926 134.572, 165.963 129.735 C 166.556 126.970, 166.806 124.473, 166.519 124.186 C 165.437 123.103, 160.527 126.686, 156.153 131.750 C 153.659 134.637, 151.196 137, 150.680 137 C 149.762 137, 150.468 128.549, 151.643 125.488 C 152.305 123.764, 150.523 123.641, 147.319 125.190 M 118.208 131.278 C 113.208 136.601, 111.055 151.930, 114.829 155.345 C 119.738 159.788, 127.789 155.210, 130.090 146.667 C 131.684 140.744, 130.812 132.327, 128.416 130.514 C 125.480 128.291, 120.676 128.651, 118.208 131.278 M 178.350 130.928 C 174.833 133.073, 171.244 141.145, 170.313 149.004 C 168.767 162.057, 180.006 167.058, 185.760 155.878 C 188.542 150.472, 190.626 139.631, 189.639 135.699 C 188.795 132.333, 185.612 128.999, 183.250 129.004 C 182.287 129.006, 180.083 129.872, 178.350 130.928" fill="var(--logo-word)" fill-rule="evenodd"/>
+      <path d="M 208.636 108.701 C 208.345 109.690, 207.832 112.300, 207.496 114.500 C 206.257 122.613, 206.075 123, 203.516 123 C 202.122 123, 200.625 123.831, 200.035 124.934 C 198.715 127.402, 198.692 131.962, 200 132.125 C 200.550 132.194, 201.412 132.306, 201.917 132.375 C 204.070 132.669, 204.080 134.547, 201.998 147.289 C 199.955 159.791, 199.915 160.934, 201.409 163.823 C 203.321 167.522, 208.777 169.379, 214.870 168.405 C 218.569 167.813, 218.912 167.482, 219.514 163.920 C 220.308 159.218, 219.784 158.250, 216.443 158.250 C 212.208 158.250, 212.002 157.122, 214.029 145.074 C 216.038 133.136, 216.625 132.014, 220.476 132.751 C 223.295 133.289, 225.283 130.285, 224.812 126.201 C 224.552 123.951, 224 123.491, 221.500 123.447 L 218.500 123.393 218.913 117.947 C 219.765 106.712, 220.116 107.536, 214.333 107.201 C 210.065 106.953, 209.074 107.214, 208.636 108.701 M 236.500 123.423 C 229.712 126.466, 226.575 131.668, 224.395 143.500 C 221.487 159.285, 223.328 165.934, 231.194 168.052 C 239.699 170.342, 248.284 167.551, 252.546 161.110 C 254.952 157.475, 259 141.330, 259 135.371 C 259 131.165, 256.249 126.122, 252.810 124.026 C 248.930 121.660, 241.081 121.370, 236.500 123.423 M 282.500 123.167 C 281.400 123.775, 279.488 125.190, 278.250 126.311 L 276 128.349 276 125.674 C 276 123.136, 275.749 123, 271.059 123 C 268.341 123, 265.899 123.354, 265.632 123.787 C 265.169 124.536, 258.964 160.251, 256.914 173.961 C 255.641 182.477, 255.930 183, 261.901 183 C 267.526 183, 267.337 183.272, 268.974 172.804 C 270.503 163.028, 270.759 162.608, 273.359 165.631 C 275.107 167.663, 276.455 168.167, 280.150 168.167 C 288.704 168.167, 292.017 163.826, 294.592 149.242 C 297.128 134.878, 296.977 127.671, 294.076 124.582 C 291.435 121.769, 286.187 121.128, 282.500 123.167 M 238.756 134.250 C 237.120 136.746, 234.568 152.084, 235.137 156 C 235.654 159.563, 241.075 160.127, 242.803 156.799 C 244.137 154.230, 247 139.946, 247 135.857 C 247 131.569, 241.247 130.448, 238.756 134.250 M 277.164 134.703 C 275.497 136.080, 274.614 138.709, 273.384 145.951 L 271.778 155.402 274 157.201 C 278.468 160.819, 281.213 157.963, 282.920 147.921 C 285.157 134.751, 283.027 129.857, 277.164 134.703" fill="var(--logo-green)" fill-rule="evenodd"/>
+      <text x="14" y="207" text-anchor="start" font-family="Georgia, 'Times New Roman', serif"
+            font-style="italic" font-size="15" fill="var(--logo-tag)"
+            textLength="235" lengthAdjust="spacingAndGlyphs"
+            style="direction:ltr;unicode-bidi:bidi-override">Agriculture Turnkey <tspan font-weight="700">Projects</tspan></text>
+      <path d="M 244.500 53.371 C 219.847 66.585, 198.837 80.835, 177.623 98.730 C 167.924 106.912, 167.724 107.022, 166.552 104.781 C 165.896 103.527, 163.988 100.025, 162.312 97 C 160.637 93.975, 157.294 87.745, 154.883 83.156 C 152.442 78.509, 150.355 75.529, 150.172 76.429 C 149.917 77.690, 160.570 107.437, 166.078 120.841 C 166.990 123.061, 167.778 122.435, 181.270 108.780 C 201.053 88.757, 219.596 73.184, 242.250 57.567 C 247.613 53.870, 252 50.655, 252 50.423 C 252 49.581, 250.392 50.213, 244.500 53.371" fill="var(--logo-green)" fill-rule="evenodd"/>
+    </svg>
+    <div>
+      <p class="eyebrow">היכרות עם המערכת · לעובדי אגרוטופ</p>
+      <h1>יומן עבודה<br>ומרכז בקרה לפרויקט</h1>
+    </div>
+    <p class="lead" style="max-width: 60ch">
+      כל מה שקורה בפרויקט — דיווח יומי מהשטח, לוח זמנים, בקרת איכות וליקויים,
+      התקדמות ועובדים — במקום אחד, מכל מחשב וכל טלפון.
+    </p>
+    <div class="meta">
+      <span>work-diary-phi.vercel.app</span>
+      <span>עברית · English</span>
+      <span>דפדפן · אנדרואיד · אופליין</span>
+    </div>
+  </section>
+
+  <!-- 2 · the problem -->
+  <section class="slide">
+    <span class="num">02</span>
+    <p class="eyebrow">למה בכלל</p>
+    <h2>איך זה עובד היום — ולמה זה נשבר</h2>
+    <p class="lead">כל הכלים האלה טובים בדבר אחד. הבעיה היא שאף אחד מהם לא מחזיק את התמונה המלאה, ואף אחד לא מדבר עם השני.</p>
+
+    <div class="grid grid--3">
+      <div class="card">
+        <span class="ic">💬</span>
+        <h3>וואטסאפ</h3>
+        <p>הדיווח מגיע מהר, ונעלם מהר. אין חיפוש אמיתי, אין תמונת מצב, ואחרי חודש אף אחד לא מוצא מה נאמר ומתי.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📄</span>
+        <h3>אקסל</h3>
+        <p>גרסאות. מי עדכן מה, איזה קובץ נכון, ומה קרה למי שערך בטלפון. עובד לאדם אחד, נשבר בצוות.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📊</span>
+        <h3>MS Project</h3>
+        <p>לוח זמנים מעולה — שיושב על מחשב אחד. מי שבשטח לא רואה אותו, ולא יודע אם הוא בפיגור.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📋</span>
+        <h3>דוחות נייר</h3>
+        <p>צ׳קליסט סיום שלב, חתימות, ליקויים — בקלסר. אי אפשר לספור, למדוד או להתריע.</p>
+      </div>
+      <div class="card">
+        <span class="ic">📷</span>
+        <h3>תמונות בגלריה</h3>
+        <p>אלפי תמונות בלי הקשר. לא ברור לאיזה לול, לאיזה תאריך ולאיזה ליקוי הן שייכות.</p>
+      </div>
+      <div class="card">
+        <span class="ic">🧠</span>
+        <h3>הידע בראש</h3>
+        <p>מי שמכיר את הפרויקט יוצא לחופשה, והפרויקט נעצר איתו.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- 3 · the answer -->
+  <section class="slide slide--dark">
+    <span class="num">03</span>
+    <p class="eyebrow">הרעיון</p>
+    <h2>מקור אמת אחד לכל פרויקט</h2>
+    <p class="lead">
+      מדווחים פעם אחת — מהשטח, מהטלפון, גם בלי קליטה. משם הנתון עובד לבד:
+      נכנס לדוח, לגרף ההתקדמות, לסיכום השבועי, למרכז הבקרה ולהתראות.
+    </p>
+    <div class="stat-row">
+      <div class="stat"><b>1</b><span>הזנה אחת</span></div>
+      <div class="stat"><b>6</b><span>שכבות בפרויקט</span></div>
+      <div class="stat"><b>∞</b><span>היסטוריה שנשמרת</span></div>
+      <div class="stat"><b>0</b><span>קבצים לשלוח במייל</span></div>
+    </div>
+    <div class="grid grid--2" style="margin-top: 6px">
+      <div class="card">
+        <h3>מה שהעובד עושה</h3>
+        <ul class="ticks">
+          <li>ממלא רשומה יומית עם תמונות</li>
+          <li>מסמן התקדמות לכל לול</li>
+          <li>מעדכן צ׳קליסט וליקויים</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>מה שהמערכת עושה מזה</h3>
+        <ul class="ticks">
+          <li>גרפי התקדמות לאורך זמן</li>
+          <li>סיכום שבועי עם תובנות</li>
+          <li>התראות על חריגה מיעד</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- 4 · login -->
+  <section class="slide">
+    <span class="num">04</span>
+    <p class="eyebrow">כניסה</p>
+    <h2>נכנסים מהדפדפן, בלי להתקין כלום</h2>
+    <p>הכניסה בדוא״ל של אגרוטופ. רק כתובות שאושרו מראש יכולות להירשם — אין הרשמה חופשית. בטלפון אפשר להוסיף את המערכת למסך הבית והיא מתנהגת כאפליקציה.</p>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_login__" alt="מסך הכניסה"></figure></div>
+  </section>
+
+  <!-- 5 · menu -->
+  <section class="slide">
+    <span class="num">05</span>
+    <p class="eyebrow">התמצאות</p>
+    <h2>התפריט — לפי נושאים, לא רשימה אחת ארוכה</h2>
+    <p>שש קבוצות. הקבוצה שאתה נמצא בה נפתחת לבד, השאר מקופלות — כך רואים חמישה־שישה דברים ולא ארבעה־עשר. הודעות שלא נקראו מסומנות גם כשהקבוצה סגורה.</p>
+    <div class="shot-wrap"><figure>
+      <img class="shot" src="__IMG_menu__" alt="התפריט הראשי">
+      <figcaption>פרויקטים · יומן עבודה · ניהול ליקויים · מעקב וניתוח · כללי · ניהול</figcaption>
+    </figure></div>
+  </section>
+
+  <!-- 6 · logbook -->
+  <section class="slide">
+    <span class="num">06</span>
+    <p class="eyebrow">הליבה</p>
+    <h2>הרשומה היומית — הבסיס לכל השאר</h2>
+    <p>מי היה בשטח, מה נעשה, כמה עובדים ובאילו שעות, מזג אוויר, תמונות, בלת״מ ובטיחות. אותה רשומה היא גם הדוח שנשלח ללקוח, וגם הנתון שמזין את הגרפים.</p>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_logbook__" alt="יומן העבודה"></figure></div>
+  </section>
+
+  <!-- 7 · progress -->
+  <section class="slide">
+    <span class="num">07</span>
+    <p class="eyebrow">התקדמות</p>
+    <h2>גרף התקדמות לכל לול, לאורך זמן</h2>
+    <p>העובד מזיז מחוון אחוזים לכל לול בדיווח היומי. מזה נבנית עקומה — ורואים מיד מי מתקדם, מי נעצר ומתי בדיוק זה קרה. בלי להרכיב אקסל, בלי לשאול אף אחד.</p>
+    <div class="shot-wrap"><figure>
+      <img class="shot" src="__IMG_progress__" alt="גרף התקדמות לאורך זמן">
+      <figcaption>שני לולים באותו פרויקט — לול 1 הגיע ל־80% וירד ל־40% לאחר עדכון, לול 2 יציב על 25%</figcaption>
+    </figure></div>
+  </section>
+
+  <!-- 8 · gantt import -->
+  <section class="slide slide--dark">
+    <span class="num">08</span>
+    <p class="eyebrow">לוח זמנים</p>
+    <h2>קובץ MS&nbsp;Project נכנס — ויוצא לוח חי</h2>
+    <p class="lead">
+      מעלים את קובץ ה־<span class="kbd" style="background:rgba(255,255,255,.1);border-color:rgba(255,255,255,.2);color:#eaf3ee">.mpp</span>
+      כמו שהוא. הוא מומר מאחורי הקלעים ונפרס ללוח זמנים שכל מי שמורשה רואה — בלי להתקין MS&nbsp;Project, ובלי לשלוח קבצים בין אנשים.
+    </p>
+    <div class="grid grid--3">
+      <div class="card"><h3>משימות ותלויות</h3><p>כל המשימות, ההיררכיה, המשכים והקשרים בין משימה למשימה — בדיוק כמו במקור.</p></div>
+      <div class="card"><h3>אבני דרך לתשלום</h3><p>המערכת מזהה אבני דרך של תשלום מתוך שם המשימה ומציגה כמה מהתמורה שוחררה.</p></div>
+      <div class="card"><h3>נתיב קריטי</h3><p>מסומן, יחד עם משימות שחורגות מיעד הסיום שלהן.</p></div>
+    </div>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_gantt__" alt="לוח הזמנים"></figure></div>
+  </section>
+
+  <!-- 9 · gantt interactive -->
+  <section class="slide">
+    <span class="num">09</span>
+    <p class="eyebrow">לוח זמנים</p>
+    <h2>גורר משימה — כל מה שתלוי בה נדחה איתה</h2>
+    <p>גרירת בר מזיזה משימה; גרירת קצה משנה משך. המערכת דוחפת אוטומטית את כל המשימות שתלויות בה, לפי סוג הקשר וזמן ההשהיה — ומעדכנת את שורות הסיכום מעליהן.</p>
+    <div class="grid grid--3">
+      <div class="card"><h3>מעבר עם העכבר</h3><p>תאריכים, משך, אחוז ביצוע, באחריות מי, במה זה תלוי — בלי ללחוץ.</p></div>
+      <div class="card"><h3>סטייה מהתכנון</h3><p>המערכת שומרת את התאריכים המקוריים מהקובץ, ומראה בכמה ימים המשימה זזה מאז.</p></div>
+      <div class="card"><h3>נשמר לכולם</h3><p>שינוי נשמר מיד ונכנס ליומן שינויים. אין גרסאות מתחרות.</p></div>
+    </div>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_gantt_hover__" alt="כרטיס פרטי משימה"></figure></div>
+  </section>
+
+  <!-- 10 · gantt phone -->
+  <section class="slide">
+    <span class="num">10</span>
+    <p class="eyebrow">בשטח</p>
+    <h2>בטלפון — לצפייה, בכוונה</h2>
+    <div class="phone-row">
+      <figure>
+        <img class="shot" src="__IMG_gantt_phone__" alt="לוח הזמנים בטלפון">
+      </figure>
+      <div class="copy">
+        <p>
+          הלוח נפתח בטלפון מוקטן לכל הפרויקט, עם שמות המשימות, אבני הדרך והקו של היום.
+          לחיצה על שורה פותחת את פרטיה מעל הלוח.
+        </p>
+        <p>
+          <b>עריכה חסומה בטלפון במכוון.</b> בזום כזה רוחב הבר הוא כמה פיקסלים — גרירה בטעות
+          הייתה מזיזה את המשימה הלא נכונה, ומכיוון שהשינוי נשמר לכולם ודוחף את כל התלויות,
+          טעות אחת מספיקה. לשינוי תאריכים פותחים במחשב.
+        </p>
+        <span class="tag">אותו מידע · פחות דרכים לטעות</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- 11 · defects intro -->
+  <section class="slide slide--dark">
+    <span class="num">11</span>
+    <p class="eyebrow">בקרת איכות</p>
+    <h2>תפיסת סיום שלב — הקלסר הופך למערכת</h2>
+    <p class="lead">
+      שבעה שערים לכל לול, מטרום־יציקה ועד מסירה. כל שער הוא צ׳קליסט; פריט שסומן «לא בוצע»
+      הופך אוטומטית לליקוי עם חומרה, אחראי ותאריך יעד.
+    </p>
+    <div class="grid grid--2">
+      <div class="card">
+        <h3>מה שהמערכת אוכפת</h3>
+        <ul class="ticks">
+          <li>אי אפשר לחתום על שער עם ליקוי קריטי פתוח</li>
+          <li>ליקוי מז׳ורי דורש ויתור חתום כדי להתקדם</li>
+          <li>שער 6 נפתח רק לאחר חתימה כפולה על כל השערים</li>
+          <li>פריטים לא רלוונטיים מסומנים לפי הגדרות הלול</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>מה שנשמר</h3>
+        <ul class="ticks">
+          <li>חתימות מנהל ומפקח, עם תאריך</li>
+          <li>תמונות לכל ליקוי ולכל פריט</li>
+          <li>יומן שינויים — מי סימן, מי הקצה, מי סגר</li>
+          <li>דוח מלא להפקה בכל רגע</li>
+        </ul>
+      </div>
+    </div>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_qc_gate__" alt="צ׳קליסט שער"></figure></div>
+  </section>
+
+  <!-- 12 · project open -->
+  <section class="slide">
+    <span class="num">12</span>
+    <p class="eyebrow">בקרת איכות</p>
+    <h2>פתיחת לול — מי אחראי על מה, מוסכם מראש</h2>
+    <p>גז, גנרטור, קו מים, הזנת חשמל, חשמלאי, ציוד גידול — לכל תחום נקבע אם הוא על אגרוטופ, על הלקוח או על גורם חוץ. כך אין ויכוח באמצע הדרך, והמערכת יודעת לסמן פריטים כלא רלוונטיים לפי הגדרות הלול.</p>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_qc_open__" alt="פתיחת פרויקט ואחריות תחומים"></figure></div>
+  </section>
+
+  <!-- 13 · defect log -->
+  <section class="slide">
+    <span class="num">13</span>
+    <p class="eyebrow">בקרת איכות</p>
+    <h2>יומן ליקויים — עם שם, יעד וסטטוס</h2>
+    <p>לכל ליקוי יש מספר, חומרה, אחראי ותאריך יעד. איחור לא נשאר שקט: המערכת שולחת התראה לאחראי, ומעלה מדרגה למנהלים כשהאיחור מתארך.</p>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_qc_log__" alt="יומן ליקויים"></figure></div>
+  </section>
+
+  <!-- 13 · status summary -->
+  <section class="slide">
+    <span class="num">14</span>
+    <p class="eyebrow">בקרת איכות</p>
+    <h2>ריכוז סטטוס לכל שער — באחוזים</h2>
+    <p>אותו חישוב שהיה בגיליון האקסל, רק שהוא מתעדכן לבד: בוצע, לא בוצע, לא רלוונטי, טרם — ואחוז לכל שער. משם רואים בדיוק איפה הלול עומד.</p>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_qc_summary__" alt="ריכוז סטטוס"></figure></div>
+  </section>
+
+  <!-- 14 · report -->
+  <section class="slide">
+    <span class="num">15</span>
+    <p class="eyebrow">פלט</p>
+    <h2>דוח מוכן לשליחה — בלחיצה</h2>
+    <p>אותם נתונים בדיוק, בפריסת דוח: פרטי הלול, ריכוז הסטטוס, הליקויים הפתוחים והחתימות. אין הקלדה מחדש ואין העתקה לוורד — ולכן אין פער בין הדוח לבין מה שבאמת בשטח.</p>
+    <div class="shot-wrap"><figure><img class="shot" src="__IMG_qc_report__" alt="דוח לול"></figure></div>
+  </section>
+
+  <!-- 15 · digest -->
+  <section class="slide">
+    <span class="num">16</span>
+    <p class="eyebrow">מעקב</p>
+    <h2>סיכום שבועי — נשלח לבד בבוקר ראשון</h2>
+    <p>כרטיס לכל פרויקט: מה נעשה השבוע, התקדמות לכל לול עם הפרש מהשבוע שעבר, ליקויים שנפתחו ונסגרו, בטיחות — ובנוסף פרויקטים שלא דיווחו בכלל.</p>
+    <div class="shot-wrap"><figure>
+      <img class="shot" src="__IMG_digest__" alt="סיכום שבועי">
+      <figcaption>המערכת גם מסיקה: לול שנעצר, ליקוי שמזדקן, ריבוי בלת״מים, ומי התקדם הכי הרבה</figcaption>
+    </figure></div>
+  </section>
+
+  <!-- 16 · control centre -->
+  <section class="slide">
+    <span class="num">17</span>
+    <p class="eyebrow">למנהלים</p>
+    <h2>מרכז בקרה — כל הפרויקט במסך אחד</h2>
+    <p>למעלה המספרים שקובעים: התקדמות לוח הזמנים, ליקויים פתוחים וחורגים, קריטיים, לולים, משימות, רשומות וימים לסיום. מתחת — שש שכבות, לפי טאבים או הכל בעמוד אחד בגלילה.</p>
+    <div class="shot-wrap"><figure>
+      <img class="shot" src="__IMG_control__" alt="מרכז הבקרה">
+      <figcaption>סקירה · לוח זמנים · לולים · ליקויים · עובדים · יומן — פתוח לאדמין ולמנהלים בלבד</figcaption>
+    </figure></div>
+  </section>
+
+  <!-- 17 · comparison -->
+  <section class="slide">
+    <span class="num">18</span>
+    <p class="eyebrow">ההשוואה</p>
+    <h2>מה משתנה בפועל</h2>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr><th>המשימה</th><th>איך זה היה</th><th>איך זה עובד עכשיו</th></tr>
+        </thead>
+        <tbody>
+          <tr><th>דיווח יומי</th><td class="old">הודעה בוואטסאפ, נעלמת בגלילה</td><td class="new">רשומה עם תמונות, נשמרת וניתנת לחיפוש</td></tr>
+          <tr><th>מצב לוח הזמנים</th><td class="old">קובץ על מחשב אחד</td><td class="new">לוח חי, זמין לכל מי שמורשה, גם בטלפון</td></tr>
+          <tr><th>שינוי תאריך</th><td class="old">מעדכנים ומקווים שכולם ראו</td><td class="new">התלויות נדחות לבד, השינוי מתועד</td></tr>
+          <tr><th>התקדמות</th><td class="old">מרכיבים אקסל, שואלים אנשים</td><td class="new">גרף לכל לול, מתעדכן מהדיווח</td></tr>
+          <tr><th>סיום שלב</th><td class="old">צ׳קליסט בקלסר</td><td class="new">שערים עם אכיפה, חתימות ותמונות</td></tr>
+          <tr><th>ליקוי שנשכח</th><td class="old">מתגלה במסירה</td><td class="new">התראה לאחראי, הסלמה למנהל</td></tr>
+          <tr><th>דוח ללקוח</th><td class="old">מקלידים מחדש בוורד</td><td class="new">מופק מהנתונים, בלחיצה</td></tr>
+          <tr><th>אין קליטה בשטח</th><td class="old">רושמים על דף ומקווים לזכור</td><td class="new">נשמר במכשיר ונשלח כשחוזרת רשת</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 18 · serious -->
+  <section class="slide slide--dark">
+    <span class="num">19</span>
+    <p class="eyebrow">מתחת למכסה</p>
+    <h2>למה זו מערכת ולא תחביב</h2>
+    <p class="lead">הדברים שלא רואים במסך הם אלה שקובעים אם אפשר לסמוך על המערכת עם נתוני פרויקט אמיתיים.</p>
+    <div class="grid grid--2">
+      <div class="card">
+        <h3>אבטחה</h3>
+        <ul class="ticks">
+          <li>הרשאה נאכפת במסד הנתונים, לא במסך — הסתרת כפתור אינה הגנה</li>
+          <li>הרשאות לפי תחום לכל משתמש: צפייה, עריכה או כלום</li>
+          <li>הרשמה רק לכתובות שאושרו מראש</li>
+          <li>תמונות וקבצים בקישורים חתומים לשעה, לא ציבוריים</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>אמינות</h3>
+        <ul class="ticks">
+          <li>יומן שינויים לפעולות רגישות — מי, מה ומתי</li>
+          <li>תור אופליין: דיווח שנשמר בשטח נשלח לבד</li>
+          <li>בדיקות אוטומטיות שרצות על כל שינוי בקוד</li>
+          <li>שינויי מסד נתונים מתועדים ומסודרים לפי גרסה</li>
+        </ul>
+      </div>
+    </div>
+    <div class="stat-row" style="margin-top: 4px">
+      <div class="stat"><b>180</b><span>בדיקות אוטומטיות</span></div>
+      <div class="stat"><b>44</b><span>גרסאות מסד נתונים</span></div>
+      <div class="stat"><b>10</b><span>תחומי הרשאה</span></div>
+      <div class="stat"><b>2</b><span>שפות, RTL מלא</span></div>
+    </div>
+  </section>
+
+  <!-- 19 · start -->
+  <section class="slide">
+    <span class="num">20</span>
+    <p class="eyebrow">להתחיל</p>
+    <h2>שלושה דברים, וסיימת</h2>
+    <div class="grid grid--3">
+      <div class="card">
+        <span class="ic">①</span>
+        <h3>נכנסים ומוסיפים למסך הבית</h3>
+        <p>נכנסים מהדפדפן בטלפון, ומוסיפים למסך הבית. משם זה נראה ומתנהג כאפליקציה, כולל עבודה בלי קליטה.</p>
+      </div>
+      <div class="card">
+        <span class="ic">②</span>
+        <h3>מדווחים בסוף כל יום</h3>
+        <p>רשומה אחת לכל יום עבודה: מה נעשה, כמה אנשים, תמונות, ואחוז התקדמות לכל לול. זה כל מה שנדרש מהשטח.</p>
+      </div>
+      <div class="card">
+        <span class="ic">③</span>
+        <h3>מאשרים התראות</h3>
+        <p>כדי לקבל הודעה על ליקוי שהוקצה לך, על תאריך יעד שמתקרב ועל הודעות מהצוות.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top: 8px">
+      <h3>שאלות נפוצות</h3>
+      <p style="margin-bottom: 8px"><b>אני לא רואה תפריט שמישהו אחר רואה.</b> ההרשאות אישיות לפי תחום. פנה לאדמין.</p>
+      <p style="margin-bottom: 8px"><b>דיווחתי בלי קליטה — זה נעלם?</b> לא. הדיווח נשמר במכשיר ונשלח כשחוזרת רשת. הסימון בסרגל הצד מראה מה ממתין.</p>
+      <p><b>אני רואה גרסה ישנה של המסך.</b> רענון מלא: <span class="kbd">Ctrl</span> + <span class="kbd">Shift</span> + <span class="kbd">R</span>, ובטלפון גלילה מלמעלה למטה.</p>
+    </div>
+  </section>
+
+  <!-- 20 · end -->
+  <section class="slide slide--dark cover">
+    <svg class="logo" viewBox="13 45 285 164" fill="none" role="img" aria-label="Agrotop" style="direction:ltr">
+      <path d="M 84.989 110.250 C 83.899 112.037, 83.006 113.778, 83.004 114.117 C 83 114.682, 75.193 131.280, 63.069 156.500 C 60.425 162, 58.454 166.838, 58.690 167.250 C 58.925 167.662, 60.610 168, 62.433 168 C 65.529 168, 65.953 167.569, 68.868 161.467 L 71.988 154.934 83.244 155.217 L 94.500 155.500 95.529 161.500 L 96.558 167.500 100.529 167.500 C 102.872 167.500, 104.418 167.049, 104.300 166.400 C 104.190 165.795, 103.633 161.745, 103.062 157.400 C 102.491 153.055, 101.347 145.225, 100.520 140 C 99.694 134.775, 98.322 125.775, 97.472 120 C 95.478 106.444, 95.754 107, 91.017 107 C 87.525 107, 86.699 107.445, 84.989 110.250 M 82.966 130.250 C 80.039 136.988, 77.274 142.928, 76.822 143.450 C 76.370 143.973, 76 145.210, 76 146.200 C 76 147.792, 76.981 148, 84.500 148 L 93 148 92.968 144.250 C 92.951 142.188, 92.285 136, 91.488 130.500 C 90.691 125, 90.030 119.938, 90.019 119.250 C 89.965 115.763, 87.781 119.169, 82.966 130.250 M 119.604 124.063 C 112.068 126.254, 106.021 137.204, 106.006 148.685 C 105.987 162.424, 116.014 167.439, 125.878 158.625 L 128.256 156.500 127.549 161.500 C 126.527 168.722, 124.176 172.231, 119.193 173.972 C 115.336 175.321, 114.694 175.290, 111.576 173.611 C 107.670 171.507, 106.492 171.906, 105.553 175.646 C 104.660 179.203, 106.108 179.966, 113.782 179.985 C 121.339 180.003, 125.688 178.348, 129.270 174.091 C 132.586 170.150, 133.226 167.788, 136.984 145.595 C 140.686 123.733, 140.680 124, 137.500 124 C 135.534 124, 135 124.508, 135 126.378 C 135 129.675, 132.390 131.804, 131.559 129.185 C 130.187 124.864, 124.796 122.554, 119.604 124.063 M 179.865 123.676 C 175.704 124.362, 169.524 130.365, 166.964 136.206 C 163.384 144.372, 162.974 158.264, 166.174 162.964 C 172.471 172.217, 185.602 169.554, 192.408 157.645 C 198.675 146.676, 197.997 129.602, 191.123 125.309 C 188.827 123.875, 183.417 123.090, 179.865 123.676 M 147.319 125.190 C 145.617 126.012, 144.888 127.701, 144.002 132.872 C 143.377 136.517, 141.823 145.575, 140.548 153 C 139.272 160.425, 138.429 166.838, 138.674 167.250 C 139.391 168.461, 143.668 168.110, 144.752 166.750 C 145.301 166.063, 146.552 160.425, 147.533 154.223 C 149.258 143.321, 149.444 142.831, 153.146 139.487 C 155.559 137.307, 158.438 135.794, 160.930 135.395 C 164.735 134.787, 164.926 134.572, 165.963 129.735 C 166.556 126.970, 166.806 124.473, 166.519 124.186 C 165.437 123.103, 160.527 126.686, 156.153 131.750 C 153.659 134.637, 151.196 137, 150.680 137 C 149.762 137, 150.468 128.549, 151.643 125.488 C 152.305 123.764, 150.523 123.641, 147.319 125.190 M 118.208 131.278 C 113.208 136.601, 111.055 151.930, 114.829 155.345 C 119.738 159.788, 127.789 155.210, 130.090 146.667 C 131.684 140.744, 130.812 132.327, 128.416 130.514 C 125.480 128.291, 120.676 128.651, 118.208 131.278 M 178.350 130.928 C 174.833 133.073, 171.244 141.145, 170.313 149.004 C 168.767 162.057, 180.006 167.058, 185.760 155.878 C 188.542 150.472, 190.626 139.631, 189.639 135.699 C 188.795 132.333, 185.612 128.999, 183.250 129.004 C 182.287 129.006, 180.083 129.872, 178.350 130.928" fill="var(--logo-word)" fill-rule="evenodd"/>
+      <path d="M 208.636 108.701 C 208.345 109.690, 207.832 112.300, 207.496 114.500 C 206.257 122.613, 206.075 123, 203.516 123 C 202.122 123, 200.625 123.831, 200.035 124.934 C 198.715 127.402, 198.692 131.962, 200 132.125 C 200.550 132.194, 201.412 132.306, 201.917 132.375 C 204.070 132.669, 204.080 134.547, 201.998 147.289 C 199.955 159.791, 199.915 160.934, 201.409 163.823 C 203.321 167.522, 208.777 169.379, 214.870 168.405 C 218.569 167.813, 218.912 167.482, 219.514 163.920 C 220.308 159.218, 219.784 158.250, 216.443 158.250 C 212.208 158.250, 212.002 157.122, 214.029 145.074 C 216.038 133.136, 216.625 132.014, 220.476 132.751 C 223.295 133.289, 225.283 130.285, 224.812 126.201 C 224.552 123.951, 224 123.491, 221.500 123.447 L 218.500 123.393 218.913 117.947 C 219.765 106.712, 220.116 107.536, 214.333 107.201 C 210.065 106.953, 209.074 107.214, 208.636 108.701 M 236.500 123.423 C 229.712 126.466, 226.575 131.668, 224.395 143.500 C 221.487 159.285, 223.328 165.934, 231.194 168.052 C 239.699 170.342, 248.284 167.551, 252.546 161.110 C 254.952 157.475, 259 141.330, 259 135.371 C 259 131.165, 256.249 126.122, 252.810 124.026 C 248.930 121.660, 241.081 121.370, 236.500 123.423 M 282.500 123.167 C 281.400 123.775, 279.488 125.190, 278.250 126.311 L 276 128.349 276 125.674 C 276 123.136, 275.749 123, 271.059 123 C 268.341 123, 265.899 123.354, 265.632 123.787 C 265.169 124.536, 258.964 160.251, 256.914 173.961 C 255.641 182.477, 255.930 183, 261.901 183 C 267.526 183, 267.337 183.272, 268.974 172.804 C 270.503 163.028, 270.759 162.608, 273.359 165.631 C 275.107 167.663, 276.455 168.167, 280.150 168.167 C 288.704 168.167, 292.017 163.826, 294.592 149.242 C 297.128 134.878, 296.977 127.671, 294.076 124.582 C 291.435 121.769, 286.187 121.128, 282.500 123.167 M 238.756 134.250 C 237.120 136.746, 234.568 152.084, 235.137 156 C 235.654 159.563, 241.075 160.127, 242.803 156.799 C 244.137 154.230, 247 139.946, 247 135.857 C 247 131.569, 241.247 130.448, 238.756 134.250 M 277.164 134.703 C 275.497 136.080, 274.614 138.709, 273.384 145.951 L 271.778 155.402 274 157.201 C 278.468 160.819, 281.213 157.963, 282.920 147.921 C 285.157 134.751, 283.027 129.857, 277.164 134.703" fill="var(--logo-green)" fill-rule="evenodd"/>
+      <text x="14" y="207" text-anchor="start" font-family="Georgia, 'Times New Roman', serif"
+            font-style="italic" font-size="15" fill="var(--logo-tag)"
+            textLength="235" lengthAdjust="spacingAndGlyphs"
+            style="direction:ltr;unicode-bidi:bidi-override">Agriculture Turnkey <tspan font-weight="700">Projects</tspan></text>
+      <path d="M 244.500 53.371 C 219.847 66.585, 198.837 80.835, 177.623 98.730 C 167.924 106.912, 167.724 107.022, 166.552 104.781 C 165.896 103.527, 163.988 100.025, 162.312 97 C 160.637 93.975, 157.294 87.745, 154.883 83.156 C 152.442 78.509, 150.355 75.529, 150.172 76.429 C 149.917 77.690, 160.570 107.437, 166.078 120.841 C 166.990 123.061, 167.778 122.435, 181.270 108.780 C 201.053 88.757, 219.596 73.184, 242.250 57.567 C 247.613 53.870, 252 50.655, 252 50.423 C 252 49.581, 250.392 50.213, 244.500 53.371" fill="var(--logo-green)" fill-rule="evenodd"/>
+    </svg>
+    <h2>מדווחים פעם אחת.<br>המערכת עושה את השאר.</h2>
+    <p class="lead" style="max-width: 52ch">
+      עדיף לשאול מאשר לנחש — כל שאלה, בעיה או רעיון לשיפור, יש כפתור «משוב» בתחתית התפריט.
+    </p>
+    <div class="meta"><span>work-diary-phi.vercel.app</span></div>
+  </section>
+
+</div>
+
+<div class="hint" id="hint">
+  <b>← →</b> מעבר בין שקפים · <b>Ctrl+P</b> להדפסה
+</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')]
+  const deck = document.getElementById('deck')
+
+  const current = () => {
+    const mid = deck.scrollTop + deck.clientHeight / 2
+    return slides.findIndex((s) => s.offsetTop <= mid && s.offsetTop + s.offsetHeight > mid)
+  }
+
+  const go = (delta) => {
+    const next = Math.min(slides.length - 1, Math.max(0, current() + delta))
+    deck.scrollTo({ top: slides[next].offsetTop, behavior: 'smooth' })
+  }
+
+  addEventListener('keydown', (e) => {
+    // in RTL, ArrowLeft advances: it points the way the text runs
+    if (e.key === 'ArrowLeft' || e.key === 'PageDown' || e.key === ' ') { e.preventDefault(); go(1) }
+    if (e.key === 'ArrowRight' || e.key === 'PageUp') { e.preventDefault(); go(-1) }
+    if (e.key === 'Home') deck.scrollTo({ top: 0, behavior: 'smooth' })
+    if (e.key === 'End') deck.scrollTo({ top: deck.scrollHeight, behavior: 'smooth' })
+  })
+
+  // the hint has said its piece after the first move
+  let hinted = false
+  const hint = document.getElementById('hint')
+  deck.addEventListener('scroll', () => {
+    if (hinted || deck.scrollTop < 40) return
+    hinted = true
+    hint.style.transition = 'opacity .5s'
+    hint.style.opacity = '0'
+    setTimeout(() => hint.remove(), 600)
+  }, { passive: true })
+</script>
