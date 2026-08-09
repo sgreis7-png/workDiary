@@ -26,7 +26,7 @@
   --shell:        #eaf0ec;
   --shell-2:      #f4f8f5;
   --shell-ink:    #0d1a13;
-  --shell-faint:  #5d7267;
+  --shell-faint:  #556a5e;   /* 5.0:1 on --shell; #5d7267 measured 4.47:1, under the floor */
   --shell-line:   rgba(13, 26, 19, 0.12);
   --shell-hover:  rgba(13, 26, 19, 0.06);
   --shell-edge:   rgba(13, 26, 19, 0.14);
