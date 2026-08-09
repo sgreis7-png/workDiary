@@ -223,13 +223,17 @@ export async function fetchAssignments(): Promise<Record<string, string[]>> {
   for (const r of data as { project_id: string; email: string }[]) (m[r.project_id] ||= []).push(r.email)
   return m
 }
+/** Replace a project's assignments in one transaction.
+ *
+ *  This used to delete every row and then insert the replacements as two separate
+ *  requests. A failure in between — a dropped connection on a phone is enough — left the
+ *  project with nobody assigned while the UI had already moved on. */
 export async function setProjectStaff(projectId: string, emails: string[]): Promise<void> {
-  await supabase.from('project_assignments').delete().eq('project_id', projectId)
-  if (emails.length) {
-    const { error } = await supabase.from('project_assignments')
-      .insert(emails.map((email) => ({ project_id: projectId, email })))
-    if (error) throw error
-  }
+  const { error } = await supabase.rpc('set_project_staff', {
+    p_project: projectId,
+    p_emails: emails,
+  })
+  if (error) throw error
 }
 
 // in-app notifications
@@ -291,6 +295,21 @@ export async function deleteField(id: string): Promise<void> {
 export async function reorderFields(orderedIds: string[]): Promise<void> {
   await Promise.all(orderedIds.map((id, i) =>
     supabase.from('field_definitions').update({ sort_order: (i + 1) * 10 }).eq('id', id)))
+}
+
+// ---------- roster ----------
+
+/** Name and address of every active, registered member.
+ *
+ *  Screens that only need to put people in a picker use this. It comes from a function
+ *  rather than from allowed_emails, which is admin-only: a member has no business reading
+ *  colleagues' roles or account state to fill a dropdown. */
+export interface DirectoryMember { email: string; name: string }
+
+export async function fetchMemberDirectory(): Promise<DirectoryMember[]> {
+  const { data, error } = await supabase.rpc('member_directory')
+  if (error) throw error
+  return (data ?? []) as DirectoryMember[]
 }
 
 // ---------- admin: users (allowlist) ----------

@@ -20,18 +20,32 @@ const Ctx = createContext<Auth>(null as unknown as Auth)
 export const useAuth = () => useContext(Ctx)
 
 // Pull role/name/active for the signed-in user via the me() RPC (security definer).
-// Never let a slow/cold request hang sign-in: fall back to a basic profile after 6s
-// (the session is already valid; role refreshes on the next load).
+//
+// Two failures that look alike and must not be treated alike:
+//
+//   the server answered, and said this account is not an active member
+//     -> fail closed. Return null; the caller signs them out.
+//
+//   the request timed out or errored
+//     -> do NOT fail closed. This app is used by people with no reception, and the
+//        fallback profile is what lets a foreman still file his report. It grants the
+//        least-privileged role, so it cannot escalate anyone, and since 0045 the database
+//        enforces the areas itself — the client is no longer the thing standing between a
+//        member and data they should not see.
 async function loadProfile(id: string, email: string): Promise<SessionUser | null> {
-  const basic: SessionUser = { id, email, name: email.split('@')[0], role: 'member', active: true }
+  const offlineFallback: SessionUser = { id, email, name: email.split('@')[0], role: 'member', active: true }
   try {
     const timeout = new Promise<never>((_, rej) => setTimeout(() => rej(new Error('timeout')), 6000))
     const { data, error } = await Promise.race([supabase.rpc('me'), timeout]) as { data: unknown; error: unknown }
+    if (error) return offlineFallback
     const row = (Array.isArray(data) ? data[0] : data) as { role?: string; active?: boolean; name?: string } | null
-    if (error || !row) return basic
-    return { id, email, name: row.name ?? email.split('@')[0], role: (row.role as Role) ?? 'member', active: row.active ?? true }
+    // A definer function that returns no row for a valid session is an answer, not a
+    // failure: this account is not on the allowlist.
+    if (!row) return null
+    if (row.active === false) return null
+    return { id, email, name: row.name ?? email.split('@')[0], role: (row.role as Role) ?? 'member', active: true }
   } catch {
-    return basic
+    return offlineFallback
   }
 }
 
@@ -45,15 +59,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const s = data.session
       if (s?.user && alive) {
         setOwner(s.user.email)
-        setUser(await loadProfile(s.user.id, s.user.email ?? ''))
+        const prof = await loadProfile(s.user.id, s.user.email ?? '')
+        if (!prof) { await supabase.auth.signOut(); setOwner(null) }
+        setUser(prof)
       }
       if (alive) setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
       if (!alive) return
       setOwner(s?.user?.email ?? null)
-      if (s?.user) setUser(await loadProfile(s.user.id, s.user.email ?? ''))
-      else setUser(null)
+      if (s?.user) {
+        const prof = await loadProfile(s.user.id, s.user.email ?? '')
+        if (!prof) { await supabase.auth.signOut(); setOwner(null) }
+        setUser(prof)
+      } else setUser(null)
     })
     return () => { alive = false; sub.subscription.unsubscribe() }
   }, [])
@@ -63,7 +82,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     if (error) return { error: 'err_bad_login' }
     setOwner(data.user.email)
     const prof = await loadProfile(data.user.id, data.user.email ?? '')
-    if (prof && !prof.active) { await supabase.auth.signOut(); setOwner(null); return { error: 'err_disabled' } }
+    // null means the server said no, not that the network failed
+    if (!prof) { await supabase.auth.signOut(); setOwner(null); return { error: 'err_disabled' } }
     setUser(prof)
     return { error: null }
   }

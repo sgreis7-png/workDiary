@@ -21,13 +21,19 @@ export interface FakeState {
   /** index of the upload that should fail, -1 for none */
   failUploadAt: number
   userId: string
+  /** rows returned by `rpc(name)`, keyed by function name */
+  rpcRows: Record<string, unknown>
+  /** functions whose next call should fail, with this error */
+  rpcFail: Record<string, { message: string } | undefined>
 }
 
 export function newFakeState(overrides: Partial<FakeState> = {}): FakeState {
   return {
     rows: {}, fail: {}, inserted: {},
     calls: [], uploads: [], removed: [],
-    failUploadAt: -1, userId: 'user-1',
+    failUploadAt: -1,
+  rpcRows: {},
+  rpcFail: {}, userId: 'user-1',
     ...overrides,
   }
 }
@@ -84,7 +90,15 @@ export function makeFakeSupabase(s: FakeState) {
 
   return {
     from,
-    rpc: vi.fn(() => Promise.resolve({ data: null, error: null })),
+    // Records the call so a test can assert what was asked for, and answers from
+    // rpcRows. Unstubbed functions still return null, which is what a caller that does
+    // not care about the result sees.
+    rpc: vi.fn((name: string, params?: unknown) => {
+      s.calls.push({ table: `rpc:${name}`, op: 'rpc', payload: params })
+      const err = s.rpcFail?.[name]
+      if (err) return Promise.resolve({ data: null, error: err })
+      return Promise.resolve({ data: s.rpcRows?.[name] ?? null, error: null })
+    }),
     auth: { getUser: () => Promise.resolve({ data: { user: { id: s.userId } } }) },
     storage: {
       from: () => ({

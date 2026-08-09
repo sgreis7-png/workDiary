@@ -18,20 +18,23 @@ const rowInserts = () => state.calls.filter((c) => c.table === 'notifications' &
 beforeEach(() => {
   state.calls = []
   state.fail = {}
-  // the fake returns these for `allowed_emails`; activeRecipients narrows with .in()
-  state.rows = { allowed_emails: ACTIVE.map((email) => ({ email })) }
+  // activeRecipients asks the server to filter, so the fixture is the function's
+  // answer rather than the raw table
+  state.rows = {}
+  state.rpcRows = { active_recipients: ACTIVE.map((email) => ({ email })) }
+  state.rpcFail = {}
 })
 
 describe('activeRecipients', () => {
-  // the active filter runs server-side (.eq('active', true).in('email', wanted)),
-  // so the fixture rows are the server's answer, not the raw table
+  // the active filter runs server-side in active_recipients(), so the fixture rows are
+  // the function's answer, not the raw table
   it('keeps only addresses the server reports as active', async () => {
-    state.rows = { allowed_emails: [{ email: 'alon@agrotop.co.il' }] }
+    state.rpcRows = { active_recipients: [{ email: 'alon@agrotop.co.il' }] }
     expect(await activeRecipients(['alon@agrotop.co.il', 'gone@agrotop.co.il']))
       .toEqual(['alon@agrotop.co.il'])
   })
   it('normalises case and removes duplicates before querying', async () => {
-    state.rows = { allowed_emails: [{ email: 'ALON@agrotop.co.il' }] }
+    state.rpcRows = { active_recipients: [{ email: 'ALON@agrotop.co.il' }] }
     expect(await activeRecipients(['alon@agrotop.co.il', 'ALON@agrotop.co.il']))
       .toEqual(['alon@agrotop.co.il'])
   })
@@ -39,14 +42,14 @@ describe('activeRecipients', () => {
     expect(await activeRecipients([])).toEqual([])
   })
   it('throws rather than reporting "nobody is active" when the lookup fails', async () => {
-    state.fail = { allowed_emails: { message: 'network' } }
+    state.rpcFail = { active_recipients: { message: 'network' } }
     await expect(activeRecipients(['alon@agrotop.co.il'])).rejects.toBeTruthy()
   })
 })
 
 describe('notifyMany', () => {
   it('writes one batch containing only active recipients', async () => {
-    state.rows = { allowed_emails: [{ email: 'alon@agrotop.co.il' }] }
+    state.rpcRows = { active_recipients: [{ email: 'alon@agrotop.co.il' }] }
     await notifyMany(['alon@agrotop.co.il', 'gone@agrotop.co.il'], { title: 'x' })
     expect(batchInserts()).toHaveLength(1)
     const rows = batchInserts()[0].payload as { recipient_email: string }[]
@@ -54,7 +57,7 @@ describe('notifyMany', () => {
   })
 
   it('never inserts when nobody is left after filtering', async () => {
-    state.rows = { allowed_emails: [] }
+    state.rpcRows = { active_recipients: [] }
     await notifyMany(['gone@agrotop.co.il'], { title: 'x' })
     expect(state.calls.filter((c) => c.table === 'notifications')).toHaveLength(0)
   })
@@ -67,13 +70,13 @@ describe('notifyMany', () => {
   })
 
   it('returns the addresses it wrote, so push does not re-filter', async () => {
-    state.rows = { allowed_emails: [{ email: 'alon@agrotop.co.il' }] }
+    state.rpcRows = { active_recipients: [{ email: 'alon@agrotop.co.il' }] }
     expect(await notifyMany(['alon@agrotop.co.il', 'gone@agrotop.co.il'], { title: 'x' }))
       .toEqual(['alon@agrotop.co.il'])
   })
 
   it('does not throw, and notifies nobody, when the member lookup fails', async () => {
-    state.fail = { allowed_emails: { message: 'network' } }
+    state.rpcFail = { active_recipients: { message: 'network' } }
     await expect(notifyMany(['alon@agrotop.co.il'], { title: 'x' })).resolves.toEqual([])
     expect(state.calls.filter((c) => c.table === 'notifications')).toHaveLength(0)
   })

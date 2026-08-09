@@ -136,19 +136,34 @@ never downloads the full entries table.
   metadata, work dates, the authoring user's id, site photos, chat messages,
   handwritten gate signatures, and avatars. No analytics or third-party trackers
   are bundled.
-- **Who can see it:** active allowlisted users (per RLS). Reports/emails are only
-  shared with the recipients the sender explicitly chooses.
+- **Who can see it:** active allowlisted users, to the extent their per-area
+  permission allows. Since `0045` those areas are enforced by RLS and not only by the
+  router, so removing someone's access to the diary or to defect management actually
+  denies the data rather than hiding the tab. An author can always read their own
+  entries. Reports and emails go only to recipients the sender explicitly chooses.
+- **The staff roster** (`allowed_emails` — addresses, roles, account state) is
+  readable by admins only. Screens that need to put colleagues in a picker get names
+  and addresses from `member_directory()` instead.
 - **Photos** live in a private bucket and are surfaced only through short-lived
   (1 hour) signed URLs.
 - **Outbound data — the full list of third parties that can see user content:**
   Microsoft Graph (report emails, sent from the user's own mailbox), Resend
   (password-reset mails only — no diary content), the browser's push service
-  (notification titles/bodies), and OpenStreetMap Nominatim (GPS coordinates are
-  sent for reverse geocoding when the user taps the location button). Google Fonts
+  (notification titles/bodies), OpenStreetMap Nominatim (GPS coordinates, sent for
+  reverse geocoding when the user taps the location button), and the **MPXJ
+  converter** in `services/mpp-converter` (receives a complete Microsoft Project
+  schedule when an admin imports one — it verifies the caller's own Supabase token,
+  holds no service-role key, converts in a temporary file and deletes it; it stores
+  nothing, but the file passes through whatever host it is deployed on). Google Fonts
   is requested at page load and therefore sees the visitor's IP.
 - **Deletion:** admins can delete entries (cascades to photos) and users.
-- **Offline cache:** queued entries and last-seen data sit in the device's
-  IndexedDB / service-worker cache until synced; clearing site data removes them.
+- **On this device:** queued offline writes and cached rows live in IndexedDB and the
+  service-worker cache. Each queued write records who made it and can only ever be
+  sent by that person, so a shared phone cannot file one worker's report under
+  another's name. Signing out clears the drafts, the QC cache and the cached
+  authenticated responses; queued writes are kept, because deleting somebody's
+  unsynced report to protect it from a colleague is the worse trade. Cached rows
+  expire after 10 minutes.
 
 ---
 

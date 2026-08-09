@@ -6,13 +6,14 @@ import {
 import { itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, severityLabel, defectStatusLabel, gateShortName, defectLogTitle, defectLogGoldenRule } from '../../defects/i18n'
 import type { Defect, DefectPhoto } from '../../defects/api'
-import type { AppUser } from '../../data'
 import { TextCell } from './TextCell'
 
 export function DefectLogTab({ defects, defs = GATES, users = [], photos = [], onAdd, onPatch, onRemove, onAddPhoto, onRemovePhoto }: {
   defects: Defect[]
   defs?: GateDefs
-  users?: AppUser[]
+  /** Only an address and a name are used, so anything carrying those fits — the
+   *  member directory, or the fuller AppUser the admin screens hold. */
+  users?: { email: string; name: string }[]
   photos?: DefectPhoto[]
   onAdd: (gate: GateKey) => void
   onPatch: (id: string, patch: Partial<Defect>) => void

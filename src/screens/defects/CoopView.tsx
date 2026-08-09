@@ -8,9 +8,9 @@ import {
   fetchDefectPhotos, addDefectPhoto, deleteDefectPhoto, logAudit, notifyUser,
   type CoopBundle, type ChecklistItem, type Coop, type CoopResponsibility, type Defect, type DefectPhoto,
 } from '../../defects/api'
-import { fetchUsers } from '../../api'
+import { fetchMemberDirectory } from '../../api'
 import { useAuth } from '../../auth'
-import type { AppUser } from '../../data'
+import type { DirectoryMember } from '../../api'
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
 import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { usePerms } from '../../lib/usePerms'
@@ -45,7 +45,7 @@ export default function CoopView() {
   const readOnly = !canEdit('defects')
   // עריכת פרטי לול ומחיקה — הרשאת coops_manage (אדמין, או עובד שהוענקה לו)
   const canManageCoops = canEdit('coops_manage')
-  const [users, setUsers] = useState<AppUser[]>([])
+  const [users, setUsers] = useState<DirectoryMember[]>([])
   const [photos, setPhotos] = useState<DefectPhoto[]>([])
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
   const [defs, setDefs] = useState<GateDefs>(GATES)
@@ -56,7 +56,7 @@ export default function CoopView() {
     fetchCoopBundle(id).then(setBundle).catch((e) => setErr(String(e.message ?? e)))
     loadGateDefs().then(setDefs)
     fetchDefectPhotos(id).then(setPhotos).catch(() => {})
-    fetchUsers().then((us) => setUsers(us.filter((u) => u.active && u.registered))).catch(() => setUsers([]))
+    fetchMemberDirectory().then(setUsers).catch(() => setUsers([]))
   }, [id])
 
   const fail = useCallback((e: unknown) => setErr(String((e as Error).message ?? e)), [])

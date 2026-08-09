@@ -13,8 +13,9 @@ import { supabase } from './supabase'
 export async function activeRecipients(emails: string[]): Promise<string[]> {
   const wanted = [...new Set(emails.map((e) => e.trim().toLowerCase()).filter(Boolean))]
   if (!wanted.length) return []
-  const { data, error } = await supabase.from('allowed_emails')
-    .select('email').eq('active', true).in('email', wanted)
+  // allowed_emails is admin-only; this asks the server to filter the list we already
+  // have rather than handing the whole roster back to be filtered here
+  const { data, error } = await supabase.rpc('active_recipients', { p_emails: wanted })
   // Fail loudly rather than silently dropping every notification: an empty
   // result from a transient error is indistinguishable from "nobody is active".
   if (error) throw error
