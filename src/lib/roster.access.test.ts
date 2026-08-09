@@ -7,7 +7,7 @@
 // and the mistake is a static one: importing the wrong function.
 import { describe, it, expect } from 'vitest'
 import { readdirSync, readFileSync, statSync } from 'node:fs'
-import { join } from 'node:path'
+import { join, sep } from 'node:path'
 
 const SCREENS = join(process.cwd(), 'src', 'screens')
 
@@ -22,7 +22,9 @@ function walk(dir: string): string[] {
 /** Screens that may read the roster table itself: the ones only an admin can open. */
 const ADMIN_ONLY = ['screens/admin/Users.tsx', 'screens/admin/Projects.tsx']
 
-const rel = (f: string) => f.slice(f.indexOf('src') + 4).replaceAll('\\', '/')
+// Path from src/, with forward slashes on every platform. (No replaceAll: the project's TS lib
+// target predates it.)
+const rel = (f: string) => f.slice(f.indexOf(`src${sep}`) + 4).replace(/\\/g, '/')
 
 describe('roster access', () => {
   const files = walk(SCREENS)
