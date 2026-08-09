@@ -541,17 +541,9 @@ select.input { cursor: pointer; }
 .notif__item small { display: block; font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3); margin-top: 4px; }
 
 /* ============ defect management (תפיסת סיום שלב) ============ */
-.mode-select { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center;
   gap: 26px; padding: 32px; background: var(--bg); }
-.mode-select h1 { font-size: clamp(26px, 4vw, 40px); }
-.mode-select__cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 340px)); gap: 20px; justify-content: center; width: 100%; }
-.mode-card { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; text-align: start; cursor: pointer;
   background: var(--panel); border: 1px solid var(--panel-edge); border-radius: var(--r-lg); padding: 26px 24px;
   transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease; font: inherit; }
-.mode-card:hover { border-color: var(--green); transform: translateY(-3px); box-shadow: var(--shadow-2); }
-.mode-card__icon { font-size: 34px; }
-.mode-card__title { font-family: var(--font-display); font-size: 24px; font-weight: 800; }
-.mode-card__desc { color: var(--ink-2); font-size: 15px; line-height: 1.5; }
 
 /* ---------- grouped, collapsible nav ---------- */
 

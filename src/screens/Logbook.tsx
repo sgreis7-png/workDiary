@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { Button, Tag, WeatherChip, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
@@ -14,7 +14,10 @@ export default function Logbook() {
   const { t } = useI18n()
   const nav = useNavigate()
   const { projects, projectName, userName, projectColor } = useStore()
-  const [projectId, setProjectId] = useState('')
+  // The digest has always linked here as /?p=<id>; nothing read it, so the filter stayed
+  // on "all projects" and the link looked broken.
+  const [params] = useSearchParams()
+  const [projectId, setProjectId] = useState(() => params.get('p') ?? '')
   const [entries, setEntries] = useState<Entry[] | null>(null)
   const [more, setMore] = useState(false)
   const [hasMore, setHasMore] = useState(true)

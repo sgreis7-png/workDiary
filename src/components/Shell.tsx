@@ -12,7 +12,6 @@ import { FeedbackDialog } from './FeedbackDialog'
 import { getTheme, setTheme, type Theme } from '../lib/theme'
 import { usePerms } from '../lib/usePerms'
 import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
-import { getMode } from '../defects/mode'
 import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
 
@@ -183,12 +182,6 @@ export function Shell() {
   const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const loc = useLocation()
   const nav = useNavigate()
-  // Mode-neutral routes (messages, account) keep the stored mode's nav instead of
-  // snapping back to work mode.
-  const path = loc.pathname
-  const neutral = path.startsWith('/messages') || path.startsWith('/account')
-  const defectsMode = path.startsWith('/defects') || path.startsWith('/admin/defect-items')
-    || (neutral && getMode() === 'defects')
   const { can, canEdit } = usePerms()
 
   useEffect(() => {
@@ -231,7 +224,7 @@ export function Shell() {
 
       <nav className="nav" onClick={() => setOpen(false)}>
         {/* The one thing people come here to do, out of the list and above it. */}
-        {canEdit('logbook') && !defectsMode && (
+        {canEdit('logbook') && (
           <NavLink to="/new" className="nav__primary" onClick={() => window.scrollTo(0, 0)}>
             <span aria-hidden>✛</span>
             {t('nav_new')}
@@ -303,10 +296,6 @@ export function Shell() {
           <button className="nav__item nav__switch" onClick={() => setFeedbackOpen(true)}>
             <span className="ic" aria-hidden>🛈</span>
             {t('nav_feedback')}
-          </button>
-          <button className="nav__item nav__switch" onClick={() => nav('/mode')}>
-            <span className="ic" aria-hidden>⇄</span>
-            {defectsMode ? dt('switch_to_work') : dt('switch_to_defects')}
           </button>
         </div>
       </nav>

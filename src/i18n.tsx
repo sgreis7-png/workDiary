@@ -258,6 +258,7 @@ export const STRINGS = {
   digest_closed:    { he: 'נסגרו השבוע', en: 'closed this week' },
   digest_incidents: { he: 'תקריות בטיחות', en: 'safety incidents' },
   digest_open_log:  { he: 'ליומן הפרויקט', en: 'Open project log' },
+  digest_open_control: { he: 'למרכז הבקרה של הפרויקט', en: 'Open the control centre' },
   digest_workers:   { he: 'עובדים דיווחו', en: 'workers reported' },
   digest_defect_moves: { he: 'ליקויים נפתחו/נסגרו', en: 'defects opened/closed' },
   digest_overdue_defects: { he: 'ליקויים באיחור', en: 'overdue defects' },

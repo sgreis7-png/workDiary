@@ -5,7 +5,7 @@
 // end to end without deciding what to look at next. Same blocks either way — the mode only
 // changes whether the others are mounted, and the strip doubles as jump links.
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useI18n } from '../i18n'
 import { useStore } from '../store'
@@ -49,8 +49,16 @@ export default function ControlCenter() {
   const [schedule, setSchedule] = useState<{ project: string; bundle: GanttBundle | null } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
+  // ?project=<id> so other screens can link straight at a project — the weekly digest
+  // does, and landing on whichever project happens to be first would defeat the point
+  const [params] = useSearchParams()
+  const linkedProject = params.get('project') ?? ''
+
   const active = useMemo(() => projects.filter((p) => p.active), [projects])
-  const projectId = pickedProject || active[0]?.id || ''
+  const projectId = pickedProject
+    || (active.some((p) => p.id === linkedProject) ? linkedProject : '')
+    || active[0]?.id
+    || ''
   const project = active.find((p) => p.id === projectId)
   // tagged, so a stale snapshot is never read against the newly picked project
   const data = snap?.project.id === projectId ? snap : null

@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { usePerms } from '../lib/usePerms'
 import { motion } from 'framer-motion'
 import { Tag, stagger, riseIn } from '../components/ui'
 import { Loader } from '../components/Loader'
@@ -51,6 +52,7 @@ interface Totals {
 
 export default function Digest() {
   const { t } = useI18n()
+  const { can } = usePerms()
   const nav = useNavigate()
   const { projects, projectName, userName } = useStore()
   const [data, setData] = useState<{ digests: ProjectDigest[]; silent: { name: string; days: number | null }[]; totals: Totals } | null>(null)
@@ -274,7 +276,15 @@ export default function Digest() {
               </div>
             )}
 
-            <div style={{ marginTop: 12 }}>
+            {/* The control centre is the answer to "so what is going on with this
+                project", which is the question the digest just raised. The diary stays
+                available for the narrower question of what was written. */}
+            <div style={{ marginTop: 12, display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              {can('control_center') && (
+                <button className="btn btn--ghost" onClick={() => nav(`/control?project=${d.projectId}`)}>
+                  {t('digest_open_control')} ←
+                </button>
+              )}
               <button className="btn btn--quiet" onClick={() => nav(`/?p=${d.projectId}`)}>{t('digest_open_log')} ←</button>
             </div>
           </motion.div>

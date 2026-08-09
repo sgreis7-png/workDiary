@@ -5,20 +5,11 @@ import { useI18n, type Lang } from '../i18n'
 import type { ItemStatus, Severity, DefectStatus, CoopType, Responsible, GateKey } from './model'
 
 export const D = {
-  // mode select
-  mode_q:            { he: 'מה מנהלים היום?', en: 'What are we managing today?' },
-  mode_work:         { he: 'ניהול עבודה', en: 'Work management' },
-  mode_work_desc:    { he: 'יומן עבודה יומי — רשומות, לוח שנה, דוחות וייצוא', en: 'Daily work diary — entries, calendar, reports and export' },
-  mode_defects:      { he: 'ניהול ליקויים', en: 'Defect management' },
-  mode_defects_desc: { he: 'תפיסת סיום שלב — צ׳קליסט שערים, יומן ליקויים וחתימות per־לול', en: 'Stage-gate QC — gate checklists, defect log and signatures per house' },
-
   // shell
   nav_coops:         { he: 'לולים — תפיסת סיום שלב', en: 'Houses — stage gates' },
   nav_defect_search: { he: 'חיפוש', en: 'Search' },
   nav_form_builder:  { he: 'בונה טופס ליקויים', en: 'Defect form builder' },
   nav_messages:      { he: 'הודעות', en: 'Messages' },
-  switch_to_work:    { he: 'מעבר לניהול עבודה', en: 'Switch to work management' },
-  switch_to_defects: { he: 'מעבר לניהול ליקויים', en: 'Switch to defect management' },
   menu_account:      { he: '👤 החשבון שלי — פרופיל וסיסמה', en: '👤 My account — profile & password' },
   menu_light:        { he: '☀ מעבר למצב בהיר', en: '☀ Switch to light mode' },
   menu_dark:         { he: '☾ מעבר למצב כהה', en: '☾ Switch to dark mode' },

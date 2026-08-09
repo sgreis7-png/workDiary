@@ -17,7 +17,6 @@ import ExportView from './screens/ExportView'
 import Projects from './screens/admin/Projects'
 import FormBuilder from './screens/admin/FormBuilder'
 import Users from './screens/admin/Users'
-import ModeSelect from './screens/ModeSelect'
 import Coops from './screens/defects/Coops'
 import CoopView from './screens/defects/CoopView'
 import CoopReport from './screens/defects/CoopReport'
@@ -34,7 +33,6 @@ import GanttScreen from './screens/Gantt'
 import ControlCenter from './screens/ControlCenter'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
-import { getMode } from './defects/mode'
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -55,12 +53,23 @@ function RequirePerm({ area, edit, children }: { area: PermArea; edit?: boolean;
   const ok = edit ? level === 'edit' : level !== 'none'
   return ok ? children : <Navigate to="/" replace />
 }
-/** Index: first visit → mode chooser; defects mode → its home; work mode → logbook. */
+/**
+ * Index: the first thing this user is actually allowed to see.
+ *
+ * This used to be decided by a stored "mode" the user picked on first run, which also
+ * hid half the navigation. The sidebar now lists both the diary and the quality module,
+ * so the mode only ever chose a landing page — and choosing it from permissions is both
+ * more accurate and one less decision to put in front of someone signing in.
+ */
 function Home() {
-  const mode = getMode()
-  if (!mode) return <Navigate to="/mode" replace />
-  if (mode === 'defects') return <Navigate to="/defects" replace />
-  return <Logbook />
+  const { perm, permsReady } = usePerms()
+  const { loading } = useAuth()
+  if (loading || !permsReady) return <Loader full label="טוען…" />
+  if (perm('logbook') !== 'none') return <Logbook />
+  if (perm('defects') !== 'none') return <Navigate to="/defects" replace />
+  if (perm('control_center') !== 'none') return <Navigate to="/control" replace />
+  if (perm('dashboard') !== 'none') return <Navigate to="/dashboard" replace />
+  return <Navigate to="/tasks" replace />
 }
 
 export default function App() {
@@ -69,7 +78,6 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/set-password" element={<SetPassword />} />
       <Route path="/report/:id" element={<RequireAuth><ReportView /></RequireAuth>} />
-      <Route path="/mode" element={<RequireAuth><ModeSelect /></RequireAuth>} />
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Home />} />
         <Route path="defects" element={<RequirePerm area="defects"><Coops /></RequirePerm>} />
