@@ -28,9 +28,21 @@ from flask import Flask, jsonify, request
 from converter import convert, find_java_home, start_jvm
 
 MAX_BYTES = int(os.environ.get("MPP_MAX_BYTES", 50 * 1024 * 1024))
-SUPABASE_URL = os.environ.get("SUPABASE_URL", "").rstrip("/")
-SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "")
-ALLOWED_ORIGINS = [o.strip() for o in os.environ.get("MPP_ALLOWED_ORIGINS", "").split(",") if o.strip()]
+
+
+def _setting(name: str) -> str:
+    """Env value with the debris a dashboard paste leaves behind removed.
+
+    A trailing newline or a pair of quotes around a key is invisible in a web form and
+    turns every Supabase call into a 401 — which surfaced as users being told they had no
+    permission.
+    """
+    return os.environ.get(name, "").strip().strip('"').strip("'").strip()
+
+
+SUPABASE_URL = _setting("SUPABASE_URL").rstrip("/")
+SUPABASE_ANON_KEY = _setting("SUPABASE_ANON_KEY")
+ALLOWED_ORIGINS = [o.strip() for o in _setting("MPP_ALLOWED_ORIGINS").split(",") if o.strip()]
 
 log = logging.getLogger("mpp-converter")
 app = Flask(__name__)

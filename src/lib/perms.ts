@@ -14,7 +14,7 @@ export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = 
   { key: 'projects', label: 'פרויקטים', label_en: 'Projects' },
   { key: 'export', label: 'ייצוא דוחות', label_en: 'Report export' },
   { key: 'dashboard', label: 'סקירה / סטטיסטיקות', label_en: 'Overview / statistics' },
-  { key: 'gantt', label: 'לוח זמנים — עריכה', label_en: 'Schedule — editing' },
+  { key: 'gantt', label: 'לוח זמנים (גאנט)', label_en: 'Schedule (Gantt)' },
   { key: 'defects', label: 'ניהול ליקויים', label_en: 'Defect management' },
   { key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה', label_en: 'Coop management — edit & delete' },
   { key: 'alert_rules', label: 'כללי התראות', label_en: 'Alert rules' },
@@ -29,7 +29,7 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   projects: 'view',
   export: 'view',
   dashboard: 'none', // סטטיסטיקות — לאדמין, אלא אם הוענקה גישה
-  gantt: 'view',     // כולם רואים את לוח הזמנים; שינוי תאריכים דורש הענקה
+  gantt: 'none',     // לוח זמנים — לאדמין ולמנהלים, אלא אם הוענקה גישה
   defects: 'edit',
   form_builder: 'none',
   coops_manage: 'none', // מחיקה/עריכת לולים — לאדמין, אלא אם הוענקה
