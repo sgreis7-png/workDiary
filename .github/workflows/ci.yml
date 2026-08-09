@@ -12,7 +12,13 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          # 22, not 20. On Node 20 @supabase/supabase-js refuses to load at all — "Node.js 20
+          # detected without native WebSocket support" — so five test files could not even be
+          # imported. `npm test` had also never been given the Supabase env vars the client needs
+          # at import time, which is why the suite passed on a developer's machine (where .env
+          # exists) and failed here. That part is fixed in vitest.config.ts instead, so it cannot
+          # depend on this file again.
+          node-version: 22
           cache: npm
       - run: npm ci
       - run: npm run lint
