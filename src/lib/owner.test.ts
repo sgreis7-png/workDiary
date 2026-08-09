@@ -3,7 +3,7 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import 'fake-indexeddb/auto'
 
-import { getOwner, ownedByCurrentUser, setOwner } from './owner'
+import { deviceHasOneAccount, getOwner, ownedByCurrentUser, setOwner } from './owner'
 import { clearQueue, getPending, pendingCount, foreignPendingCount, queueEntry, syncQueue } from './offline'
 
 const entry = (project: string) => ({ project_id: project, values: { daily_content: project }, files: [] })
@@ -22,10 +22,47 @@ describe('owner', () => {
   })
 
   it('claims rows written before the field existed', () => {
-    // refusing them would strand real unsynced work with no way to ever send it
+    // refusing them outright would strand real unsynced work with no way to ever send it
     setOwner('someone@agrotop.co.il')
     expect(ownedByCurrentUser(undefined)).toBe(true)
     expect(ownedByCurrentUser(null)).toBe(true)
+  })
+
+  it('stops claiming ownerless rows once a second account has used the device', () => {
+    // The ownerless case is only unambiguous on a phone one person uses. Needs a real
+    // localStorage: the module keeps the accounts it has seen there, and the test environment
+    // has none, which is why the case above reads as a single-account device.
+    const mem = new Map<string, string>()
+    const store = {
+      getItem: (k: string) => mem.get(k) ?? null,
+      setItem: (k: string, v: string) => { mem.set(k, v) },
+      removeItem: (k: string) => { mem.delete(k) },
+      clear: () => mem.clear(),
+      key: () => null,
+      length: 0,
+    }
+    const g = globalThis as { localStorage?: Storage }
+    const had = g.localStorage
+    g.localStorage = store as unknown as Storage
+    try {
+      setOwner('a@agrotop.co.il')
+      expect(ownedByCurrentUser(undefined)).toBe(true) // still the only account here
+
+      setOwner('b@agrotop.co.il')
+      expect(deviceHasOneAccount()).toBe(false)
+      // b must not inherit whatever a left queued before the field existed
+      expect(ownedByCurrentUser(undefined)).toBe(false)
+      expect(ownedByCurrentUser(null)).toBe(false)
+      // and their own rows still work
+      expect(ownedByCurrentUser('b@agrotop.co.il')).toBe(true)
+
+      // a comes back: the device has seen two accounts, so ownerless stays ambiguous
+      setOwner('a@agrotop.co.il')
+      expect(ownedByCurrentUser(undefined)).toBe(false)
+    } finally {
+      if (had) g.localStorage = had
+      else delete g.localStorage
+    }
   })
 
   it('refuses another account, including when signed out', () => {

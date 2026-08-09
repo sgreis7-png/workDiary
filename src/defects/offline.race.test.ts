@@ -5,12 +5,13 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { queueOp, outboxCount, replayOutbox, type DefectOp } from './offline'
+import { setOwner } from '../lib/owner'
 
 const op = (tag: string): DefectOp => ({ kind: 'defect_create', row: { description: tag } })
 const tagOf = (o: DefectOp) => String((o as { row: Record<string, unknown> }).row.description)
 
 describe('replayOutbox concurrency', () => {
-  beforeEach(async () => { await replayOutbox(async () => {}) })
+  beforeEach(async () => { setOwner('a@agrotop.co.il'); await replayOutbox(async () => {}) })
 
   it('applies each queued op exactly once when replays overlap', async () => {
     await queueOp(op('c1'))

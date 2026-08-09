@@ -165,7 +165,9 @@ never downloads the full entries table.
 - **On this device:** queued offline writes and cached rows live in IndexedDB and the
   service-worker cache. Each queued write records who made it and can only ever be
   sent by that person, so a shared phone cannot file one worker's report under
-  another's name. Signing out clears the drafts, the QC cache and the cached
+  another's name. Writes queued before that field existed carry no name; they are
+  still sent on a phone only one account has ever signed in on, and held back on one
+  where a second has, because there nothing identifies whose they are. Signing out clears the drafts, the QC cache and the cached
   authenticated responses; queued writes are kept, because deleting somebody's
   unsynced report to protect it from a colleague is the worse trade. Cached rows
   expire after 10 minutes.

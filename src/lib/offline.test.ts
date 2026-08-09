@@ -1,12 +1,15 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { clear, createStore } from 'idb-keyval'
 import { queueEntry, getPending, pendingCount, syncQueue } from './offline'
+import { setOwner } from './owner'
 
 const store = createStore('agrotop-wd', 'pending-entries')
 const draft = () => ({ project_id: 'p1', values: { site_location: 'כפר יובל' }, files: [] as File[] })
 
 describe('offline entry queue', () => {
-  beforeEach(async () => { await clear(store) })
+  // queueing is only reachable from a signed-in screen, and a row without an owner is
+  // nobody's — so the signed-in state is part of the fixture, not incidental
+  beforeEach(async () => { setOwner('a@agrotop.co.il'); await clear(store) })
 
   it('queues an entry and reports the count', async () => {
     expect(await pendingCount()).toBe(0)

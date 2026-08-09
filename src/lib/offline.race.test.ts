@@ -4,10 +4,11 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import 'fake-indexeddb/auto'
 import { queueEntry, pendingCount, syncQueue } from './offline'
+import { setOwner } from './owner'
 
 describe('syncQueue concurrency', () => {
   // a no-op "upload" always succeeds, so this empties the queue between tests
-  beforeEach(async () => { await syncQueue(async () => {}) })
+  beforeEach(async () => { setOwner('a@agrotop.co.il'); await syncQueue(async () => {}) })
 
   it('sends each queued entry exactly once when syncs overlap', async () => {
     await queueEntry({ project_id: 'p1', values: { a: '1' }, files: [] })
