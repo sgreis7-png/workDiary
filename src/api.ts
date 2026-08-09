@@ -90,22 +90,32 @@ export async function getEntry(id: string): Promise<Entry | null> {
   return (await hydrate([data as unknown as EntryRow]))[0]
 }
 
+/** Save a new entry.
+ *
+ *  `entryId` makes this idempotent, and every automatic caller passes one. Without it a save
+ *  that got the row in but failed partway through its photos would be retried — by the offline
+ *  queue, or by the user pressing save again — and produce a *second* entry rather than
+ *  finishing the first. With it the row upserts and the photos land on the paths they were
+ *  always going to have, so a retry converges instead of duplicating.
+ *
+ *  Left optional because the id has to survive the same trip as the work it belongs to: the
+ *  queue row carries it, the draft carries it, and a caller with neither still works. */
 export async function createEntry(
-  project_id: string, values: Record<string, string>, files: File[],
+  project_id: string, values: Record<string, string>, files: File[], entryId?: string,
 ): Promise<string> {
   const { data: u } = await supabase.auth.getUser()
   const uid = u.user?.id
   if (!uid) throw new Error('not authenticated')
 
-  const { data: ins, error } = await supabase.from('entries')
-    .insert({ project_id, created_by: uid, work_date: values.work_date || null, values })
-    .select('id').single()
+  const id = entryId ?? crypto.randomUUID()
+  const { error } = await supabase.from('entries')
+    .upsert({ id, project_id, created_by: uid, work_date: values.work_date || null, values },
+      { onConflict: 'id' })
   if (error) throw error
-  const entryId = ins.id as string
 
-  await savePhotos(entryId, files)
-  notifyNewEntry(project_id, entryId)
-  return entryId
+  await savePhotos(id, files)
+  notifyNewEntry(project_id, id)
+  return id
 }
 
 /** Upload an entry's photos and record them.
@@ -119,6 +129,27 @@ export async function createEntry(
  *  is then raised, exactly as before — an entry saved with some of its photos is the documented
  *  outcome, and the user is told. */
 async function savePhotos(entryId: string, files: File[]): Promise<void> {
+  if (!files.length) return
+  const results = await Promise.allSettled(files.map(async (f, i) => {
+    const safe = f.name.replace(/[^\w.-]+/g, '_')
+    // Position, not a fresh uuid: the path a photo gets must be the same on a retry, or the
+    // retry uploads the file again under a new name and the entry ends up with doubles. The
+    // index keeps two files of the same name apart.
+    const path = `${entryId}/${i}-${safe}`
+    const { error: upErr } = await supabase.storage.from('photos').upload(path, f, { upsert: true })
+    if (upErr) throw upErr
+    const { error: pErr } = await supabase.from('entry_photos')
+      .upsert({ entry_id: entryId, storage_path: path }, { onConflict: 'storage_path' })
+    if (pErr) throw pErr
+  }))
+  const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+  if (failed) throw failed.reason
+}
+
+/** Add photos to an entry that already has some. Unlike savePhotos this cannot key the path
+ *  on position — position 0 is already taken — so it keeps a uuid and is not idempotent. That is
+ *  the right trade here: editing is a deliberate act with no automatic retry behind it. */
+async function addPhotos(entryId: string, files: File[]): Promise<void> {
   if (!files.length) return
   const results = await Promise.allSettled(files.map(async (f) => {
     const safe = f.name.replace(/[^\w.-]+/g, '_')
@@ -158,15 +189,19 @@ export async function updateEntry(
     if (rowErr) throw rowErr
     await supabase.storage.from('photos').remove(removedPaths)
   }
-  await savePhotos(id, newFiles)
+  await addPhotos(id, newFiles)
 }
 
 export async function deleteEntry(id: string): Promise<void> {
   const { data } = await supabase.from('entry_photos').select('storage_path').eq('entry_id', id)
   const paths = (data ?? []).map((r: { storage_path: string }) => r.storage_path)
-  if (paths.length) await supabase.storage.from('photos').remove(paths)
+
+  // The row goes first. This used to run the other way round, so a row delete that failed —
+  // an RLS refusal is enough — left the diary showing an entry whose images were already gone.
+  // In this order a failure after the row is deleted only leaks bytes, which is recoverable.
   const { error } = await supabase.from('entries').delete().eq('id', id)
   if (error) throw error
+  if (paths.length) await supabase.storage.from('photos').remove(paths)
 }
 
 export interface DashboardStats {
@@ -309,14 +344,25 @@ export async function setProjectActive(id: string, active: boolean): Promise<voi
  *  assignments + per-user priorities cascade too). Irreversible. Admin-only via RLS.
  *  Returns how many entries were removed so the UI can report it. */
 export async function deleteProject(id: string): Promise<number> {
-  const { count } = await supabase
-    .from('entries').select('id', { count: 'exact', head: true }).eq('project_id', id)
-  // entries FK to projects has no ON DELETE CASCADE, so clear them first
+  const { data: rows } = await supabase
+    .from('entries').select('id,entry_photos(storage_path)').eq('project_id', id)
+  const entries = (rows ?? []) as { id: string; entry_photos: { storage_path: string }[] | null }[]
+  // Collected before the rows go, because afterwards there is nothing left to ask. This step
+  // did not exist: the photo rows cascaded in the database and the files themselves stayed in
+  // the bucket for good — readable by anyone the bucket lets in, long after the project was
+  // "hard deleted".
+  const paths = entries.flatMap((e) => (e.entry_photos ?? []).map((p) => p.storage_path))
+
   const { error: eErr } = await supabase.from('entries').delete().eq('project_id', id)
   if (eErr) throw eErr
   const { error } = await supabase.from('projects').delete().eq('id', id)
   if (error) throw error
-  return count ?? 0
+  // Last, and unguarded: the rows are already gone, so a storage failure here leaves bytes
+  // behind rather than a half-deleted project. Storage takes at most 1000 keys per call.
+  for (let i = 0; i < paths.length; i += 1000) {
+    await supabase.storage.from('photos').remove(paths.slice(i, i + 1000))
+  }
+  return entries.length
 }
 
 // ---------- admin: field definitions ----------

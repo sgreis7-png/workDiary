@@ -47,6 +47,9 @@ export default function EntryForm() {
   // Draft persistence: phones kill the page while the camera app is open, wiping
   // React state. The draft lives in IndexedDB until the entry is saved.
   const draftKey = id ?? 'new'
+  // Minted once per form, and persisted with the draft. A failed save can then be retried —
+  // by the user pressing save again, or by the offline queue — without producing a second entry.
+  const newEntryId = useRef<string>(crypto.randomUUID())
   const [restored, setRestored] = useState(false)
   // "שמור נתונים" — server-saved name/phone; on by default once the user saved once
   const [savePrefs, setSavePrefs] = useState(false)
@@ -66,6 +69,7 @@ export default function EntryForm() {
       const d = await loadDraft('new')
       if (!alive) return
       if (d) {
+        if (d.entry_id) newEntryId.current = d.entry_id
         setProject(d.project_id)
         setValues((v) => ({ ...v, ...d.values }))
         setPhotos(d.files.map((f) => ({ file: f, url: URL.createObjectURL(f) })))
@@ -130,6 +134,7 @@ export default function EntryForm() {
     if (!restored || busy) return
     const t = setTimeout(() => {
       void saveDraft(draftKey, {
+        entry_id: editing ? undefined : newEntryId.current,
         project_id: project,
         values,
         files: photos.filter((p) => p.file).map((p) => p.file!),
@@ -137,7 +142,7 @@ export default function EntryForm() {
       }).catch(() => {})
     }, 400)
     return () => clearTimeout(t)
-  }, [restored, busy, draftKey, project, values, photos, removedPaths])
+  }, [restored, busy, editing, draftKey, project, values, photos, removedPaths])
 
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
   const set = (k: string, v: string) => setValues((s) => ({ ...s, [k]: v }))
@@ -205,7 +210,7 @@ export default function EntryForm() {
         keepPrefs()
         nav('/')
       } else {
-        await createEntry(project, values, newFiles)
+        await createEntry(project, values, newFiles, newEntryId.current)
         await clearDraft(draftKey).catch(() => {})
         keepPrefs()
         nav('/')

@@ -156,7 +156,12 @@ never downloads the full entries table.
   holds no service-role key, converts in a temporary file and deletes it; it stores
   nothing, but the file passes through whatever host it is deployed on). Google Fonts
   is requested at page load and therefore sees the visitor's IP.
-- **Deletion:** admins can delete entries (cascades to photos) and users.
+- **Deletion:** deleting an entry removes its photo rows *and* the stored image files;
+  deleting a project does the same for every entry it holds. Until `0049` the project case
+  only removed the database rows and left every image in the bucket — production had one
+  such orphan when this was corrected. The row is always deleted before the files, so a
+  failure leaves unreferenced bytes rather than a diary entry with missing images. Admins
+  can also delete users.
 - **On this device:** queued offline writes and cached rows live in IndexedDB and the
   service-worker cache. Each queued write records who made it and can only ever be
   sent by that person, so a shared phone cannot file one worker's report under

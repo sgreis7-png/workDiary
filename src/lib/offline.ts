@@ -62,21 +62,22 @@ export async function getPending(): Promise<PendingEntry[]> {
   } catch { return [] }
 }
 
-// A sync can be triggered by the `online` event, window focus and mount at once.
-// createEntry is not idempotent, so two overlapping runs would read the same
-// pending row and post the entry twice — this guard serializes them.
+// A sync can be triggered by the `online` event, window focus and mount at once. createEntry
+// is idempotent now — the queue row's own id becomes the entry id — so a double run converges
+// rather than posting twice. The guard stays: it saves the duplicated work, and it keeps the
+// count the UI shows from jumping around.
 let syncing: Promise<number> | null = null
 
 /** Push queued entries to the server. Stops on the first failure (still offline). */
 export function syncQueue(
-  create: (project_id: string, values: Record<string, string>, files: File[]) => Promise<unknown>,
+  create: (project_id: string, values: Record<string, string>, files: File[], id?: string) => Promise<unknown>,
 ): Promise<number> {
   syncing ??= runSync(create).finally(() => { syncing = null })
   return syncing
 }
 
 async function runSync(
-  create: (project_id: string, values: Record<string, string>, files: File[]) => Promise<unknown>,
+  create: (project_id: string, values: Record<string, string>, files: File[], id?: string) => Promise<unknown>,
 ): Promise<number> {
   // Replay order is not significant here: queued entries are independent
   // creates, unlike the defects outbox whose patch ops must apply in sequence.
@@ -84,7 +85,9 @@ async function runSync(
   let n = 0
   for (const it of items) {
     try {
-      await create(it.project_id, it.values, it.files)
+      // the queue row's id becomes the entry's id, so replaying this row twice — after a
+      // partial upload, or from two overlapping syncs — finishes one entry instead of two
+      await create(it.project_id, it.values, it.files, it.id)
       await del(it.id, store)
       n++
     } catch {

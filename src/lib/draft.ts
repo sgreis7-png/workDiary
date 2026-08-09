@@ -9,6 +9,10 @@ const store = createStore('agrotop-wd-drafts', 'entry-drafts')
 const MAX_AGE_MS = 24 * 3600_000
 
 export interface EntryDraft {
+  /** The id the entry will be saved under. Kept with the draft so a retry — including one
+   *  after the PWA was killed and the form restored — finishes that entry instead of
+   *  creating a second. Absent in drafts written before this existed. */
+  entry_id?: string
   project_id: string
   values: Record<string, string>
   files: File[]
