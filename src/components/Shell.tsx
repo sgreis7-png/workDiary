@@ -168,6 +168,7 @@ export function Shell() {
             {can('calendar') && <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />}
             {can('search') && <NavItem to="/search" icon="⌕" label={t('nav_search')} />}
             {can('projects') && <NavItem to="/projects" icon="◆" label={t('nav_projects')} />}
+            {can('gantt') && <NavItem to="/gantt" icon="▬" label={t('nav_gantt')} />}
             {can('export') && <NavItem to="/export" icon="⭳" label={t('nav_export')} />}
             <NavItem to="/tasks" icon="☑" label={dt('nav_tasks')} />
             {can('dashboard') && <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />}

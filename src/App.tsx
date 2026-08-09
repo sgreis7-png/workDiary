@@ -30,6 +30,7 @@ import AlertRules from './screens/AlertRules'
 import DistLists from './screens/DistLists'
 import Digest from './screens/Digest'
 import Feedback from './screens/admin/Feedback'
+import GanttScreen from './screens/Gantt'
 import { usePerms } from './lib/usePerms'
 import type { PermArea } from './lib/perms'
 import { getMode } from './defects/mode'
@@ -88,6 +89,7 @@ export default function App() {
         <Route path="alert-rules" element={<RequirePerm area="alert_rules"><AlertRules /></RequirePerm>} />
         <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
+        <Route path="gantt" element={<RequirePerm area="gantt"><GanttScreen /></RequirePerm>} />
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
         <Route path="admin/defect-items" element={<RequirePerm area="form_builder" edit><DefectFormBuilder /></RequirePerm>} />

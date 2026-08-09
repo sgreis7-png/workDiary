@@ -29,6 +29,7 @@ export const STRINGS = {
   nav_new:        { he: 'רשומה חדשה', en: 'New entry' },
   nav_search:     { he: 'חיפוש', en: 'Search' },
   nav_projects:   { he: 'פרויקטים', en: 'Projects' },
+  nav_gantt:      { he: 'לוח זמנים', en: 'Schedule' },
   nav_fields:     { he: 'בונה הטופס', en: 'Form builder' },
   nav_users:      { he: 'משתמשים והרשאות', en: 'Users & permissions' },
   nav_admin:      { he: 'ניהול', en: 'Admin' },
