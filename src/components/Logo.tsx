@@ -19,14 +19,17 @@ export function Logo({
   height?: number
   withTag?: boolean
   animated?: boolean
-  tone?: 'dark' | 'light'
+  /** 'light' = on a permanently dark panel (the login art). 'shell' = on the sidebar,
+   *  which follows the theme, so its colours come from tokens rather than being fixed. */
+  tone?: 'dark' | 'light' | 'shell'
 }) {
   const ratio = withTag ? 285 / 164 : 285 / 140
   const light = tone === 'light'
-  const word = light ? '#ffffff' : 'var(--ink)'
-  const tag = light ? 'rgba(255,255,255,.85)' : 'var(--ink-2)'
-  // brand green from the official file; the brighter theme green reads better on the dark sidebar
-  const green = light ? 'var(--green)' : '#008540'
+  const shell = tone === 'shell'
+  const word = shell ? 'var(--shell-ink)' : light ? '#ffffff' : 'var(--ink)'
+  const tag = shell ? 'var(--shell-faint)' : light ? 'rgba(255,255,255,.85)' : 'var(--ink-2)'
+  // brand green from the official file; the brighter theme green reads better on a dark ground
+  const green = shell ? 'var(--shell-logo-green)' : light ? 'var(--green)' : '#008540'
 
   const Word = animated ? motion.g : 'g'
   const Check = animated ? motion.path : 'path'

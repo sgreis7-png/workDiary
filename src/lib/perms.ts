@@ -5,7 +5,7 @@ import type { Role } from '../data'
 export type PermLevel = 'none' | 'view' | 'edit'
 export type PermArea =
   | 'dashboard' | 'logbook' | 'calendar' | 'search' | 'projects' | 'export'
-  | 'defects' | 'form_builder' | 'coops_manage' | 'alert_rules' | 'gantt'
+  | 'defects' | 'form_builder' | 'coops_manage' | 'alert_rules' | 'gantt' | 'control_center'
 
 export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = [
   { key: 'logbook', label: 'יומן עבודה', label_en: 'Work diary' },
@@ -14,6 +14,7 @@ export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = 
   { key: 'projects', label: 'פרויקטים', label_en: 'Projects' },
   { key: 'export', label: 'ייצוא דוחות', label_en: 'Report export' },
   { key: 'dashboard', label: 'סקירה / סטטיסטיקות', label_en: 'Overview / statistics' },
+  { key: 'control_center', label: 'מרכז בקרה', label_en: 'Control centre' },
   { key: 'gantt', label: 'לוח זמנים (גאנט)', label_en: 'Schedule (Gantt)' },
   { key: 'defects', label: 'ניהול ליקויים', label_en: 'Defect management' },
   { key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה', label_en: 'Coop management — edit & delete' },
@@ -29,7 +30,8 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   projects: 'view',
   export: 'view',
   dashboard: 'none', // סטטיסטיקות — לאדמין, אלא אם הוענקה גישה
-  gantt: 'none',     // לוח זמנים — לאדמין ולמנהלים, אלא אם הוענקה גישה
+  gantt: 'none',          // לוח זמנים — לאדמין ולמנהלים, אלא אם הוענקה גישה
+  control_center: 'none', // מרכז בקרה — כל הפרויקט במסך אחד; לאדמין ולמנהלים בלבד
   defects: 'edit',
   form_builder: 'none',
   coops_manage: 'none', // מחיקה/עריכת לולים — לאדמין, אלא אם הוענקה

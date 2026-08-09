@@ -67,10 +67,15 @@ select.input { cursor: pointer; }
 
 /* ============ layout shell ============ */
 .shell { display: grid; grid-template-columns: 264px 1fr; min-height: 100%; }
+/* z-index matters here: `position: sticky` makes the sidebar its own stacking context, so
+   the notifications and user-menu panels inside it cannot escape it however high their own
+   z-index is. The sidebar precedes the content in the DOM, so without this any card with a
+   background painted over those panels. Stays below modals (80), lightbox (100) and the
+   message toast (90), which sit in the root stacking context. */
 .sidebar { padding: 26px 20px; display: flex; flex-direction: column; gap: 30px;
-  position: sticky; top: 0; height: 100vh; color: var(--shell-ink);
+  position: sticky; top: 0; height: 100vh; z-index: 40; color: var(--shell-ink);
   background: linear-gradient(168deg, var(--shell-2), var(--shell) 62%);
-  border-inline-end: 1px solid rgba(11,18,16,.28);
+  border-inline-end: 1px solid var(--shell-edge);
   overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; }
 .sidebar__brand { padding-inline-start: 4px; }
 .sidebar__brand .sub { font-family: var(--font-mono); font-size: 9.5px; letter-spacing: .2em; text-transform: uppercase;
@@ -82,7 +87,7 @@ select.input { cursor: pointer; }
 .nav__item { position: relative; display: flex; align-items: center; gap: 12px; padding: 11px 12px; border-radius: var(--r);
   color: var(--shell-faint); font-weight: 600; font-size: 15px; transition: background .16s var(--ease), color .16s var(--ease); }
 .nav__item .ic { width: 18px; text-align: center; opacity: .75; font-size: 16px; }
-.nav__item:hover { background: rgba(233,242,236,.08); color: var(--shell-ink); }
+.nav__item:hover { background: var(--shell-hover); color: var(--shell-ink); }
 .nav__item.active { background: var(--green); color: #fff; box-shadow: 0 6px 18px rgba(58,170,53,.35); }
 .nav__item.active .ic { opacity: 1; }
 .nav__marker { position: absolute; inset-inline-start: -20px; top: 50%; width: 4px; height: 22px; border-radius: 99px;
@@ -90,13 +95,13 @@ select.input { cursor: pointer; }
 
 .sidebar__foot { margin-top: auto; display: flex; flex-direction: column; gap: 14px; }
 .user-chip { display: flex; align-items: center; gap: 11px; padding: 10px; border: 1px solid var(--shell-line);
-  border-radius: var(--r-lg); background: rgba(233,242,236,.06); }
+  border-radius: var(--r-lg); background: var(--shell-hover); }
 .user-chip .meta { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; }
 .user-chip .meta b { font-size: 14px; color: var(--shell-ink); }
 .user-chip .meta small { font-size: 11px; color: var(--shell-faint); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sidebar .btn--quiet { color: var(--shell-faint); }
 .sidebar .btn--quiet:hover { color: var(--shell-ink); }
-.sidebar .notif__bell { background: rgba(233,242,236,.08); border-color: var(--shell-line); color: var(--shell-ink); }
+.sidebar .notif__bell { background: var(--shell-hover); border-color: var(--shell-line); color: var(--shell-ink); }
 .sidebar .notif__bell:hover { border-color: var(--green); }
 
 .lang-toggle { display: inline-flex; border: 1px solid var(--line-strong); border-radius: 99px; padding: 3px; background: var(--panel); }
@@ -105,7 +110,7 @@ select.input { cursor: pointer; }
 /* var(--panel), not #fff: --ink inverts per theme, so a fixed white label
    vanished on the near-white pill in dark mode (role/lang toggles) */
 .lang-toggle button.on { background: var(--ink); color: var(--panel); }
-.sidebar .lang-toggle { background: rgba(233,242,236,.08); border-color: var(--shell-line); }
+.sidebar .lang-toggle { background: var(--shell-hover); border-color: var(--shell-line); }
 .sidebar .lang-toggle button { color: var(--shell-faint); }
 .sidebar .lang-toggle button.on { background: var(--shell-ink); color: var(--shell); }
 
@@ -143,6 +148,10 @@ select.input { cursor: pointer; }
 .entry-card__meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .entry-card__side { display: flex; flex-direction: column; align-items: flex-end; gap: 10px; text-align: end; }
 .entry-card__date { font-family: var(--font-mono); font-size: 14.5px; color: var(--ink-2); font-weight: 600; }
+/* Skip layout and paint for cards that are off-screen. `auto` remembers each card's last
+   measured height, so the scrollbar does not jump as they come in and out of range. */
+.entry-card { content-visibility: auto; contain-intrinsic-size: auto 168px; }
+
 .entry-card__photos { display: flex; }
 .entry-card__photos img { width: 38px; height: 38px; object-fit: cover; border-radius: 6px; border: 2px solid var(--panel);
   margin-inline-start: -10px; box-shadow: var(--shadow-1); }
@@ -544,9 +553,57 @@ select.input { cursor: pointer; }
 .mode-card__title { font-family: var(--font-display); font-size: 24px; font-weight: 800; }
 .mode-card__desc { color: var(--ink-2); font-size: 15px; line-height: 1.5; }
 
-.nav__switch { width: 100%; border: 0; background: none; cursor: pointer; font: inherit; color: var(--shell-faint);
-  border-top: 1px solid var(--shell-line); border-radius: 0; margin-top: 10px; padding-top: 14px; }
-.nav__switch:hover { background: rgba(233,242,236,.08); color: var(--shell-ink); border-radius: var(--r); }
+/* ---------- grouped, collapsible nav ---------- */
+
+/* The primary action, lifted out of the list: a filled control reads as "do this",
+   where a list row reads as "go there". */
+.nav__primary {
+  display: flex; align-items: center; justify-content: center; gap: 9px;
+  padding: 11px 14px; margin-bottom: 4px;
+  border-radius: var(--r);
+  background: linear-gradient(180deg, var(--green), var(--green-deep));
+  color: #fff; font-family: var(--font-display); font-weight: 700; font-size: 14.5px;
+  text-decoration: none;
+  box-shadow: 0 6px 18px rgba(58, 170, 53, .3);
+  transition: transform .16s var(--ease), box-shadow .16s var(--ease);
+}
+.nav__primary:hover { transform: translateY(-1px); box-shadow: var(--shadow-green); }
+.nav__primary:active { transform: translateY(0); }
+
+.nav__group { display: flex; flex-direction: column; }
+
+.nav__toggle {
+  display: flex; align-items: center; gap: 8px; width: 100%;
+  padding: 9px 12px; margin-top: 6px;
+  border: 0; background: none; cursor: pointer;
+  font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+  color: var(--shell-faint); text-align: start;
+  border-radius: var(--r-sm);
+  transition: color .14s var(--ease), background .14s var(--ease);
+}
+.nav__toggle:hover { color: var(--shell-ink); background: var(--shell-hover); }
+.nav__toggle.is-open { color: var(--shell-ink); }
+.nav__toggle-label { flex: 1; min-width: 0; }
+.nav__chev { font-size: 11px; opacity: .6; }
+.nav__toggle:hover .nav__chev { opacity: 1; }
+
+.nav__items { display: flex; flex-direction: column; gap: 3px; }
+
+/* unread count on a row, or summed onto a folded group so nothing hides */
+.nav__badge {
+  margin-inline-start: auto;
+  min-width: 19px; padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--clay); color: #fff;
+  font-family: var(--font-mono); font-size: 10.5px; font-weight: 700; text-align: center;
+  letter-spacing: 0;
+}
+
+.nav__minor { margin-top: 16px; padding-top: 8px; border-top: 1px solid var(--shell-line); }
+
+.nav__switch { width: 100%; border: 0; background: none; cursor: pointer; font: inherit;
+  color: var(--shell-faint); border-radius: var(--r); font-size: 13px; }
+.nav__switch:hover { background: var(--shell-hover); color: var(--shell-ink); }
 
 .coop-intro { color: var(--ink-2); margin: -14px 0 20px; }
 .coop-hint { color: var(--ink-3); font-size: 14px; margin-top: 8px; }
@@ -837,10 +894,10 @@ select.input { cursor: pointer; }
 /* ============ top user menu ============ */
 .user-menu { position: relative; }
 .user-menu__btn { display: flex; align-items: center; gap: 11px; width: 100%; padding: 9px 11px;
-  border: 1px solid var(--shell-line); border-radius: var(--r-lg); background: rgba(233,242,236,.06);
+  border: 1px solid var(--shell-line); border-radius: var(--r-lg); background: var(--shell-hover);
   cursor: pointer; font: inherit; color: var(--shell-ink); text-align: start;
   transition: background .16s var(--ease), border-color .16s var(--ease); }
-.user-menu__btn:hover { background: rgba(233,242,236,.12); border-color: var(--green); }
+.user-menu__btn:hover { background: var(--shell-hover); border-color: var(--green); }
 .user-menu__btn--compact { width: auto; padding: 5px 9px; border-color: var(--line-strong);
   background: var(--panel); color: var(--ink); }
 .user-menu__meta { display: flex; flex-direction: column; line-height: 1.2; min-width: 0; flex: 1; }

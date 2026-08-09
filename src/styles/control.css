@@ -1,0 +1,84 @@
+/* Control centre. Imported by src/screens/ControlCenter.tsx; every colour is a token.
+   The screen is scanned, not read, so density and state legibility beat decoration. */
+
+.cc-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding-bottom: 2px;
+}
+
+.cc-tab__n {
+  margin-inline-start: 7px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: var(--paper-2);
+  color: var(--ink-3);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+.coop-tab.on .cc-tab__n { background: rgba(255, 255, 255, .22); color: #fff; }
+
+.cc-kpi__note {
+  margin-top: 3px;
+  font-size: 10.5px;
+  color: var(--ink-faint);
+}
+
+/* Detail beside chart: the facts are narrow and fixed, the chart wants the rest. */
+.cc-split {
+  display: grid;
+  grid-template-columns: minmax(240px, 340px) minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.cc-block { padding: 16px 18px; min-width: 0; }
+
+.cc-block__title {
+  margin: 0 0 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+
+.cc-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(258px, 1fr));
+  gap: 12px;
+}
+
+.cc-card {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  padding: 14px 15px;
+  color: inherit;
+  text-decoration: none;
+  transition: border-color .16s var(--ease), transform .16s var(--ease);
+}
+a.cc-card:hover { border-color: var(--green); transform: translateY(-2px); }
+
+.cc-card__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: space-between;
+}
+.cc-card__head b { font-family: var(--font-display); font-size: 15.5px; }
+
+.cc-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  font-size: 12px;
+  color: var(--ink-faint);
+}
+
+@media (max-width: 860px) {
+  .cc-split { grid-template-columns: minmax(0, 1fr); }
+}

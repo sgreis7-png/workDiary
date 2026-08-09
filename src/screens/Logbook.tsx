@@ -82,7 +82,12 @@ export default function Logbook() {
               <div className="entry-card__side">
                 <span className="entry-card__date">{e.work_date}</span>
                 <div className="entry-card__photos">
-                  {e.photos.slice(0, 3).map((p, k) => <img key={k} src={p} alt="" />)}
+                  {/* Site photos are stored up to 1920px and shown at 38px. Without lazy
+                      loading the browser fetches and decodes three of them per card for
+                      the whole list at once, which is what made scrolling stutter. */}
+                  {e.photos.slice(0, 3).map((p, k) => (
+                    <img key={k} src={p} alt="" width={38} height={38} loading="lazy" decoding="async" />
+                  ))}
                 </div>
                 <span className="count mono">{e.photos.length} {t('photos_n')}</span>
               </div>

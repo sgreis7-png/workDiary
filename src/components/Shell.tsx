@@ -77,7 +77,7 @@ function LangToggle() {
   )
 }
 
-function NavItem({ to, icon, label, end }: { to: string; icon: string; label: string; end?: boolean }) {
+function NavItem({ to, icon, label, end, badge }: { to: string; icon: string; label: string; end?: boolean; badge?: number }) {
   return (
     <NavLink to={to} end={end} className={({ isActive }) => `nav__item ${isActive ? 'active' : ''}`} onClick={() => window.scrollTo(0, 0)}>
       {({ isActive }) => (
@@ -85,9 +85,86 @@ function NavItem({ to, icon, label, end }: { to: string; icon: string; label: st
           {isActive && <motion.span layoutId="nav-marker" className="nav__marker" transition={{ type: 'spring', stiffness: 500, damping: 36 }} />}
           <span className="ic" aria-hidden>{icon}</span>
           {label}
+          {badge ? <span className="nav__badge">{badge}</span> : null}
         </>
       )}
     </NavLink>
+  )
+}
+
+interface NavLeaf { to: string; icon: string; label: string; end?: boolean; badge?: number }
+interface NavGroup { key: string; label: string; items: NavLeaf[] }
+
+const OPEN_GROUPS_KEY = 'nav_open_groups'
+
+/** Explicit open/closed choices only; a group the user has never touched has no entry. */
+function readGroupPrefs(): Record<string, boolean> {
+  try {
+    const raw = localStorage.getItem(OPEN_GROUPS_KEY)
+    const parsed = raw ? JSON.parse(raw) : null
+    return parsed && !Array.isArray(parsed) ? (parsed as Record<string, boolean>) : {}
+  } catch {
+    return {}
+  }
+}
+
+/**
+ * Topic groups, collapsed unless you are inside them.
+ *
+ * The nav had grown to fourteen flat entries under three headings, which is more than
+ * anyone scans — so the sections fold, and the one holding the current page opens itself.
+ * That keeps five or six things on screen instead of fourteen, without hiding anything
+ * behind an extra decision.
+ */
+function NavGroups({ groups }: { groups: NavGroup[] }) {
+  const loc = useLocation()
+
+  const groupOf = (path: string) => groups.find((g) => g.items.some(
+    (i) => (i.end ? path === i.to : path === i.to || path.startsWith(`${i.to}/`)),
+  ))?.key
+
+  const activeGroup = groupOf(loc.pathname)
+  const [prefs, setPrefs] = useState<Record<string, boolean>>(readGroupPrefs)
+
+  // Derived, not stored: the group holding the current page is open unless the user has
+  // said otherwise. Nothing to synchronise on navigation, and a deliberate collapse
+  // still sticks.
+  const isOpen = (key: string) => prefs[key] ?? key === activeGroup
+
+  const toggle = (key: string) => {
+    setPrefs((prev) => {
+      const next = { ...prev, [key]: !isOpen(key) }
+      try { localStorage.setItem(OPEN_GROUPS_KEY, JSON.stringify(next)) } catch { /* private browsing */ }
+      return next
+    })
+  }
+
+  return (
+    <>
+      {groups.filter((g) => g.items.length > 0).map((group) => {
+        const expanded = isOpen(group.key)
+        const hidden = group.items.reduce((n, i) => n + (i.badge ?? 0), 0)
+        return (
+          <div className="nav__group" key={group.key}>
+            <button
+              type="button"
+              className={`nav__toggle ${expanded ? 'is-open' : ''}`}
+              aria-expanded={expanded}
+              onClick={(e) => { e.stopPropagation(); toggle(group.key) }}
+            >
+              <span className="nav__toggle-label">{group.label}</span>
+              {!expanded && hidden > 0 && <span className="nav__badge">{hidden}</span>}
+              <span className="nav__chev" aria-hidden>{expanded ? '▾' : '‹'}</span>
+            </button>
+            {expanded && (
+              <div className="nav__items">
+                {group.items.map((item) => <NavItem key={item.to} {...item} />)}
+              </div>
+            )}
+          </div>
+        )
+      })}
+    </>
   )
 }
 
@@ -143,7 +220,7 @@ export function Shell() {
   const sidebar = (
     <aside className={`sidebar ${open ? 'open' : ''}`}>
       <div className="sidebar__brand">
-        <Logo height={52} tone="light" />
+        <Logo height={52} tone="shell" />
         <div className="sub">{t('app_title')} · {t('app_sub')}</div>
       </div>
 
@@ -153,59 +230,85 @@ export function Shell() {
       </div>
 
       <nav className="nav" onClick={() => setOpen(false)}>
-        {/* ---- עבודה: כל מה ששייך למצב הנוכחי ---- */}
-        <div className="nav__heading">{defectsMode ? t('nav_section_defects') : t('nav_section_work')}</div>
-        {defectsMode ? (
-          <>
-            {can('defects') && <NavItem to="/defects" end icon="🛡" label={dt('nav_coops')} />}
-            {can('defects') && <NavItem to="/defects/search" icon="⌕" label={dt('nav_defect_search')} />}
-            {can('dashboard') && <NavItem to="/defects/dashboard" icon="◷" label={t('nav_dashboard')} />}
-          </>
-        ) : (
-          <>
-            {can('logbook') && <NavItem to="/" end icon="▤" label={t('nav_log')} />}
-            {canEdit('logbook') && <NavItem to="/new" icon="✛" label={t('nav_new')} />}
-            {can('calendar') && <NavItem to="/calendar" icon="▦" label={t('nav_calendar')} />}
-            {can('search') && <NavItem to="/search" icon="⌕" label={t('nav_search')} />}
-            {can('projects') && <NavItem to="/projects" icon="◆" label={t('nav_projects')} />}
-            {can('gantt') && <NavItem to="/gantt" icon="▬" label={t('nav_gantt')} />}
-            {can('export') && <NavItem to="/export" icon="⭳" label={t('nav_export')} />}
-            <NavItem to="/tasks" icon="☑" label={dt('nav_tasks')} />
-            {can('dashboard') && <NavItem to="/dashboard" icon="◷" label={t('nav_dashboard')} />}
-            {can('dashboard') && <NavItem to="/digest" icon="📊" label={t('nav_digest')} />}
-          </>
+        {/* The one thing people come here to do, out of the list and above it. */}
+        {canEdit('logbook') && !defectsMode && (
+          <NavLink to="/new" className="nav__primary" onClick={() => window.scrollTo(0, 0)}>
+            <span aria-hidden>✛</span>
+            {t('nav_new')}
+          </NavLink>
         )}
 
-        {/* ---- כללי: תקשורת והתראות ---- */}
-        <div className="nav__heading">{t('nav_section_general')}</div>
-        <NavLink to="/messages" className={({ isActive }) => `nav__item ${isActive ? 'active' : ''}`} onClick={() => window.scrollTo(0, 0)}>
-          <span className="ic" aria-hidden>✉</span>
-          {dt('nav_messages')}
-          {unacked > 0 && <span className="coop-tab__badge" style={{ marginInlineStart: 'auto' }}>{unacked}</span>}
-        </NavLink>
-        {can('alert_rules') && <NavItem to="/alert-rules" icon="⚑" label={t('nav_alert_rules')} />}
-        <NavItem to="/lists" icon="✉" label={t('nav_lists')} />
-        <button className="nav__item" onClick={() => setFeedbackOpen(true)}>
-          <span className="ic" aria-hidden>🛈</span>
-          {t('nav_feedback')}
-        </button>
+        <NavGroups
+          groups={[
+            {
+              key: 'projects',
+              label: t('nav_section_projects'),
+              items: [
+                ...(can('control_center') ? [{ to: '/control', icon: '◈', label: t('nav_control_center') }] : []),
+                ...(can('projects') ? [{ to: '/projects', icon: '◆', label: t('nav_projects') }] : []),
+                ...(can('gantt') ? [{ to: '/gantt', icon: '▬', label: t('nav_gantt') }] : []),
+              ],
+            },
+            {
+              key: 'diary',
+              label: t('nav_section_work'),
+              items: [
+                ...(can('logbook') ? [{ to: '/', icon: '▤', label: t('nav_log'), end: true }] : []),
+                ...(can('calendar') ? [{ to: '/calendar', icon: '▦', label: t('nav_calendar') }] : []),
+                ...(can('search') ? [{ to: '/search', icon: '⌕', label: t('nav_search') }] : []),
+              ],
+            },
+            {
+              key: 'quality',
+              label: t('nav_section_defects'),
+              items: [
+                ...(can('defects') ? [{ to: '/defects', icon: '🛡', label: dt('nav_coops'), end: true }] : []),
+                ...(can('defects') ? [{ to: '/defects/search', icon: '⌕', label: dt('nav_defect_search') }] : []),
+                ...(can('dashboard') ? [{ to: '/defects/dashboard', icon: '◷', label: t('nav_qc_dashboard') }] : []),
+              ],
+            },
+            {
+              key: 'tracking',
+              label: t('nav_section_tracking'),
+              items: [
+                { to: '/tasks', icon: '☑', label: dt('nav_tasks') },
+                ...(can('dashboard') ? [{ to: '/dashboard', icon: '◷', label: t('nav_stats') }] : []),
+                ...(can('dashboard') ? [{ to: '/digest', icon: '📊', label: t('nav_digest') }] : []),
+                ...(can('export') ? [{ to: '/export', icon: '⭳', label: t('nav_export') }] : []),
+              ],
+            },
+            {
+              key: 'comms',
+              label: t('nav_section_general'),
+              items: [
+                { to: '/messages', icon: '✉', label: dt('nav_messages'), badge: unacked },
+                { to: '/lists', icon: '⛁', label: t('nav_lists') },
+                ...(can('alert_rules') ? [{ to: '/alert-rules', icon: '⚑', label: t('nav_alert_rules') }] : []),
+              ],
+            },
+            {
+              key: 'admin',
+              label: t('nav_admin'),
+              items: [
+                ...(canEdit('form_builder') ? [{ to: '/admin/fields', icon: '⚙', label: t('nav_fields') }] : []),
+                ...(canEdit('form_builder') ? [{ to: '/admin/defect-items', icon: '⚙', label: dt('nav_form_builder') }] : []),
+                ...(isAdmin ? [{ to: '/admin/users', icon: '◎', label: t('nav_users') }] : []),
+                ...(isAdmin ? [{ to: '/admin/feedback', icon: '📢', label: t('nav_feedback_admin') }] : []),
+              ],
+            },
+          ]}
+        />
 
-        {/* ---- ניהול: כלים לאדמין ולמי שהוענקה הרשאה ---- */}
-        {(isAdmin || canEdit('form_builder')) && (
-          <>
-            <div className="nav__heading">{t('nav_admin')}</div>
-            {defectsMode
-              ? canEdit('form_builder') && <NavItem to="/admin/defect-items" icon="⚙" label={dt('nav_form_builder')} />
-              : canEdit('form_builder') && <NavItem to="/admin/fields" icon="⚙" label={t('nav_fields')} />}
-            {isAdmin && <NavItem to="/admin/users" icon="◎" label={t('nav_users')} />}
-            {isAdmin && <NavItem to="/admin/feedback" icon="📢" label={t('nav_feedback_admin')} />}
-          </>
-        )}
-
-        <button className="nav__item nav__switch" onClick={() => nav('/mode')}>
-          <span className="ic" aria-hidden>⇄</span>
-          {defectsMode ? dt('switch_to_work') : dt('switch_to_defects')}
-        </button>
+        <div className="nav__minor">
+          <button className="nav__item nav__switch" onClick={() => setFeedbackOpen(true)}>
+            <span className="ic" aria-hidden>🛈</span>
+            {t('nav_feedback')}
+          </button>
+          <button className="nav__item nav__switch" onClick={() => nav('/mode')}>
+            <span className="ic" aria-hidden>⇄</span>
+            {defectsMode ? dt('switch_to_work') : dt('switch_to_defects')}
+          </button>
+        </div>
       </nav>
 
       <div className="sidebar__foot">
