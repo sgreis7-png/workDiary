@@ -1,0 +1,37 @@
+# Render blueprint for the Microsoft Project converter.
+#
+# The app itself stays on Vercel and the database on Supabase; only this one container
+# lives here, because reading .mpp needs MPXJ and MPXJ needs a JVM — which neither
+# Vercel nor Supabase Edge Functions provide.
+#
+# To create it: Render dashboard -> New -> Blueprint -> pick this repo. Render reads
+# this file, and prompts for the two values marked `sync: false` (they are secrets, so
+# they are deliberately not in the repo).
+#
+# Afterwards, set VITE_MPP_CONVERTER_URL in the Vercel project to
+# https://<the service's host>/convert and redeploy the app.
+
+services:
+  - type: web
+    name: mpp-converter
+    runtime: docker
+    plan: free
+    # closest region to Israel; the Supabase project is in ap-northeast-2, but the
+    # round trip that matters is browser -> converter, not converter -> Supabase
+    region: frankfurt
+    rootDir: services/mpp-converter
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # the app's own Supabase project — used only to verify the caller's token
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_ANON_KEY
+        sync: false
+      - key: MPP_ALLOWED_ORIGINS
+        value: https://work-diary-phi.vercel.app
+      # the free plan gives 512MB; leave headroom for Python and gunicorn
+      - key: MPP_JVM_XMX
+        value: 256m

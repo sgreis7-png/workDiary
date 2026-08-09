@@ -168,12 +168,16 @@ src/
   screens/            Logbook, EntryForm, EntryDetail, ReportView, ExportView,
                       Calendar, Dashboard, Search, Lists, Account, Login, SetPassword
   screens/admin/      Projects, Users, FormBuilder
+  gantt/              Schedule module: model (dates, dependencies, roll-up), api, i18n
   lib/                supabase client, offline queue, useOfflineSync, geo
   styles/             tokens.css, global.css, components.css
 
 supabase/
   migrations/         Ordered SQL (schema, RLS, features). 0001 = schema/RLS.
   functions/          Edge functions: register, invite, send-entry, delete-user
+
+services/
+  mpp-converter/      Microsoft Project (.mpp) -> JSON, MPXJ on a JVM. See its README.
 ```
 
 ### Local development
@@ -186,6 +190,8 @@ npm test           # vitest
 ```
 
 Required client env (`.env`): `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+Importing `.mpp` schedules also needs `VITE_MPP_CONVERTER_URL`, pointing at the
+`/convert` endpoint of `services/mpp-converter`.
 
 ### Database migrations
 

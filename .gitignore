@@ -10,3 +10,10 @@ dist/
 
 # incremental typecheck artifact
 tsconfig.tsbuildinfo
+
+# python bytecode from services/
+__pycache__/
+*.pyc
+
+# screenshot / dev scratch output
+.shots-tmp/
