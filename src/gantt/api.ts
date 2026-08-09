@@ -56,7 +56,19 @@ export async function archiveChart(chartId: string): Promise<void> {
 
 // ---------- import ----------
 
-const converterEndpoint = () => import.meta.env.VITE_MPP_CONVERTER_URL as string | undefined
+/**
+ * The deployed converter (services/mpp-converter on Render).
+ *
+ * Committed rather than configured because it is not a secret: the endpoint verifies the
+ * caller's own Supabase token before doing any work, holds no service-role key, and its
+ * CORS allowlist only admits this app's origin. Baking it in means a fresh deploy works
+ * with no dashboard step. `VITE_MPP_CONVERTER_URL` still overrides it — set it to a
+ * localhost address to develop against a converter running on your own machine.
+ */
+const DEFAULT_CONVERTER_URL = 'https://mpp-converter-dhm3.onrender.com/convert'
+
+const converterEndpoint = (): string =>
+  (import.meta.env.VITE_MPP_CONVERTER_URL as string | undefined)?.trim() || DEFAULT_CONVERTER_URL
 
 /**
  * Nudge the converter awake, and report whether it answered.
@@ -67,7 +79,6 @@ const converterEndpoint = () => import.meta.env.VITE_MPP_CONVERTER_URL as string
  */
 export async function pingConverter(): Promise<boolean> {
   const endpoint = converterEndpoint()
-  if (!endpoint) return false
   try {
     const res = await fetch(endpoint.replace(/\/convert\/?$/, '/health'), { method: 'GET' })
     return res.ok
@@ -85,7 +96,6 @@ export async function pingConverter(): Promise<boolean> {
  */
 export async function convertFile(file: File): Promise<ConvertedProject> {
   const endpoint = converterEndpoint()
-  if (!endpoint) throw new GanttError('err_converter_missing')
   if (file.size > MAX_IMPORT_BYTES) throw new GanttError('err_file_too_big')
 
   const { data: sessionData } = await supabase.auth.getSession()

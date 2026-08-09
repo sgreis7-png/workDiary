@@ -76,7 +76,6 @@ export const G = {
   g_resources:      { he: 'באחריות',                        en: 'Owner' },
 
   // failures
-  err_converter_missing:    { he: 'שירות ההמרה לא מוגדר. חסר VITE_MPP_CONVERTER_URL.', en: 'The conversion service is not configured — VITE_MPP_CONVERTER_URL is missing.' },
   err_converter_unreachable:{ he: 'לא הצלחנו להגיע לשירות ההמרה.',       en: 'Could not reach the conversion service.' },
   err_converter_config:     { he: 'שירות ההמרה מוגדר חלקית.',            en: 'The conversion service is misconfigured.' },
   err_convert_failed:       { he: 'ההמרה נכשלה. ייתכן שהקובץ פגום.',      en: 'Conversion failed — the file may be damaged.' },
