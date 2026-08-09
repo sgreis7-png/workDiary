@@ -15,6 +15,13 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
+
+  /* A flex or grid item defaults to min-width:auto, so it refuses to shrink below its
+     contents. Without this the 1500px-wide timeline pushes the whole page wider than the
+     window instead of scrolling inside the board — and in an RTL layout the overflow
+     hangs off the left edge, carrying the task column out of view. */
+  min-width: 0;
+  max-width: 100%;
 }
 
 html[data-theme='dark'] .gantt {
@@ -24,7 +31,7 @@ html[data-theme='dark'] .gantt {
 }
 
 /* Six tiles of dates and counts, so smaller than the dashboard's single big numbers. */
-.gantt__stats { grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 10px; }
+.gantt__stats { grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 10px; min-width: 0; }
 .gantt__stats .stat { padding: 13px 10px; }
 .gantt__stats .stat__value { font-size: 23px; letter-spacing: -0.02em; }
 .gantt__stats .stat__label { font-size: 10.5px; letter-spacing: 0.06em; margin-top: 5px; }
@@ -111,6 +118,9 @@ html[data-theme='dark'] .gantt {
 .gantt__board {
   direction: ltr;
   overflow: auto;
+  /* the board is the thing that scrolls; it must never widen its parent to fit the grid */
+  min-width: 0;
+  max-width: 100%;
   max-height: 68vh;
   background: var(--panel);
   border: 1px solid var(--panel-edge);

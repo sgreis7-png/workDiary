@@ -65,7 +65,15 @@ function Preview() {
           </div>
           {failure && <div className="tag tag--clay">{failure}</div>}
           {!tasks && !failure && <div className="empty">pick a converted schedule (.json)</div>}
-          {tasks && <GanttChart tasks={tasks} links={links} canEdit onEdit={onEdit} today="2026-08-09" />}
+          {/* Deliberately narrower than the window, standing in for the real shell's
+              sidebar. An unconstrained harness let the board widen the page instead of
+              scrolling inside itself, and the bug stayed invisible here while breaking
+              the actual screen. */}
+          {tasks && (
+            <div style={{ maxWidth: 1050, minWidth: 0, border: '1px dashed var(--panel-edge)', padding: 8 }}>
+              <GanttChart tasks={tasks} links={links} canEdit onEdit={onEdit} today="2026-08-09" />
+            </div>
+          )}
           {log.length > 0 && (
             <div className="panel" style={{ marginTop: 14, padding: 12, fontFamily: 'var(--font-mono)', fontSize: 11.5 }}>
               <b>would persist</b>

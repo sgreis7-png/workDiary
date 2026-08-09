@@ -163,7 +163,9 @@ export default function GanttScreen() {
         </div>
       </div>
 
-      <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 14 }}>
+      {/* minWidth 0 all the way down: grid and flex items otherwise refuse to shrink
+          below the width of the schedule board, which then overflows the page */}
+      <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 14, minWidth: 0 }}>
         <motion.div variants={riseIn} className="panel" style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', gap: '10px 14px', alignItems: 'flex-end' }}>
           <label style={{ display: 'grid', gap: 4 }}>
             <span className="gantt__label">{g('g_pick_project')}</span>
@@ -228,7 +230,7 @@ export default function GanttScreen() {
         {!busy && chartId && !bundle && <Loader label={g('g_nav')} />}
 
         {bundle && chart && (
-          <motion.div variants={riseIn} style={{ display: 'grid', gap: 10 }}>
+          <motion.div variants={riseIn} style={{ display: 'grid', gap: 10, minWidth: 0 }}>
             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '2px 14px', fontSize: 12, color: 'var(--ink-faint)' }}>
               {chart.source_file && <span>{g('g_source')}: <code className="mono">{chart.source_file}</code></span>}
               <span>{g('g_imported_on')}: {new Date(chart.imported_at).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB')}</span>
