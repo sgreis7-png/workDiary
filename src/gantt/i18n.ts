@@ -85,6 +85,11 @@ export const G = {
   o_pick:           { he: 'בחר פרויקט כדי לראות את כל הפרטים.', en: 'Choose a project to see everything about it.' },
   o_admin_only:     { he: 'מרכז הבקרה פתוח לאדמין ולמנהלים בלבד.', en: 'The control centre is for admins and managers only.' },
 
+  o_view:           { he: 'תצוגה',                          en: 'View' },
+  o_view_tabs:      { he: 'לפי טאבים',                      en: 'Tabs' },
+  o_view_all:       { he: 'הכל בעמוד אחד',                  en: 'One page' },
+  o_jump:           { he: 'קפיצה לנושא',                    en: 'Jump to' },
+
   o_tab_summary:    { he: 'סקירה',                          en: 'Summary' },
   o_tab_schedule:   { he: 'לוח זמנים',                      en: 'Schedule' },
   o_tab_coops:      { he: 'לולים',                          en: 'Houses' },

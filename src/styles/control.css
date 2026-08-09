@@ -1,12 +1,47 @@
 /* Control centre. Imported by src/screens/ControlCenter.tsx; every colour is a token.
    The screen is scanned, not read, so density and state legibility beat decoration. */
 
+.cc-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px 18px;
+}
+
 .cc-tabs {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
   padding-bottom: 2px;
 }
+
+.cc-view { display: flex; align-items: center; gap: 8px; }
+
+/* One-page mode: each topic gets a heading, and enough room above it that a jump lands
+   with the heading visible rather than flush against the viewport edge. */
+.cc-section {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+  scroll-margin-top: 18px;
+}
+
+.cc-section__title {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin: 8px 0 0;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--line);
+  font-family: var(--font-display);
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -.01em;
+}
+.cc-section__title .cc-tab__n { font-size: 12px; }
+
+.cc-row__text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .cc-tab__n {
   margin-inline-start: 7px;
