@@ -40,7 +40,7 @@ export default function MalfunctionsSection() {
         { projectId: unfiltered ? undefined : projectId, from: from || undefined, to: to || undefined, malfunction: 'any' },
         { photos: false }, // this list shows the fault text, not the photos
       )
-        .then((r) => {
+        .then(({ rows: r }) => {
           if (!alive) return
           setResult({ key: filterKey, rows: r })
           // the callback knows whether a filter was applied, so the sticky set can be

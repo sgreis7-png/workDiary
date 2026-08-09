@@ -224,7 +224,14 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
  *  whole diary — not the page size of a browsable list. */
 const SEARCH_LIMIT = 400
 
-export async function searchEntries(f: SearchFilters, opts?: { photos?: boolean }): Promise<Entry[]> {
+export interface SearchResult {
+  rows: Entry[]
+  /** The cap was reached, so older matches beyond it were not considered. Worth saying out
+   *  loud: the rows that come back look like a complete answer and are not one. */
+  truncated: boolean
+}
+
+export async function searchEntries(f: SearchFilters, opts?: { photos?: boolean }): Promise<SearchResult> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (f.projectId) q = q.eq('project_id', f.projectId)
   if (f.userId) q = q.eq('created_by', f.userId)
@@ -241,18 +248,21 @@ export async function searchEntries(f: SearchFilters, opts?: { photos?: boolean 
   for (const token of (f.text ?? '').trim().split(/\s+/).filter(Boolean)) {
     q = q.ilike('values_text', `%${token}%`)
   }
-  q = q.limit(SEARCH_LIMIT)
+  // one more than the cap, purely to find out whether there would have been more
+  q = q.limit(SEARCH_LIMIT + 1)
 
   const { data, error } = await q
   if (error) throw error
-  let entries = await hydrate((data ?? []) as unknown as EntryRow[], opts?.photos !== false)
+  const raw = (data ?? []) as unknown as EntryRow[]
+  const truncated = raw.length > SEARCH_LIMIT
+  let entries = await hydrate(raw.slice(0, SEARCH_LIMIT), opts?.photos !== false)
   if (f.text) entries = entries.filter((e) => entryMatchesText(e.values, f.text!))
   if (f.malfunction) {
     if (f.malfunction === 'any') entries = entries.filter((e) => hasMalfunction(e.values))
     else if (f.malfunction === 'none') entries = entries.filter((e) => !hasMalfunction(e.values))
     else entries = entries.filter((e) => deptIdOf(e.values[MALFUNCTION_DEPT_KEY]) === f.malfunction)
   }
-  return entries
+  return { rows: entries, truncated }
 }
 
 // ---------- admin: projects ----------

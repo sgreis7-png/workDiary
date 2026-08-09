@@ -19,6 +19,7 @@ export default function ExportView() {
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
   const [entries, setEntries] = useState<Entry[] | null>(null)
+  const [truncated, setTruncated] = useState(false)
   const [busy, setBusy] = useState(false)
 
   const defs = fieldDefs.filter((f) => f.active)
@@ -31,7 +32,8 @@ export default function ExportView() {
         { projectId: projectId || undefined, userId: userId || undefined, from: from || undefined, to: to || undefined },
         { photos: false }, // the CSV carries a count, not the images
       )
-      setEntries(r)
+      setEntries(r.rows)
+      setTruncated(r.truncated)
     } finally { setBusy(false) }
   }
 
@@ -84,6 +86,8 @@ export default function ExportView() {
       {entries && (
         <div className="report-paper">
           <div className="no-print" style={{ marginBottom: 16 }}><span className="count mono">{entries.length} {t('results_n')}</span></div>
+          {/* an export that silently stopped at the cap would look like a complete record */}
+          {truncated && <div className="alert no-print">{t('search_truncated')}</div>}
           {entries.length === 0 && <div className="empty no-print"><div className="big">{t('no_entries')}</div></div>}
           {entries.map((e) => (
             <div key={e.id} className="export-entry"

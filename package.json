@@ -17,7 +17,7 @@
     "idb-keyval": "^6.2.6",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
-    "react-router-dom": "^6.30.4"
+    "react-router-dom": "^7.18.2"
   },
   "devDependencies": {
     "@bubblewrap/cli": "^1.24.1",

@@ -96,6 +96,8 @@ export const STRINGS = {
   to_date:        { he: 'עד תאריך', en: 'To' },
   free_text:      { he: 'טקסט חופשי', en: 'Free text' },
   results_n:      { he: 'תוצאות', en: 'results' },
+  search_truncated: { he: 'החיפוש רחב מדי — מוצגות רק התוצאות האחרונות. צמצמו את הטווח או הוסיפו מילה.',
+                      en: 'This search is too broad — only the most recent matches are shown. Narrow the dates or add a word.' },
   malf_filter:    { he: 'בלת"מ', en: 'Malfunction' },
   malf_all:       { he: 'הכל', en: 'All' },
   malf_any:       { he: 'עם בלת"מ בלבד', en: 'Only malfunctions' },

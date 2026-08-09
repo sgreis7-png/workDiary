@@ -18,6 +18,7 @@ export default function Search() {
   const [text, setText] = useState('')
   const [malfunction, setMalfunction] = useState('')
   const [results, setResults] = useState<Entry[] | null>(null)
+  const [truncated, setTruncated] = useState(false)
   const [busy, setBusy] = useState(false)
 
   // Live search: runs as criteria change; clears the moment all criteria are empty.
@@ -31,8 +32,8 @@ export default function Search() {
         { projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined, malfunction: malfunction || undefined },
         { photos: false }, // results are text rows; opening one signs its own photos
       )
-        .then((r) => { if (alive) setResults(r) })
-        .catch(() => { if (alive) setResults([]) })
+        .then((r) => { if (alive) { setResults(r.rows); setTruncated(r.truncated) } })
+        .catch(() => { if (alive) { setResults([]); setTruncated(false) } })
         .finally(() => { if (alive) setBusy(false) })
     }, 300)
     return () => { alive = false; clearTimeout(handle) }
@@ -72,6 +73,8 @@ export default function Search() {
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
         <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
       </div>
+
+      {truncated && <div className="alert">{t('search_truncated')}</div>}
 
       {results && (
         <motion.div className="panel" variants={stagger} initial="hidden" animate="show">
