@@ -66,6 +66,16 @@ describe('createEntry', () => {
     // and the draft in IndexedDB still holds the user's work
     expect(state.calls.filter((c) => c.table === 'entry_photos')).toHaveLength(1)
   })
+
+  it('lets the photos that did upload finish even when one of them fails', async () => {
+    // Uploads run concurrently now. The failure still has to surface, but abandoning the
+    // photos already in flight would leave storage objects with no row pointing at them.
+    state.failUploadAt = 1
+    await expect(createEntry('proj-1', {}, [file('a.jpg'), file('b.jpg'), file('c.jpg')]))
+      .rejects.toBeTruthy()
+    expect(state.uploads).toHaveLength(3)
+    expect(state.calls.filter((c) => c.table === 'entry_photos' && c.op === 'insert')).toHaveLength(2)
+  })
 })
 
 describe('updateEntry', () => {
@@ -85,5 +95,13 @@ describe('updateEntry', () => {
   it('adds new photos under the edited entry id', async () => {
     await updateEntry('entry-1', 'proj-1', {}, [file('new.jpg')], [])
     expect(state.uploads[0]).toMatch(/^entry-1\//)
+  })
+
+  it('clears several removed photos in one round trip each', async () => {
+    const gone = ['entry-1/a.jpg', 'entry-1/b.jpg', 'entry-1/c.jpg']
+    await updateEntry('entry-1', 'proj-1', {}, [], gone)
+    expect(state.removed).toEqual(gone)
+    // one row delete for the whole list, not one per photo
+    expect(state.calls.filter((c) => c.table === 'entry_photos' && c.op === 'delete')).toHaveLength(1)
   })
 })

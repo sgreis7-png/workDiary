@@ -35,7 +35,7 @@ export default function Calendar() {
     setEntries(null)
     const from = ymd(y, m, 1)
     const to = ymd(y, m, new Date(y, m + 1, 0).getDate())
-    listEntries(undefined, { from, to, limit: 1000 })
+    listEntries(undefined, { from, to, limit: 1000, photos: false })
       .then((e) => { if (alive) setEntries(e) })
       .catch(() => { if (alive) setEntries([]) })
     return () => { alive = false }

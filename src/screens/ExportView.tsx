@@ -27,7 +27,10 @@ export default function ExportView() {
   const generate = async () => {
     setBusy(true)
     try {
-      const r = await searchEntries({ projectId: projectId || undefined, userId: userId || undefined, from: from || undefined, to: to || undefined })
+      const r = await searchEntries(
+        { projectId: projectId || undefined, userId: userId || undefined, from: from || undefined, to: to || undefined },
+        { photos: false }, // the CSV carries a count, not the images
+      )
       setEntries(r)
     } finally { setBusy(false) }
   }
@@ -48,7 +51,7 @@ export default function ExportView() {
       return [
         e.work_date, projectName(e.project_id), userName(e.created_by),
         ...defs.filter((f) => f.type !== 'photo').map((f) => e.values[f.key] ?? ''),
-        pct, e.values[SAFETY_TRAINING_KEY] ?? '', e.values[SAFETY_INCIDENT_KEY] ?? '', e.photos.length,
+        pct, e.values[SAFETY_TRAINING_KEY] ?? '', e.values[SAFETY_INCIDENT_KEY] ?? '', e.photo_count,
       ]
     })
     downloadCsv(`work-diary-${from || 'all'}-${to || 'all'}`, headers, data)

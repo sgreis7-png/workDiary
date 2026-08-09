@@ -36,7 +36,10 @@ export default function MalfunctionsSection() {
     let alive = true
     const unfiltered = !projectId || projectId === 'all'
     const h = setTimeout(() => {
-      searchEntries({ projectId: unfiltered ? undefined : projectId, from: from || undefined, to: to || undefined, malfunction: 'any' })
+      searchEntries(
+        { projectId: unfiltered ? undefined : projectId, from: from || undefined, to: to || undefined, malfunction: 'any' },
+        { photos: false }, // this list shows the fault text, not the photos
+      )
         .then((r) => {
           if (!alive) return
           setResult({ key: filterKey, rows: r })

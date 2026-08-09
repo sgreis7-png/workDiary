@@ -34,7 +34,7 @@ export default function Dashboard() {
   useEffect(() => {
     if (!chartProject) return
     let alive = true
-    listEntries(chartProject).then((entries) => {
+    listEntries(chartProject, { photos: false }).then((entries) => {
       if (!alive) return
       // per coop: the pct recorded on each work date (last entry of a day wins,
       // list arrives newest-first so the first value seen per date is kept)

@@ -27,7 +27,10 @@ export default function Search() {
     setBusy(true)
     let alive = true
     const handle = setTimeout(() => {
-      searchEntries({ projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined, malfunction: malfunction || undefined })
+      searchEntries(
+        { projectId: projectId || undefined, from: from || undefined, to: to || undefined, text: text || undefined, malfunction: malfunction || undefined },
+        { photos: false }, // results are text rows; opening one signs its own photos
+      )
         .then((r) => { if (alive) setResults(r) })
         .catch(() => { if (alive) setResults([]) })
         .finally(() => { if (alive) setBusy(false) })

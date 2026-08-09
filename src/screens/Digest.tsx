@@ -68,7 +68,7 @@ export default function Digest() {
     const twoWeeksAgo = dayKey(new Date(now - 2 * WEEK_MS))
     const today = dayKey(new Date())
     Promise.all([
-      listEntries(undefined, { from: twoWeeksAgo }),
+      listEntries(undefined, { from: twoWeeksAgo, photos: false }),
       fetchDefectsForSearch().catch(() => [] as DefectSearchRow[]),
       fetchTasks().catch(() => [] as WorkTask[]),
     ]).then(([entries, defects, tasks]) => {
@@ -119,7 +119,7 @@ export default function Digest() {
           projectId: p.id,
           entries: thisWeek,
           authors,
-          photos: thisWeek.reduce((n, e) => n + e.photos.length, 0),
+          photos: thisWeek.reduce((n, e) => n + e.photo_count, 0),
           malfThisWeek: thisWeek.filter((e) => hasMalfunction(e.values)).length,
           progress, incidents, trainingNo,
           openDefects: pd.filter((d) => d.status === 'open').length,

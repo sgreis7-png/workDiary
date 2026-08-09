@@ -52,6 +52,9 @@ export function makeFakeSupabase(s: FakeState) {
       eq: () => thenable(table),
       in: () => thenable(table),
       ilike: () => thenable(table),
+      gte: () => thenable(table),
+      lte: () => thenable(table),
+      range: () => thenable(table),
       order: () => thenable(table),
       limit: () => thenable(table),
       single: () => Promise.resolve({
@@ -84,7 +87,8 @@ export function makeFakeSupabase(s: FakeState) {
     },
     delete() {
       s.calls.push({ table, op: 'delete' })
-      return { eq: () => Promise.resolve({ error: s.fail[table] ?? null }) }
+      const done = () => Promise.resolve({ error: s.fail[table] ?? null })
+      return { eq: done, in: done }
     },
   })
 

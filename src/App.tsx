@@ -1,38 +1,45 @@
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
-import { ReactElement } from 'react'
+import { ReactElement, Suspense, lazy } from 'react'
 import { Shell } from './components/Shell'
 import { Loader } from './components/Loader'
 import { useAuth } from './auth'
+import { usePerms } from './lib/usePerms'
+import type { PermArea } from './lib/perms'
+
+// Eager: the two screens a signed-out visitor sees first, and the diary, which the index
+// renders directly — putting a spinner in front of any of those would be a step backwards.
 import Login from './screens/Login'
 import SetPassword from './screens/SetPassword'
 import Logbook from './screens/Logbook'
-import Calendar from './screens/Calendar'
-import EntryForm from './screens/EntryForm'
-import EntryDetail from './screens/EntryDetail'
-import Search from './screens/Search'
-import Account from './screens/Account'
-import ReportView from './screens/ReportView'
-import Dashboard from './screens/Dashboard'
-import ExportView from './screens/ExportView'
-import Projects from './screens/admin/Projects'
-import FormBuilder from './screens/admin/FormBuilder'
-import Users from './screens/admin/Users'
-import Coops from './screens/defects/Coops'
-import CoopView from './screens/defects/CoopView'
-import CoopReport from './screens/defects/CoopReport'
-import DefectFormBuilder from './screens/admin/DefectFormBuilder'
-import DefectSearch from './screens/defects/DefectSearch'
-import QCDashboard from './screens/defects/QCDashboard'
-import Tasks from './screens/Tasks'
-import Messages from './screens/Messages'
-import AlertRules from './screens/AlertRules'
-import DistLists from './screens/DistLists'
-import Digest from './screens/Digest'
-import Feedback from './screens/admin/Feedback'
-import GanttScreen from './screens/Gantt'
-import ControlCenter from './screens/ControlCenter'
-import { usePerms } from './lib/usePerms'
-import type { PermArea } from './lib/perms'
+
+// Everything else loads when it is first visited. A foreman opening the diary on a phone was
+// downloading the admin form builder, the Gantt chart and the CSV export before he could read
+// an entry.
+const Calendar = lazy(() => import('./screens/Calendar'))
+const EntryForm = lazy(() => import('./screens/EntryForm'))
+const EntryDetail = lazy(() => import('./screens/EntryDetail'))
+const Search = lazy(() => import('./screens/Search'))
+const Account = lazy(() => import('./screens/Account'))
+const ReportView = lazy(() => import('./screens/ReportView'))
+const Dashboard = lazy(() => import('./screens/Dashboard'))
+const ExportView = lazy(() => import('./screens/ExportView'))
+const Projects = lazy(() => import('./screens/admin/Projects'))
+const FormBuilder = lazy(() => import('./screens/admin/FormBuilder'))
+const Users = lazy(() => import('./screens/admin/Users'))
+const Coops = lazy(() => import('./screens/defects/Coops'))
+const CoopView = lazy(() => import('./screens/defects/CoopView'))
+const CoopReport = lazy(() => import('./screens/defects/CoopReport'))
+const DefectFormBuilder = lazy(() => import('./screens/admin/DefectFormBuilder'))
+const DefectSearch = lazy(() => import('./screens/defects/DefectSearch'))
+const QCDashboard = lazy(() => import('./screens/defects/QCDashboard'))
+const Tasks = lazy(() => import('./screens/Tasks'))
+const Messages = lazy(() => import('./screens/Messages'))
+const AlertRules = lazy(() => import('./screens/AlertRules'))
+const DistLists = lazy(() => import('./screens/DistLists'))
+const Digest = lazy(() => import('./screens/Digest'))
+const Feedback = lazy(() => import('./screens/admin/Feedback'))
+const GanttScreen = lazy(() => import('./screens/Gantt'))
+const ControlCenter = lazy(() => import('./screens/ControlCenter'))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -74,6 +81,9 @@ function Home() {
 
 export default function App() {
   return (
+    // One boundary around the whole table: a route change swaps the screen, and the same
+    // full-page loader the auth and permission gates already use covers the fetch.
+    <Suspense fallback={<Loader full label="טוען…" />}>
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/set-password" element={<SetPassword />} />
@@ -108,5 +118,6 @@ export default function App() {
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
+    </Suspense>
   )
 }

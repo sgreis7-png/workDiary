@@ -27,7 +27,8 @@ export interface AppUser {
 export interface Entry {
   id: string; project_id: string; created_by: string; work_date: string
   created_at: string; last_sent_at: string | null; values: Record<string, string>
-  photos: string[] // signed URLs for display
+  photos: string[]    // signed URLs — empty when the caller asked not to sign them
+  photo_count: number // always accurate, whether or not the URLs were signed
 }
 
 export interface SearchFilters { projectId?: string; userId?: string; from?: string; to?: string; text?: string; malfunction?: string }

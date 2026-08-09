@@ -12,6 +12,7 @@ const entry: Entry = {
   created_at: '', last_sent_at: null,
   values: { site_location: 'כפר יובל', daily_content: 'line1\nline2 <script>x</script>' },
   photos: ['https://x/photo1.jpg', 'https://x/photo2.jpg'],
+  photo_count: 2,
 }
 
 describe('buildReportHtml', () => {

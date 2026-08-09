@@ -38,20 +38,31 @@ export async function fetchUserMap(): Promise<Record<string, string>> {
 type EntryRow = Omit<Entry, 'photos'> & { entry_photos: { storage_path: string }[] | null }
 const ENTRY_SELECT = 'id,project_id,created_by,work_date,created_at,last_sent_at,values,entry_photos(storage_path)'
 
-async function hydrate(rows: EntryRow[]): Promise<Entry[]> {
-  const paths = rows.flatMap((r) => (r.entry_photos ?? []).map((p) => p.storage_path))
-  const signed = await signPaths(paths)
+/** Rows to entries.
+ *
+ *  `sign` is off for callers that only want the numbers: signing mints a URL for every photo of
+ *  every row, and a chart, a digest or a CSV export never displays one. `photo_count` stays
+ *  right either way, so a caller that just wants "how many" does not pay for the URLs. */
+async function hydrate(rows: EntryRow[], sign = true): Promise<Entry[]> {
+  const signed = sign
+    ? await signPaths(rows.flatMap((r) => (r.entry_photos ?? []).map((p) => p.storage_path)))
+    : {}
   return rows.map((r) => ({
     id: r.id, project_id: r.project_id, created_by: r.created_by,
     work_date: r.work_date ?? '', created_at: r.created_at, last_sent_at: r.last_sent_at,
     values: r.values ?? {},
-    photos: (r.entry_photos ?? []).map((p) => signed[p.storage_path]).filter(Boolean),
+    photos: sign ? (r.entry_photos ?? []).map((p) => signed[p.storage_path]).filter(Boolean) : [],
+    photo_count: (r.entry_photos ?? []).length,
   }))
 }
 
 // ---------- entries ----------
 
-export async function listEntries(projectId?: string, opts?: { limit?: number; offset?: number; from?: string; to?: string }): Promise<Entry[]> {
+/** Entries, newest first. Pass `photos: false` when the caller only needs the numbers. */
+export async function listEntries(
+  projectId?: string,
+  opts?: { limit?: number; offset?: number; from?: string; to?: string; photos?: boolean },
+): Promise<Entry[]> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (projectId) q = q.eq('project_id', projectId)
   if (opts?.from) q = q.gte('work_date', opts.from)
@@ -59,7 +70,7 @@ export async function listEntries(projectId?: string, opts?: { limit?: number; o
   if (opts?.limit != null) q = q.range(opts.offset ?? 0, (opts.offset ?? 0) + opts.limit - 1)
   const { data, error } = await q
   if (error) throw error
-  return hydrate((data ?? []) as unknown as EntryRow[])
+  return hydrate((data ?? []) as unknown as EntryRow[], opts?.photos !== false)
 }
 
 /** Most recent entry for a project — used by "copy last entry". */
@@ -92,16 +103,33 @@ export async function createEntry(
   if (error) throw error
   const entryId = ins.id as string
 
-  for (const f of files) {
+  await savePhotos(entryId, files)
+  notifyNewEntry(project_id, entryId)
+  return entryId
+}
+
+/** Upload an entry's photos and record them.
+ *
+ *  In parallel: a field report carries ten photos over a phone connection, and one after
+ *  another made the save take ten round trips it did not need. Each photo's own name comes from
+ *  a UUID, so nothing depends on the order they finish in.
+ *
+ *  allSettled rather than all: if one photo fails we still want the others recorded, and we
+ *  want them finished rather than abandoned mid-flight before the error surfaces. The failure
+ *  is then raised, exactly as before — an entry saved with some of its photos is the documented
+ *  outcome, and the user is told. */
+async function savePhotos(entryId: string, files: File[]): Promise<void> {
+  if (!files.length) return
+  const results = await Promise.allSettled(files.map(async (f) => {
     const safe = f.name.replace(/[^\w.-]+/g, '_')
     const path = `${entryId}/${crypto.randomUUID()}-${safe}`
     const { error: upErr } = await supabase.storage.from('photos').upload(path, f)
     if (upErr) throw upErr
     const { error: pErr } = await supabase.from('entry_photos').insert({ entry_id: entryId, storage_path: path })
     if (pErr) throw pErr
-  }
-  notifyNewEntry(project_id, entryId)
-  return entryId
+  }))
+  const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
+  if (failed) throw failed.reason
 }
 
 /** Existing photos of an entry as {path, signed url} — for the edit screen. */
@@ -121,22 +149,16 @@ export async function updateEntry(
     .update({ project_id, work_date: values.work_date || null, values }).eq('id', id)
   if (error) throw error
 
-  for (const path of removedPaths) {
-    // The row is the source of truth for what the report shows, so a failure
-    // here must surface: silently keeping a photo the user deleted is worse
-    // than failing the save. A leftover storage object is only wasted bytes.
-    const { error: rowErr } = await supabase.from('entry_photos').delete().eq('storage_path', path)
+  if (removedPaths.length) {
+    // The row is the source of truth for what the report shows, so a failure here must
+    // surface: silently keeping a photo the user deleted is worse than failing the save. A
+    // leftover storage object is only wasted bytes. Both calls take the whole list — one
+    // round trip instead of two per deleted photo.
+    const { error: rowErr } = await supabase.from('entry_photos').delete().in('storage_path', removedPaths)
     if (rowErr) throw rowErr
-    await supabase.storage.from('photos').remove([path])
+    await supabase.storage.from('photos').remove(removedPaths)
   }
-  for (const f of newFiles) {
-    const safe = f.name.replace(/[^\w.-]+/g, '_')
-    const path = `${id}/${crypto.randomUUID()}-${safe}`
-    const { error: upErr } = await supabase.storage.from('photos').upload(path, f)
-    if (upErr) throw upErr
-    const { error: pErr } = await supabase.from('entry_photos').insert({ entry_id: id, storage_path: path })
-    if (pErr) throw pErr
-  }
+  await savePhotos(id, newFiles)
 }
 
 export async function deleteEntry(id: string): Promise<void> {
@@ -162,15 +184,33 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
   return data as DashboardStats
 }
 
-export async function searchEntries(f: SearchFilters): Promise<Entry[]> {
+/** Cap on rows fetched for one search. The server-side filter below has already thrown out
+ *  almost everything irrelevant, so this is a guard against a single-letter search pulling the
+ *  whole diary — not the page size of a browsable list. */
+const SEARCH_LIMIT = 400
+
+export async function searchEntries(f: SearchFilters, opts?: { photos?: boolean }): Promise<Entry[]> {
   let q = supabase.from('entries').select(ENTRY_SELECT).order('work_date', { ascending: false })
   if (f.projectId) q = q.eq('project_id', f.projectId)
   if (f.userId) q = q.eq('created_by', f.userId)
   if (f.from) q = q.gte('work_date', f.from)
   if (f.to) q = q.lte('work_date', f.to)
+
+  // Narrow in Postgres before anything crosses the wire. `values_text` (migration 0047) is the
+  // entry's searchable text, trigram-indexed; one ilike per whitespace-separated token.
+  //
+  // This is deliberately looser than the real rules — it matches JSON keys and syntax too, and
+  // any % or _ the user typed acts as a wildcard. That is the safe direction: every entry
+  // entryMatchesText would accept is in here, because a token has no spaces and so cannot
+  // straddle two table cells. The exact predicate below then decides.
+  for (const token of (f.text ?? '').trim().split(/\s+/).filter(Boolean)) {
+    q = q.ilike('values_text', `%${token}%`)
+  }
+  q = q.limit(SEARCH_LIMIT)
+
   const { data, error } = await q
   if (error) throw error
-  let entries = await hydrate((data ?? []) as unknown as EntryRow[])
+  let entries = await hydrate((data ?? []) as unknown as EntryRow[], opts?.photos !== false)
   if (f.text) entries = entries.filter((e) => entryMatchesText(e.values, f.text!))
   if (f.malfunction) {
     if (f.malfunction === 'any') entries = entries.filter((e) => hasMalfunction(e.values))
