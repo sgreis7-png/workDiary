@@ -11,7 +11,7 @@ import {
   DAY_MS, DEFAULT_FINISH_TIME, DEFAULT_START_TIME,
   buildTree, cascade, dayOf, hasChildren, paymentMilestones, rollUp,
   spanDays, summarize, visibleRows, withDay,
-  type GanttLink, type GanttTask, type Span,
+  type GanttLink, type GanttTask, type PaymentMilestone, type Span,
 } from '../gantt/model'
 import '../styles/gantt.css'
 
@@ -60,9 +60,10 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
   const [openOnly, setOpenOnly] = useState(false)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<number | null>(null)
-  const [hot, setHot] = useState<number | null>(null)
+  const [hover, setHover] = useState<{ uid: number; x: number; y: number } | null>(null)
   const [drag, setDrag] = useState<Drag | null>(null)
   const boardRef = useRef<HTMLDivElement>(null)
+  const hot = hover?.uid ?? null
 
   const todayISO = `${today ?? localDate()}T00:00:00`
 
@@ -354,7 +355,19 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
         </div>
       </div>
 
-      <div className={`gantt__board${drag ? ' gantt__board--dragging' : ''}`} ref={boardRef}>
+      <div
+        className={`gantt__board${drag ? ' gantt__board--dragging' : ''}`}
+        ref={boardRef}
+        onMouseMove={(ev) => {
+          // one handler for the whole board rather than two per row: 63 rows of
+          // enter/leave listeners re-render the dependency overlay on every crossing
+          const host = (ev.target as HTMLElement).closest<HTMLElement>('[data-uid]')
+          const uid = host ? Number(host.dataset.uid) : null
+          if (uid === null || Number.isNaN(uid)) { setHover(null); return }
+          setHover({ uid, x: ev.clientX, y: ev.clientY })
+        }}
+        onMouseLeave={() => setHover(null)}
+      >
         <div className="gantt__inner">
           <div className="gantt__pane-tasks">
             <div className="gantt__head">
@@ -374,8 +387,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
                     + (hot === t.ext_uid ? ' is-hot' : '')
                     + (selected === t.ext_uid ? ' is-sel' : '')
                   }
-                  onMouseEnter={() => setHot(t.ext_uid)}
-                  onMouseLeave={() => setHot((h) => (h === t.ext_uid ? null : h))}
+                  data-uid={t.ext_uid}
                   onClick={() => setSelected(t.ext_uid)}
                 >
                   <span style={{ flex: 'none', width: Math.min(tree.depthOf.get(t.ext_uid) ?? 0, 6) * 13 }} />
@@ -476,8 +488,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
                 <div
                   key={t.id}
                   className={'gantt__lane' + (hot === t.ext_uid ? ' is-hot' : '') + (isSel ? ' is-sel' : '')}
-                  onMouseEnter={() => setHot(t.ext_uid)}
-                  onMouseLeave={() => setHot((h) => (h === t.ext_uid ? null : h))}
+                  data-uid={t.ext_uid}
                   onClick={() => setSelected(t.ext_uid)}
                 >
                   {t.milestone ? (
@@ -489,7 +500,6 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
                         + (isSel ? ' is-sel' : '')
                       }
                       style={{ left: left + px / 2 }}
-                      title={`${t.name} — ${fmtDay(startDay)}`}
                       onPointerDown={(e) => beginDrag(e, t, 'move')}
                     />
                   ) : (
@@ -502,7 +512,6 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
                         + (isSel ? ' is-sel' : '')
                       }
                       style={{ left, width: Math.max(px, (finishDay - startDay + 1) * px) }}
-                      title={`${t.name} — ${fmtDay(startDay)} → ${fmtDay(finishDay)} · ${t.pct}%`}
                       onPointerDown={(e) => beginDrag(e, t, 'move')}
                     >
                       {!parent && t.pct > 0 && t.pct < 100 && <span className="gantt__fill" style={{ width: `${t.pct}%` }} />}
@@ -524,6 +533,19 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
         </div>
       </div>
 
+      {hover && !drag && (
+        <HoverCard
+          task={byUid.get(hover.uid) ?? null}
+          x={hover.x}
+          y={hover.y}
+          isSummary={hasChildren(tree, hover.uid)}
+          deps={links.filter((l) => l.succ_ext_uid === hover.uid)}
+          nameOf={(uid) => byUid.get(uid)?.name ?? String(uid)}
+          payment={pays.find((p) => p.ext_uid === hover.uid)}
+          fmtDay={fmtDay}
+        />
+      )}
+
       <TaskEditor
         task={selectedTask}
         isSummary={selectedTask ? hasChildren(tree, selectedTask.ext_uid) : false}
@@ -534,6 +556,87 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
         allTasks={tasks}
         allLinks={links}
       />
+    </div>
+  )
+}
+
+/**
+ * Everything about a task, on hover — the whole point of a Gantt is reading it, and
+ * clicking a row to fill a panel below the fold is not reading it.
+ *
+ * Positioned against the viewport and flipped near the edges, so it never runs off
+ * screen and never covers the bar it describes.
+ */
+function HoverCard({
+  task, x, y, isSummary, deps, nameOf, payment, fmtDay,
+}: {
+  task: GanttTask | null
+  x: number
+  y: number
+  isSummary: boolean
+  deps: GanttLink[]
+  nameOf: (uid: number) => string
+  payment: PaymentMilestone | undefined
+  fmtDay: (day: number) => string
+}) {
+  const { lang } = useI18n()
+  const g = (k: string) => gt(lang, k)
+  const ref = useRef<HTMLDivElement>(null)
+  const [size, setSize] = useState({ w: 300, h: 150 })
+
+  useEffect(() => {
+    const r = ref.current?.getBoundingClientRect()
+    if (r && (Math.round(r.width) !== size.w || Math.round(r.height) !== size.h)) {
+      setSize({ w: Math.round(r.width), h: Math.round(r.height) })
+    }
+  }, [task?.ext_uid, size.w, size.h])
+
+  if (!task) return null
+
+  const GAP = 16
+  const left = x - size.w - GAP < 8 ? Math.min(x + GAP, innerWidth - size.w - 8) : x - size.w - GAP
+  const top = y + GAP + size.h > innerHeight - 8 ? Math.max(8, y - size.h - GAP) : y + GAP
+
+  const slip = task.base_start_ts ? dayOf(task.start_ts) - dayOf(task.base_start_ts) : 0
+  const duration = task.duration_days !== null
+    ? `${task.duration_days} ${g('g_edit_days')}`
+    : `${spanDays(task)} ${g('g_edit_days')}`
+
+  const rows: [string, React.ReactNode, boolean][] = [
+    [g('g_edit_start'), fmtDay(dayOf(task.start_ts)), false],
+  ]
+  if (!task.milestone) {
+    rows.push([g('g_edit_finish'), fmtDay(dayOf(task.finish_ts)), false])
+    rows.push([g('g_duration'), duration, false])
+  }
+  rows.push([g('g_edit_pct'), `${task.pct}%`, false])
+  if (slip !== 0) {
+    rows.push([g('g_edit_slip'), <b>{slip > 0 ? `+${slip}` : slip} {g('g_edit_days')}</b>, false])
+  }
+  if (payment) {
+    rows.push([g('g_payment'), `${payment.pct}% — ${payment.paid ? g('g_pay_paid') : g('g_pay_open')}`, true])
+  }
+  if (task.resources.length) rows.push([g('g_resources'), task.resources.join(', '), true])
+  if (deps.length) {
+    rows.push([g('g_deps_of'), deps.map((d) => nameOf(d.pred_ext_uid)).join(' · '), true])
+  }
+  if (task.critical) rows.push([g('g_path'), g('g_critical'), true])
+  if (isSummary) rows.push([g('g_kind'), g('g_summary'), true])
+
+  return (
+    <div className="gantt__tip" ref={ref} style={{ left, top }} role="tooltip">
+      <h5>
+        {task.wbs && <span>{task.wbs} </span>}
+        {task.name}
+      </h5>
+      <dl>
+        {rows.map(([label, value, isText], i) => (
+          <div key={i} style={{ display: 'contents' }}>
+            <dt>{label}</dt>
+            <dd className={isText ? 'gantt__tip-text' : undefined}>{value}</dd>
+          </div>
+        ))}
+      </dl>
     </div>
   )
 }

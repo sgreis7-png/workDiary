@@ -74,6 +74,10 @@ export const G = {
   g_selected_none:  { he: 'בחר משימה כדי לערוך אותה.',      en: 'Select a task to edit it.' },
   g_deps_of:        { he: 'תלוי ב',                         en: 'Depends on' },
   g_resources:      { he: 'באחריות',                        en: 'Owner' },
+  g_duration:       { he: 'משך',                            en: 'Duration' },
+  g_path:           { he: 'נתיב',                           en: 'Path' },
+  g_critical:       { he: 'קריטי',                          en: 'Critical' },
+  g_kind:           { he: 'סוג',                            en: 'Type' },
 
   // failures
   err_converter_unreachable:{ he: 'לא הצלחנו להגיע לשירות ההמרה.',       en: 'Could not reach the conversion service.' },
