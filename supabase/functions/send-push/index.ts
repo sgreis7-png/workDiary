@@ -23,6 +23,18 @@ Deno.serve(async (req) => {
     if (!VAPID_PUBLIC || !VAPID_PRIVATE) return json({ error: 'push_not_configured' }, 500)
 
     const { emails = [], title = '', body = '', link = '/' } = await req.json()
+
+    // The sender chooses this string and it ends up in clients.openWindow() on somebody
+    // else's phone. Only a plain absolute path leaves here; anything with a scheme, a
+    // protocol-relative prefix, a backslash or whitespace becomes '/'. The client and the
+    // service worker check again — this is the layer that stops it being stored at all.
+    const safeLink = typeof link === 'string'
+      && link.startsWith('/')
+      && !link.startsWith('//')
+      && !link.includes('\\')
+      && !/[\u0000-\u001F\u007F\s]/.test(link)
+      ? link
+      : '/'
     const asked = [...new Set((emails as string[]).filter((e) => typeof e === 'string' && e.includes('@')).map((e) => e.toLowerCase()))]
     if (!asked.length || !title) return json({ error: 'missing_fields' }, 400)
 
@@ -45,7 +57,7 @@ Deno.serve(async (req) => {
     if (!subs?.length) return json({ ok: true, sent: 0 })
 
     webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC, VAPID_PRIVATE)
-    const payload = JSON.stringify({ title, body, link })
+    const payload = JSON.stringify({ title, body, link: safeLink })
     let sent = 0
     await Promise.all(subs.map(async (s: { email: string; endpoint: string; p256dh: string; auth: string }) => {
       try {

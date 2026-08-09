@@ -7,6 +7,7 @@ import { listEntries } from '../api'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
 import { fetchDeadlines, type Deadline } from '../lib/tasks'
+import { notificationTarget } from '../lib/safeLink'
 import { groupByDate } from '../data'
 import type { Entry } from '../data'
 
@@ -140,7 +141,7 @@ export default function Calendar() {
               <div className="cal-cell__chips">
                 {(deadlinesByDate[date] ?? []).map((dl, j) => (
                   <button key={`dl${j}`} className={`cal-chip cal-chip--deadline ${dl.overdue ? 'cal-chip--overdue' : ''}`}
-                    onClick={() => nav(dl.link)} title={dl.title}>
+                    onClick={() => nav(notificationTarget(dl.link))} title={dl.title}>
                     <i />{dl.kind === 'defect' ? '🛠' : dl.kind === 'task' ? '☑' : '🏁'} {dl.title}
                   </button>
                 ))}

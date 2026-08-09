@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { useI18n } from '../i18n'
 import { fetchMyNotifications, markAllNotificationsRead, markNotificationRead, type AppNotification } from '../api'
+import { notificationTarget } from '../lib/safeLink'
 
 export function NotificationsBell() {
   const { t } = useI18n()
@@ -23,7 +24,10 @@ export function NotificationsBell() {
   const unread = unreadItems.length
   const openItem = async (n: AppNotification) => {
     if (!n.read) { await markNotificationRead(n.id); load() }
-    if (n.link) { nav(n.link); setOpen(false) }
+    // The link is whatever the row says, and any member can write a row. Anything that
+    // is not a path this app serves lands on the notifications screen instead of taking
+    // the user off the origin.
+    if (n.link) { nav(notificationTarget(n.link)); setOpen(false) }
   }
   const allRead = async () => { await markAllNotificationsRead(); load() }
 

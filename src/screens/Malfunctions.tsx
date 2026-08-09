@@ -20,28 +20,34 @@ export default function MalfunctionsSection() {
   const [projectId, setProjectId] = useState('')
   const [from, setFrom] = useState('')
   const [to, setTo] = useState('')
-  const [entries, setEntries] = useState<Entry[] | null>(null)
-  const [busy, setBusy] = useState(false)
-
-  useEffect(() => {
-    setBusy(true)
-    let alive = true
-    const h = setTimeout(() => {
-      searchEntries({ projectId: projectId && projectId !== 'all' ? projectId : undefined, from: from || undefined, to: to || undefined, malfunction: 'any' })
-        .then((r) => { if (alive) setEntries(r) })
-        .catch(() => { if (alive) setEntries([]) })
-        .finally(() => { if (alive) setBusy(false) })
-    }, 300)
-    return () => { alive = false; clearTimeout(h) }
-  }, [projectId, from, to])
+  // Results are tagged with the filters they were fetched for. Reading them back only
+  // when the tag still matches makes `busy` a derivation rather than state set inside the
+  // effect, and stops the table showing the previous filter's rows as if they were new.
+  const [result, setResult] = useState<{ key: string; rows: Entry[] } | null>(null)
+  const filterKey = JSON.stringify({ projectId, from, to })
+  const entries = result?.key === filterKey ? result.rows : null
+  const busy = entries === null
 
   // projects that have at least one malfunction in the CURRENT unfiltered view:
   // captured whenever no project filter is applied, kept while one is
   const [malfProjects, setMalfProjects] = useState<Set<string>>(new Set())
+
   useEffect(() => {
-    if ((projectId && projectId !== 'all') || !entries) return
-    setMalfProjects(new Set(entries.map((e) => e.project_id)))
-  }, [entries, projectId])
+    let alive = true
+    const unfiltered = !projectId || projectId === 'all'
+    const h = setTimeout(() => {
+      searchEntries({ projectId: unfiltered ? undefined : projectId, from: from || undefined, to: to || undefined, malfunction: 'any' })
+        .then((r) => {
+          if (!alive) return
+          setResult({ key: filterKey, rows: r })
+          // the callback knows whether a filter was applied, so the sticky set can be
+          // updated here instead of in a second effect watching the first one's output
+          if (unfiltered) setMalfProjects(new Set(r.map((e) => e.project_id)))
+        })
+        .catch(() => { if (alive) setResult({ key: filterKey, rows: [] }) })
+    }, 300)
+    return () => { alive = false; clearTimeout(h) }
+  }, [projectId, from, to, filterKey])
 
   const stats = useMemo(() => {
     const list = entries ?? []

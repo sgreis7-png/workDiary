@@ -55,7 +55,10 @@ export default function Digest() {
   const { can } = usePerms()
   const nav = useNavigate()
   const { projects, projectName, userName } = useStore()
-  const [data, setData] = useState<{ digests: ProjectDigest[]; silent: { name: string; days: number | null }[]; totals: Totals } | null>(null)
+  // `range` is formatted by the loader, which already knows the week it fetched.
+  // Deriving it during render called Date.now() on every re-render — an unstable
+  // value in the output, and the one lint error the repo had left.
+  const [data, setData] = useState<{ digests: ProjectDigest[]; silent: { name: string; days: number | null }[]; totals: Totals; range: string } | null>(null)
   const [err, setErr] = useState('')
 
   useEffect(() => {
@@ -160,7 +163,8 @@ export default function Digest() {
 
       // most activity first
       digests.sort((a, b) => b.entries.length - a.entries.length)
-      setData({ digests, silent, totals })
+      const range = `${new Date(now - WEEK_MS).toLocaleDateString('he-IL')} – ${new Date(now).toLocaleDateString('he-IL')}`
+      setData({ digests, silent, totals, range })
     }).catch((e) => { if (alive) setErr(String((e as Error).message ?? e)) })
     return () => { alive = false }
   }, [projects])
@@ -169,7 +173,7 @@ export default function Digest() {
   if (!data) return <Loader full />
 
   const { totals } = data
-  const range = `${new Date(Date.now() - WEEK_MS).toLocaleDateString('he-IL')} – ${new Date().toLocaleDateString('he-IL')}`
+  const { range } = data
   const delta = (pr: CoopProgress) => (pr.from !== null ? pr.to - pr.from : null)
 
   return (
