@@ -5,6 +5,7 @@ import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { changeMyPassword } from '../api'
 import { fetchProfileMetas, uploadMyAvatar } from '../lib/messages'
+import { useDialog } from '../lib/useDialog'
 
 /** Interactive crop: drag to position, slider to zoom, circular preview. */
 function AvatarCropDialog({ file, onCancel, onSave }: {
@@ -13,6 +14,8 @@ function AvatarCropDialog({ file, onCancel, onSave }: {
   onSave: (png: Blob) => void
 }) {
   const { t } = useI18n()
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onCancel)
   const VIEW = 280
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const imgRef = useRef<ImageBitmap | null>(null)
@@ -79,7 +82,7 @@ function AvatarCropDialog({ file, onCancel, onSave }: {
 
   return (
     <div className="modal-backdrop" onClick={onCancel}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 360 }}>
+      <div className="modal" ref={panel} role="dialog" aria-modal="true" aria-label={t('avatar_title')} tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 360 }}>
         <h2>{t('avatar_title')}</h2>
         <p className="coop-intro" style={{ margin: '6px 0 12px' }}>{t('avatar_hint')}</p>
         <canvas

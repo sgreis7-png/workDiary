@@ -1,7 +1,8 @@
-import { CSSProperties, Fragment, ReactNode, useState } from 'react'
+import { CSSProperties, Fragment, ReactNode, useRef, useState } from 'react'
 import { Button } from './ui'
 import { useI18n } from '../i18n'
 import { CoopReport, MISSING_REASONS, MissingRow, ProgressRow, defaultBdRows, defaultCoop } from '../lib/reportTables'
+import { useDialog } from '../lib/useDialog'
 
 /** 0–100 slider rendered as a filled bar; big thumb on touch, slim bar on desktop. */
 export function PctSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -60,6 +61,10 @@ export function ProgressTable({ rows, onChange, injectAfter, injected }: {
 export function CoopReports({ coops, onChange }: { coops: CoopReport[]; onChange: (c: CoopReport[]) => void }) {
   const { t, lang } = useI18n()
   const [bdOpen, setBdOpen] = useState<number | null>(null)
+  // This panel is rendered inline by the table rather than as its own component, so the hook
+  // has to be told when it is actually on screen.
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, () => setBdOpen(null), bdOpen !== null)
   const upd = (i: number, patch: Partial<CoopReport>) =>
     onChange(coops.map((c, k) => (k === i ? { ...c, ...patch } : c)))
   const remove = (i: number) => {
@@ -113,7 +118,8 @@ export function CoopReports({ coops, onChange }: { coops: CoopReport[]; onChange
 
       {bdOpen !== null && coops[bdOpen] && (
         <div className="modal-backdrop" onClick={() => setBdOpen(null)}>
-          <div className="modal bd-modal" onClick={(e) => e.stopPropagation()} dir={lang === 'he' ? 'rtl' : 'ltr'}>
+          <div className="modal bd-modal" ref={panel} role="dialog" aria-modal="true" aria-label={t('bd_field')} tabIndex={-1}
+            onClick={(e) => e.stopPropagation()} dir={lang === 'he' ? 'rtl' : 'ltr'}>
             <h3 className="bd-modal__title">{t('bd_field')} — {coops[bdOpen].name}</h3>
             <ProgressTable rows={coops[bdOpen].bd} onChange={(bd) => upd(bdOpen, { bd })} />
             <div className="bd-modal__foot">

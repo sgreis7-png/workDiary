@@ -15,6 +15,7 @@ import { supabase } from '../lib/supabase'
 import type { AppUser } from '../data'
 import { useDT } from '../defects/i18n'
 import { sendPush } from '../lib/push'
+import { useDialog } from '../lib/useDialog'
 
 type GroupMsg = UserMessage & { group_id: string }
 
@@ -343,12 +344,14 @@ function NewGroupDialog({ users, metas, onClose, onCreate }: {
   onCreate: (name: string, emails: string[]) => void
 }) {
   const { dt } = useDT()
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onClose)
   const [name, setName] = useState('')
   const [sel, setSel] = useState<Set<string>>(new Set())
   const toggle = (em: string) => setSel((p) => { const n = new Set(p); if (n.has(em)) n.delete(em); else n.add(em); return n })
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 460 }}>
+      <div className="modal" ref={panel} role="dialog" aria-modal="true" aria-label="קבוצה חדשה" tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 460 }}>
         <h2>{dt('grp_title')}</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 14, marginTop: 14 }}>
           <input className="input" placeholder={dt('grp_name_ph')} value={name} onChange={(e) => setName(e.target.value)} />

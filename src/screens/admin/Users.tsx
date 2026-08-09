@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { motion } from 'framer-motion'
 import { Button, Avatar, Tag, RoleBadge, stagger, riseIn } from '../../components/ui'
 import { Loader } from '../../components/Loader'
 import { useI18n } from '../../i18n'
 import { deleteUser, fetchUsers, fetchRegistrationCodes, inviteUser, setUserActive, setUserRole } from '../../api'
 import { useAuth } from '../../auth'
+import { useDialog } from '../../lib/useDialog'
 import type { AppUser, Role } from '../../data'
 import {
   PERM_AREAS, fetchPermOverrides, setPermOverride, clearPermOverride,
@@ -16,6 +17,8 @@ const LEVELS: (PermLevel | 'default')[] = ['default', 'none', 'view', 'edit']
 /** הרשאות פר-משתמש: שורה לכל אזור, בחירה גוברת על ברירת המחדל של התפקיד. */
 function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => void }) {
   const { t, lang } = useI18n()
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onClose)
   const [overrides, setOverrides] = useState<Record<string, PermLevel> | null>(null)
   const [err, setErr] = useState('')
 
@@ -38,7 +41,7 @@ function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => vo
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl">
+      <div className="modal" ref={panel} role="dialog" aria-modal="true" aria-label={t('perm_title')} tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl">
         <h2>{t('perm_title')} — {user.name}</h2>
         <p className="coop-intro" style={{ margin: '8px 0 14px' }}>
           {user.role === 'admin' ? t('perm_admin_note') : t('perm_member_note')}

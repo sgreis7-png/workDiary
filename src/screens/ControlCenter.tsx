@@ -4,7 +4,7 @@
 // the thing you already have a question about; one-page is for going through the project
 // end to end without deciding what to look at next. Same blocks either way — the mode only
 // changes whether the others are mounted, and the strip doubles as jump links.
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { useI18n } from '../i18n'
@@ -26,6 +26,7 @@ import {
 } from '../control/api'
 import type { Project } from '../data'
 import '../styles/control.css'
+import { useTabStrip } from '../lib/useTabStrip'
 
 type SectionKey = 'summary' | 'schedule' | 'coops' | 'defects' | 'people' | 'diary'
 type View = 'tabs' | 'all'
@@ -40,6 +41,8 @@ export default function ControlCenter() {
   const g = useCallback((k: string) => gt(lang, k), [lang])
   const { projects, userName } = useStore()
   const { can } = usePerms()
+  const tabs = useRef<HTMLDivElement>(null)
+  const onTabKey = useTabStrip(tabs)
   const maySeeSchedule = can('gantt')
 
   const [pickedProject, setPickedProject] = useState('')
@@ -201,13 +204,17 @@ export default function ControlCenter() {
           </motion.div>
 
           <motion.div variants={riseIn} className="cc-bar">
-            <div className="cc-tabs" role={view === 'tabs' ? 'tablist' : 'group'} aria-label={view === 'tabs' ? undefined : g('o_jump')}>
+            <div className="cc-tabs" role={view === 'tabs' ? 'tablist' : 'group'} aria-label={view === 'tabs' ? undefined : g('o_jump')}
+              ref={tabs} onKeyDown={onTabKey}>
               {sections.map((s) => (
                 <button
                   key={s.key}
                   type="button"
                   role={view === 'tabs' ? 'tab' : undefined}
                   aria-selected={view === 'tabs' ? section === s.key : undefined}
+                  // one tab stop for the strip when it is a tablist; in one-page mode these are
+                  // ordinary jump buttons and each keeps its own
+                  tabIndex={view === 'tabs' ? (section === s.key ? 0 : -1) : undefined}
                   className={`coop-tab ${view === 'tabs' && section === s.key ? 'on' : ''}`}
                   onClick={() => goTo(s.key)}
                 >

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
@@ -9,6 +9,7 @@ import {
   type CoopBundle, type ChecklistItem, type Coop, type CoopResponsibility, type Defect, type DefectPhoto,
 } from '../../defects/api'
 import { fetchMemberDirectory } from '../../api'
+import { useTabStrip } from '../../lib/useTabStrip'
 import { useAuth } from '../../auth'
 import type { DirectoryMember } from '../../api'
 import { GATES, GATE_ORDER, type GateKey, type ItemStatus } from '../../defects/model'
@@ -42,6 +43,8 @@ export default function CoopView() {
   const { canEdit } = usePerms()
   const { dt, lang } = useDT()
   const { user } = useAuth()
+  const tabs = useRef<HTMLDivElement>(null)
+  const onTabKey = useTabStrip(tabs)
   const readOnly = !canEdit('defects')
   // עריכת פרטי לול ומחיקה — הרשאת coops_manage (אדמין, או עובד שהוענקה לו)
   const canManageCoops = canEdit('coops_manage')
@@ -250,7 +253,7 @@ export default function CoopView() {
       {err && <div className="alert">{err}</div>}
       {readOnly && <div className="alert" style={{ background: 'var(--paper-2)', color: 'var(--ink-2)' }}>{dt('coop_readonly')}</div>}
 
-      <div className="coop-tabs" role="tablist">
+      <div className="coop-tabs" role="tablist" ref={tabs} onKeyDown={onTabKey}>
         {TAB_KEYS.map((k) => {
           const label = k === 'project_open' ? dt('tab_project_open')
             : k === 'summary' ? dt('tab_summary')
@@ -258,7 +261,7 @@ export default function CoopView() {
             : gateShortName(lang, k as GateKey)
           return (
             <button
-              key={k} role="tab" aria-selected={tab === k}
+              key={k} role="tab" aria-selected={tab === k} tabIndex={tab === k ? 0 : -1}
               className={`coop-tab ${tab === k ? 'on' : ''}`}
               onClick={() => setTab(k)}
             >

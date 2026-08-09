@@ -1,11 +1,14 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useI18n } from '../i18n'
 import { MicButton } from './MicButton'
 import { submitFeedback } from '../lib/feedback'
+import { useDialog } from '../lib/useDialog'
 
 /** "דווח" — modal for filing a bug report / feature request to the admins. */
 export function FeedbackDialog({ onClose }: { onClose: () => void }) {
   const { t } = useI18n()
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onClose)
   const [kind, setKind] = useState<'bug' | 'request'>('bug')
   const [message, setMessage] = useState('')
   const [file, setFile] = useState<File | null>(null)
@@ -27,7 +30,7 @@ export function FeedbackDialog({ onClose }: { onClose: () => void }) {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 460 }}>
+      <div className="modal" ref={panel} role="dialog" aria-modal="true" aria-label="דיווח על בעיה" tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 460 }}>
         <h2>{t('feedback_title')}</h2>
         {sent ? (
           <div className="empty" style={{ padding: '28px 0' }}>✓ {t('feedback_sent')}</div>

@@ -1,12 +1,16 @@
+import { useRef } from 'react'
 import { Logo } from './Logo'
+import { useDialog } from '../lib/useDialog'
 
 const VERSION = '1.0.0'
 
 /** ⓘ מידע על התוכנה. */
 export function AboutDialog({ onClose }: { onClose: () => void }) {
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onClose)
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal about" onClick={(e) => e.stopPropagation()} dir="rtl">
+      <div className="modal about" ref={panel} role="dialog" aria-modal="true" aria-label="מידע על התוכנה" tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl">
         <div className="about__head">
           <Logo height={30} />
           <span className="tag tag--green mono">v{VERSION}</span>

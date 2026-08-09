@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { defectItemLabel } from '../../defects/model'
 import { useDT, severityLabel } from '../../defects/i18n'
 import type { Defect } from '../../defects/api'
 import { SignaturePad } from './SignaturePad'
 import { MicButton } from '../../components/MicButton'
+import { useDialog } from '../../lib/useDialog'
 
 /** טופס ויתור (Concession) — double signature over an open 🟠 major defect. */
 export function ConcessionDialog({ defect, onClose, onSubmit }: {
@@ -12,6 +13,8 @@ export function ConcessionDialog({ defect, onClose, onSubmit }: {
   onSubmit: (reason: string, manager: { name: string; png: Blob }, supervisor: { name: string; png: Blob }) => void
 }) {
   const { dt, lang } = useDT()
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onClose)
   const [reason, setReason] = useState('')
   const [mName, setMName] = useState('')
   const [sName, setSName] = useState('')
@@ -21,7 +24,7 @@ export function ConcessionDialog({ defect, onClose, onSubmit }: {
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal concession" onClick={(e) => e.stopPropagation()} dir="rtl">
+      <div className="modal concession" ref={panel} role="dialog" aria-modal="true" aria-label="טופס ויתור" tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl">
         <h2>{dt('con_title')}</h2>
         <p className="concession__defect">
           {dt('con_defect')}{defect.seq} · {defect.severity ? severityLabel(lang, defect.severity) : ''} ·{' '}

@@ -4,6 +4,7 @@ import { useAuth } from '../auth'
 import { isPopupBlocked, parseRecipients, sendMailViaOutlook } from '../lib/outlookSend'
 import { fetchLists, type DistList } from '../lib/distLists'
 import { fetchDirectory } from '../api'
+import { useDialog } from '../lib/useDialog'
 
 /** Modal: send a report straight from the user's Outlook mailbox (Graph).
  *  Recipients come from three sources that merge: distribution-list chips,
@@ -16,6 +17,8 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
 }) {
   const { t } = useI18n()
   const { user } = useAuth()
+  const panel = useRef<HTMLDivElement>(null)
+  useDialog(panel, onClose)
   const [recipients, setRecipients] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [subject, setSubject] = useState(initialSubject)
@@ -87,7 +90,7 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
 
   return (
     <div className="modal-backdrop" onClick={onClose}>
-      <div className="modal" onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 520 }}>
+      <div className="modal" ref={panel} role="dialog" aria-modal="true" aria-label="שליחת דוח במייל" tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 520 }}>
         <h2>{t('send_title')}</h2>
         {sent ? (
           <div className="empty" style={{ padding: '28px 0' }}>✓ {t('send_sent')}</div>

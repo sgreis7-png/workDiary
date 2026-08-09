@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { Loader } from '../../components/Loader'
 import { GATES, GATE_ORDER, type GateKey } from '../../defects/model'
 import { useDT, gateShortName } from '../../defects/i18n'
@@ -6,11 +6,14 @@ import {
   fetchItemOverrides, saveItemOverride, deleteItemOverride,
   type ItemOverride,
 } from '../../defects/defs'
+import { useTabStrip } from '../../lib/useTabStrip'
 
 /** בונה טופס — עריכת סעיפי הצ'קליסט של תפיסת סיום שלב (אדמין).
  *  שינוי נוסח, השבתה/החזרה של סעיפים קיימים, והוספת סעיפים חדשים לכל שער. */
 export default function DefectFormBuilder() {
   const { dt, lang } = useDT()
+  const tabs = useRef<HTMLDivElement>(null)
+  const onTabKey = useTabStrip(tabs)
   const [overrides, setOverrides] = useState<ItemOverride[] | null>(null)
   const [gate, setGate] = useState<GateKey>('pre_pour')
   const [err, setErr] = useState('')
@@ -68,9 +71,9 @@ export default function DefectFormBuilder() {
 
       {err && <div className="alert">{err}</div>}
 
-      <div className="coop-tabs" role="tablist">
+      <div className="coop-tabs" role="tablist" ref={tabs} onKeyDown={onTabKey}>
         {GATE_ORDER.map((g) => (
-          <button key={g} role="tab" aria-selected={gate === g}
+          <button key={g} role="tab" aria-selected={gate === g} tabIndex={gate === g ? 0 : -1}
             className={`coop-tab ${gate === g ? 'on' : ''}`} onClick={() => setGate(g)}>
             {gateShortName(lang, g)}
           </button>
