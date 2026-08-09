@@ -572,11 +572,15 @@ select.input { cursor: pointer; }
 
 .nav__group { display: flex; flex-direction: column; }
 
+/* Not the 10px letter-spaced uppercase mono used as an eyebrow label elsewhere in the app:
+   Hebrew has no uppercase so the transform does nothing, the wide tracking pulls the
+   letters apart, and the mono face carries no Hebrew glyphs so it falls back silently.
+   Display face (Heebo), readable size, and a real tap target since it is now a button. */
 .nav__toggle {
   display: flex; align-items: center; gap: 8px; width: 100%;
-  padding: 9px 12px; margin-top: 6px;
+  padding: 11px 12px; margin-top: 10px;
   border: 0; background: none; cursor: pointer;
-  font-family: var(--font-mono); font-size: 10px; letter-spacing: .2em; text-transform: uppercase;
+  font-family: var(--font-display); font-size: 14px; font-weight: 700; letter-spacing: .005em;
   color: var(--shell-faint); text-align: start;
   border-radius: var(--r-sm);
   transition: color .14s var(--ease), background .14s var(--ease);
@@ -584,8 +588,11 @@ select.input { cursor: pointer; }
 .nav__toggle:hover { color: var(--shell-ink); background: var(--shell-hover); }
 .nav__toggle.is-open { color: var(--shell-ink); }
 .nav__toggle-label { flex: 1; min-width: 0; }
-.nav__chev { font-size: 11px; opacity: .6; }
+.nav__chev { font-size: 13px; opacity: .55; }
 .nav__toggle:hover .nav__chev { opacity: 1; }
+
+/* Group headings now carry the weight, so the rows beneath can sit a step quieter. */
+.nav__items .nav__item { font-size: 14.5px; }
 
 .nav__items { display: flex; flex-direction: column; gap: 3px; }
 
