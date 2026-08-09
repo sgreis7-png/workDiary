@@ -4,7 +4,7 @@ import { Lightbox } from '../components/Lightbox'
 import { Avatar } from '../components/ui'
 import { EmojiPicker } from '../components/EmojiPicker'
 import { useAuth } from '../auth'
-import { fetchUsers } from '../api'
+import { fetchMemberDirectory, type DirectoryMember } from '../api'
 import {
   fetchAllChat, fetchMyGroups, fetchAcks, fetchProfileMetas,
   sendUserMessage, sendGroupMessage, ackMessage, ackGroupMessage, createGroup,
@@ -12,7 +12,6 @@ import {
   type UserMessage, type ProfileMeta, type ChatGroup, type MessageAck,
 } from '../lib/messages'
 import { supabase } from '../lib/supabase'
-import type { AppUser } from '../data'
 import { useDT } from '../defects/i18n'
 import { sendPush } from '../lib/push'
 import { useDialog } from '../lib/useDialog'
@@ -37,7 +36,7 @@ export default function Messages() {
   const [groupMsgs, setGroupMsgs] = useState<GroupMsg[]>([])
   const [groups, setGroups] = useState<ChatGroup[]>([])
   const [acks, setAcks] = useState<MessageAck[]>([])
-  const [users, setUsers] = useState<AppUser[]>([])
+  const [users, setUsers] = useState<DirectoryMember[]>([])
   const [metas, setMetas] = useState<Record<string, ProfileMeta>>({})
   const [active, setActive] = useState('') // 'u:<email>' | 'g:<id>'
   const [body, setBody] = useState('')
@@ -66,8 +65,9 @@ export default function Messages() {
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'user_messages' }, reload)
       .subscribe()
     const t = setInterval(reload, 120_000)
-    fetchUsers()
-      .then((us) => setUsers(us.filter((u) => u.active && u.registered && u.email.toLowerCase() !== me)))
+    // the directory is already limited to active, registered members
+    fetchMemberDirectory()
+      .then((us) => setUsers(us.filter((u) => u.email.toLowerCase() !== me)))
       .catch(() => setUsers([]))
     fetchProfileMetas().then(setMetas).catch(() => {})
     return () => { clearInterval(t); void supabase.removeChannel(chan) }
@@ -338,7 +338,7 @@ export default function Messages() {
 }
 
 function NewGroupDialog({ users, metas, onClose, onCreate }: {
-  users: AppUser[]
+  users: DirectoryMember[]
   metas: Record<string, ProfileMeta>
   onClose: () => void
   onCreate: (name: string, emails: string[]) => void

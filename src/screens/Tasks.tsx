@@ -3,11 +3,10 @@ import { Loader } from '../components/Loader'
 import { useAuth } from '../auth'
 import { useStore } from '../store'
 import { useI18n } from '../i18n'
-import { fetchUsers } from '../api'
+import { fetchMemberDirectory, type DirectoryMember } from '../api'
 import { fetchTasks, createTask, updateTask, deleteTask, type WorkTask } from '../lib/tasks'
 import { notifyUser } from '../defects/api'
 import { sendPush } from '../lib/push'
-import type { AppUser } from '../data'
 
 // exported so the i18n completeness test covers these strings too
 export const T = {
@@ -36,7 +35,7 @@ export default function Tasks() {
   const t = (k: keyof typeof T) => T[k][lang]
   const { projects, projectName } = useStore()
   const [tasks, setTasks] = useState<WorkTask[] | null>(null)
-  const [users, setUsers] = useState<AppUser[]>([])
+  const [users, setUsers] = useState<DirectoryMember[]>([])
   const [title, setTitle] = useState('')
   const [projectId, setProjectId] = useState('')
   const [assignee, setAssignee] = useState('')
@@ -50,7 +49,8 @@ export default function Tasks() {
   const reload = () => fetchTasks().then(setTasks).catch((e) => setErr(String(e.message ?? e)))
   useEffect(() => {
     reload()
-    fetchUsers().then((us) => setUsers(us.filter((u) => u.active && u.registered))).catch(() => setUsers([]))
+    // the directory is already limited to active, registered members
+    fetchMemberDirectory().then(setUsers).catch(() => setUsers([]))
   }, [])
 
   const me = user?.email?.toLowerCase()
