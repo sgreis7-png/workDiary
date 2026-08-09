@@ -1,6 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react'
 import { supabase } from './lib/supabase'
 import { unwrapFnError } from './lib/storagePaths'
+import { setOwner } from './lib/owner'
+import { purgeLocalData } from './lib/localData'
 import type { Role } from './data'
 
 export interface SessionUser { id: string; email: string; name: string; role: Role; active: boolean }
@@ -41,11 +43,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     let alive = true
     supabase.auth.getSession().then(async ({ data }) => {
       const s = data.session
-      if (s?.user && alive) setUser(await loadProfile(s.user.id, s.user.email ?? ''))
+      if (s?.user && alive) {
+        setOwner(s.user.email)
+        setUser(await loadProfile(s.user.id, s.user.email ?? ''))
+      }
       if (alive) setLoading(false)
     })
     const { data: sub } = supabase.auth.onAuthStateChange(async (_e, s) => {
       if (!alive) return
+      setOwner(s?.user?.email ?? null)
       if (s?.user) setUser(await loadProfile(s.user.id, s.user.email ?? ''))
       else setUser(null)
     })
@@ -55,8 +61,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signIn: Auth['signIn'] = async (email, password) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email: email.trim(), password })
     if (error) return { error: 'err_bad_login' }
+    setOwner(data.user.email)
     const prof = await loadProfile(data.user.id, data.user.email ?? '')
-    if (prof && !prof.active) { await supabase.auth.signOut(); return { error: 'err_disabled' } }
+    if (prof && !prof.active) { await supabase.auth.signOut(); setOwner(null); return { error: 'err_disabled' } }
     setUser(prof)
     return { error: null }
   }
@@ -75,7 +82,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return signIn(email, password)
   }
 
-  const signOut = async () => { await supabase.auth.signOut(); setUser(null) }
+  // Order matters: purge while the owner is still known, so the queues can tell whose
+  // unsent work they are holding, and only then forget who was signed in.
+  const signOut = async () => {
+    try { await purgeLocalData() } catch { /* never block sign-out on local cleanup */ }
+    await supabase.auth.signOut()
+    setOwner(null)
+    setUser(null)
+  }
 
   return (
     <Ctx.Provider value={{ user, loading, signIn, register, signOut, isAdmin: user?.role === 'admin' }}>

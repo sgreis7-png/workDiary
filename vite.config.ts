@@ -34,10 +34,14 @@ export default defineConfig({
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
         runtimeCaching: [
           {
-            // last-seen data is viewable offline
+            // Last-seen data stays viewable offline, but only briefly. Workbox keys this
+            // cache by URL and not by Authorization header, so an entry written for one
+            // account can be served to the next person signed in on the same device. Ten
+            // minutes keeps the offline read working on a site visit while bounding that
+            // window; purgeLocalData() deletes the whole cache on sign-out.
             urlPattern: ({ url }) => url.hostname.endsWith('supabase.co') && url.pathname.includes('/rest/'),
             handler: 'NetworkFirst',
-            options: { cacheName: 'supabase-rest', networkTimeoutSeconds: 5, expiration: { maxEntries: 300, maxAgeSeconds: 60 * 60 * 24 } },
+            options: { cacheName: 'supabase-rest', networkTimeoutSeconds: 5, expiration: { maxEntries: 300, maxAgeSeconds: 60 * 10 } },
           },
           {
             urlPattern: ({ url }) => url.hostname.includes('fonts.g'),

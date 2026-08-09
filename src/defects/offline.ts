@@ -2,6 +2,7 @@
 // and a write outbox replayed when the connection returns. Field sites often
 // have no reception — the checklist must keep working.
 import { del, get, keys, set, createStore } from 'idb-keyval'
+import { getOwner, ownedByCurrentUser } from '../lib/owner'
 
 const cacheStore = createStore('agrotop-defects', 'cache')
 const outboxStore = createStore('agrotop-defects', 'outbox')
@@ -24,7 +25,8 @@ export type DefectOp =
   | { kind: 'defect_patch'; id: string; patch: Record<string, unknown> }
   | { kind: 'defect_create'; row: Record<string, unknown> }
 
-interface QueuedOp { id: string; seq: number; op: DefectOp }
+/** `owner` scopes replay to whoever queued it — see src/lib/owner.ts. */
+interface QueuedOp { id: string; seq: number; op: DefectOp; owner?: string | null }
 let counter = Date.now()
 
 // guarded like the diary queue's sibling: this module is also exercised outside
@@ -35,12 +37,31 @@ const notifyQueued = () => {
 
 export async function queueOp(op: DefectOp): Promise<void> {
   const id = crypto.randomUUID()
-  await set(id, { id, seq: ++counter, op } satisfies QueuedOp, outboxStore)
+  await set(id, { id, seq: ++counter, op, owner: getOwner() } satisfies QueuedOp, outboxStore)
   notifyQueued()
 }
 
 export async function outboxCount(): Promise<number> {
-  try { return (await keys(outboxStore)).length } catch { return 0 }
+  // only the signed-in user's ops, so the pending badge reflects work they can send
+  return (await ownOps()).length
+}
+
+async function ownOps(): Promise<QueuedOp[]> {
+  try {
+    const out: QueuedOp[] = []
+    for (const k of await keys(outboxStore)) {
+      const v = await get<QueuedOp>(k, outboxStore)
+      if (v && ownedByCurrentUser(v.owner)) out.push(v)
+    }
+    return out
+  } catch { return [] }
+}
+
+/** Drop the read cache and every queued op. Only for an explicit local wipe. */
+export async function clearDefectStores(): Promise<void> {
+  try {
+    for (const k of await keys(cacheStore)) await del(k, cacheStore)
+  } catch { /* private mode */ }
 }
 
 // Same guard as the diary queue (src/lib/offline.ts): `online`, window focus and
@@ -56,11 +77,7 @@ export function replayOutbox(apply: (op: DefectOp) => Promise<void>): Promise<nu
 }
 
 async function runReplay(apply: (op: DefectOp) => Promise<void>): Promise<number> {
-  let items: QueuedOp[] = []
-  try {
-    const ks = await keys(outboxStore)
-    for (const k of ks) { const v = await get<QueuedOp>(k, outboxStore); if (v) items.push(v) }
-  } catch { return 0 }
+  let items = await ownOps()
   items = items.sort((a, b) => a.seq - b.seq)
   let n = 0
   for (const it of items) {
