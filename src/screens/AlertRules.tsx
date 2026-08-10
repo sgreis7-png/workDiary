@@ -34,26 +34,40 @@ export default function AlertRules() {
     fetchRuleTaskCounts().then(setTaskCounts).catch(() => setTaskCounts({}))
   }, [])
 
-  // The task list only exists for an overdue rule on one named project — "all projects" has no
-  // single schedule to pick from.
+  // A task list only exists for an overdue rule on one named project — "all projects" has no
+  // single schedule to pick from. Derived rather than stored, so there is no state to reset.
+  const picking = kind === 'overdue' && Boolean(projectId)
+
+  // Both effects only ever write what they fetched. Clearing happens in the change handlers
+  // below, because that is where the change happens — resetting state inside an effect makes
+  // React render twice for one user action.
   useEffect(() => {
-    if (kind !== 'overdue' || !projectId) { setTasks(null); setPickedTasks(new Set()); return }
+    if (!picking) return
     let alive = true
     fetchSchedulableTasks(projectId)
       .then((ts) => { if (alive) setTasks(ts) })
       .catch(() => { if (alive) setTasks([]) })
     return () => { alive = false }
-  }, [kind, projectId])
+  }, [picking, projectId])
 
   // How much noise saving this rule would make right now.
   useEffect(() => {
-    if (kind !== 'overdue') { setLateNow(null); return }
+    if (kind !== 'overdue') return
     let alive = true
     countLateTasks(projectId || null)
       .then((n) => { if (alive) setLateNow(n) })
-      .catch(() => { if (alive) setLateNow(null) })
+      .catch(() => { if (alive) setLateNow(0) })
     return () => { alive = false }
   }, [kind, projectId])
+
+  /** Changing either of these invalidates the picked tasks and the fetched list. */
+  const changeScope = (next: { kind?: typeof kind; project?: string }) => {
+    if (next.kind !== undefined) setKind(next.kind)
+    if (next.project !== undefined) setProjectId(next.project)
+    setTasks(null)
+    setPickedTasks(new Set())
+    setLateNow(null)
+  }
 
   const weekdays = lang === 'he' ? WEEKDAYS_HE : WEEKDAYS_EN
 
@@ -120,12 +134,12 @@ export default function AlertRules() {
       {err && <div className="alert">{err}</div>}
 
       <div className="coop-new" style={{ flexWrap: 'wrap' }}>
-        <select className="input" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
+        <select className="input" value={kind} onChange={(e) => changeScope({ kind: e.target.value as typeof kind })}>
           <option value="missing">{t('rule_kind_missing')}</option>
           <option value="filled">{t('rule_kind_filled')}</option>
           <option value="overdue">{t('rule_kind_overdue')}</option>
         </select>
-        <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
+        <select className="input" value={projectId} onChange={(e) => changeScope({ project: e.target.value })}>
           <option value="">{t('rule_all_projects')}</option>
           {projects.filter((p) => p.active).map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
@@ -165,7 +179,7 @@ export default function AlertRules() {
             <div className="alert">{t('rule_late_now')} {lateNow}</div>
           )}
 
-          {!projectId ? (
+          {!picking ? (
             <p className="coop-intro">{t('rule_pick_project_for_tasks')}</p>
           ) : tasks === null ? (
             <span className="count mono"><span className="spin" /></span>
