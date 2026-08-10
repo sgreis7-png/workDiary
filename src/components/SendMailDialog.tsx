@@ -97,7 +97,8 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
       // take a week to find.
       const kind = e instanceof ReportSendError ? e.kind : 'unknown'
       const msg =
-        kind === 'not_configured' ? t('send_not_configured')
+        kind === 'domain_not_verified' ? t('send_no_domain')
+        : kind === 'not_configured' ? t('send_not_configured')
         : kind === 'rate_limited' ? t('send_rate_limited')
         : kind === 'too_many' ? t('send_too_many')
         : kind === 'rejected' ? `${t('send_rejected')} ${(e as ReportSendError).detail ?? ''}`.trim()

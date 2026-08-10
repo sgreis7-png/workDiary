@@ -9,6 +9,7 @@ import { supabase } from './supabase'
 /** Distinguishable failures, so the dialog can say something true rather than "failed". */
 export type SendError =
   | 'not_configured'   // no Resend key on the server
+  | 'domain_not_verified' // Resend is in sandbox: only the account owner may receive
   | 'not_a_member'
   | 'rate_limited'
   | 'no_recipients'
@@ -50,6 +51,7 @@ export async function sendReportByEmail(opts: {
 function fail(code: string, detail?: string): never {
   const kind: SendError =
     code === 'email_not_configured' ? 'not_configured'
+    : code === 'domain_not_verified' ? 'domain_not_verified'
     : code === 'not_a_member' ? 'not_a_member'
     : code === 'rate_limited' ? 'rate_limited'
     : code === 'no_recipients' ? 'no_recipients'

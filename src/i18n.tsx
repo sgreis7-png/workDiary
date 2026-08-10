@@ -214,6 +214,10 @@ export const STRINGS = {
                       en: 'Too many emails in the last hour. Try again shortly.' },
   send_too_many:    { he: 'יותר מדי נמענים בשליחה אחת.', en: 'Too many recipients for one send.' },
   send_rejected:    { he: 'שרת הדואר דחה את השליחה:', en: 'The mail server refused the send:' },
+  send_no_domain:   { he: 'שליחת מייל עדיין במצב בדיקה: לא אומת דומיין ב-Resend, ולכן אפשר לשלוח רק לכתובת של בעל החשבון. '
+                        + 'עד שיאומת דומיין — השתמשו ב"צור דוח למייל" והדביקו בדואר שלכם, או בשליחה מ-Outlook.',
+                      en: 'Email is still in test mode: no domain is verified in Resend, so only the account owner can receive. '
+                        + 'Until a domain is verified, use "Copy report" and paste it into your own mail, or send from Outlook.' },
   print_pdf:        { he: 'הדפס / שמור PDF', en: 'Print / Save PDF' },
   print_in_browser: { he: 'הדוח נפתח בדפדפן — משם אפשר להדפיס או לשמור כ־PDF.',
                       en: 'The report opened in your browser — print or save as PDF from there.' },

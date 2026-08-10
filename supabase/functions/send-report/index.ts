@@ -73,11 +73,20 @@ Deno.serve(async (req) => {
     if (recipients.size === 0) return json({ error: 'no_recipients' }, 400)
     if (recipients.size > MAX_RECIPIENTS) return json({ error: 'too_many_recipients' }, 400)
 
+    // Sending identity comes from mail_settings when it is set, so verifying a domain in Resend
+    // takes one update statement rather than a secret change and a redeploy. Falls back to the
+    // env vars, which is how this ran before the table existed.
+    const { data: settings } = await db.from('mail_settings')
+      .select('from_address,verified_domain').eq('id', true).maybeSingle()
+    const conf = (settings ?? null) as { from_address: string | null; verified_domain: string | null } | null
+    const fromAddress = conf?.from_address?.trim() || RESEND_FROM
+    const verifiedDomain = (conf?.verified_domain?.trim() || VERIFIED_DOMAIN).toLowerCase()
+
     // Send as the user when their domain is verified, so the report arrives from the person who
     // sent it. Otherwise from the system address with reply-to set to them, which is the most
     // an unverified domain allows without the mail being rejected as a forgery.
     const senderDomain = user.email.split('@')[1]?.toLowerCase() ?? ''
-    const asUser = Boolean(VERIFIED_DOMAIN) && senderDomain === VERIFIED_DOMAIN
+    const asUser = Boolean(verifiedDomain) && senderDomain === verifiedDomain
     const { data: profile } = await db.from('profiles').select('name').eq('id', user.id).maybeSingle()
     const senderName = (profile as { name?: string } | null)?.name ?? user.email.split('@')[0]
 
@@ -85,7 +94,7 @@ Deno.serve(async (req) => {
       method: 'POST',
       headers: { Authorization: `Bearer ${RESEND_KEY}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        from: asUser ? `${senderName} <${user.email}>` : RESEND_FROM,
+        from: asUser ? `${senderName} <${user.email}>` : fromAddress,
         reply_to: user.email,
         to: [...recipients],
         subject,
@@ -93,10 +102,17 @@ Deno.serve(async (req) => {
       }),
     })
     if (!r.ok) {
-      // Hand the provider's reason back: "your domain is not verified" is something the admin
-      // can act on, and swallowing it is how this became a mystery in the first place.
+      // Hand the provider's reason back: "your domain is not verified" is something an admin can
+      // act on, and swallowing it is how this became a mystery in the first place. The one
+      // refusal worth naming is the sandbox restriction, because it is not a fault in the app and
+      // the message it deserves is an instruction, not a stack trace.
       const detail = await r.text().catch(() => '')
-      return json({ error: 'send_failed', status: r.status, detail: detail.slice(0, 400) }, 502)
+      const sandboxed = r.status === 403 && detail.includes('verify a domain')
+      return json({
+        error: sandboxed ? 'domain_not_verified' : 'send_failed',
+        status: r.status,
+        detail: detail.slice(0, 400),
+      }, 502)
     }
 
     return json({ ok: true, sent: recipients.size, from: asUser ? user.email : 'system' })
