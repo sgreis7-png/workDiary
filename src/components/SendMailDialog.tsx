@@ -213,13 +213,14 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
             <input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} />
             <div className="form-actions">
               <button className="btn btn--ghost" onClick={onClose}>{t('cancel')}</button>
-              {/* Secondary, and labelled with what it costs: this is the one that asks you to
-                  sign in to Microsoft. The primary button just sends. */}
-              <button className="btn btn--ghost" disabled={busy} onClick={onSendViaOutlook}
-                title={t('send_outlook_hint')}>
-                {t('send_via_outlook')}
+              {/* Outlook is the primary button again, because it is the path that actually
+                  delivers today: the server-side send cannot reach anyone but the Resend account
+                  owner until a domain is verified there. Swap them back the moment it is. */}
+              <button className="btn btn--ghost" disabled={busy} onClick={onSend}
+                title={t('send_server_hint')}>
+                {t('send_via_server')}
               </button>
-              <button className="btn btn--primary" disabled={busy} onClick={onSend}>
+              <button className="btn btn--primary" disabled={busy} onClick={onSendViaOutlook}>
                 {busy ? <span className="spin" /> : t('send_now')}
               </button>
             </div>
