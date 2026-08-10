@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button, Tag, Field, stagger, riseIn } from '../../components/ui'
 import { useI18n } from '../../i18n'
-import { createProject, deleteProject, fetchUsers, notifyAssigned, setProjectActive, setProjectStaff, updateProject } from '../../api'
+import { createProject, deleteProject, fetchProjectManagers, fetchUsers, notifyAssigned, setProjectActive, setProjectStaff, updateProject } from '../../api'
 import { useStore } from '../../store'
 import { useAuth } from '../../auth'
 import type { AppUser, Project, ProjectInput } from '../../data'
@@ -19,6 +19,9 @@ export default function Projects() {
   const { projects, myPriorities, setUserPriority, reloadProjects, assignments, reloadAssignments } = useStore()
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
   const [allStaff, setAllStaff] = useState<AppUser[]>([])
+  // who runs each project. Kept here rather than in the store: this is the only screen that
+  // sets it, and the notification fan-out reads it server-side.
+  const [projectManagers, setProjectManagers] = useState<Record<string, string[]>>({})
   const [params] = useSearchParams()
   const focusId = params.get('p')
   const [flash, setFlash] = useState<string | null>(null)
@@ -42,6 +45,7 @@ export default function Projects() {
       fetchUsers()
         .then((us) => setAllStaff(us.filter((u) => u.active)))
         .catch(() => setAllStaff([]))
+      fetchProjectManagers().then(setProjectManagers).catch(() => setProjectManagers({}))
     }
   }, [isAdmin])
   const staffLabel = (email: string) => allStaff.find((u) => u.email === email)?.name ?? email.split('@')[0]
@@ -131,20 +135,31 @@ export default function Projects() {
     const [form, setForm] = useState<ProjectInput>({ ...initial })
     const prevStaff = isNew ? [] : (assignments[(initial as Project).id] ?? [])
     const [staffEmails, setStaffEmails] = useState<string[]>(prevStaff)
+    const [managerEmails, setManagerEmails] = useState<string[]>(
+      isNew ? [] : (projectManagers[(initial as Project).id] ?? []))
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState('')
     const set = (k: keyof ProjectInput, v: string | boolean | number | null) => setForm((f) => ({ ...f, [k]: v }))
-    const toggleStaff = (email: string) => setStaffEmails((s) => s.includes(email) ? s.filter((x) => x !== email) : [...s, email])
+    const toggleStaff = (email: string) => setStaffEmails((s) => {
+      const next = s.includes(email) ? s.filter((x) => x !== email) : [...s, email]
+      // taking someone off the project takes their manager mark with them, or they would keep
+      // receiving its notifications while no longer being on it
+      if (!next.includes(email)) setManagerEmails((m) => m.filter((x) => x !== email))
+      return next
+    })
+    const toggleManager = (email: string) => setManagerEmails((m) =>
+      m.includes(email) ? m.filter((x) => x !== email) : [...m, email])
 
     const save = async () => {
       if (!form.name.trim()) { setErr(t('project_name')); return }
       setBusy(true); setErr('')
       try {
         const id = isNew ? await createProject(form) : ((await updateProject((initial as Project).id, form)), (initial as Project).id)
-        await setProjectStaff(id, staffEmails)
+        await setProjectStaff(id, staffEmails, managerEmails)
         // notify only the newly-added workers
         const added = staffEmails.filter((e) => !prevStaff.includes(e))
         await notifyAssigned(added, form.name.trim(), id)
+        await fetchProjectManagers().then(setProjectManagers).catch(() => {})
         onSaved()
       } catch (e) { setErr(String((e as Error).message ?? e)); setBusy(false) }
     }
@@ -186,6 +201,21 @@ export default function Projects() {
                 ))}
               </div>
             </Field>
+            {staffEmails.length > 0 && (
+              <Field label={t('pm_label')} hint={t('pm_hint')}>
+                <div className="staff-pick">
+                  {/* only people already on the project: managing one you are not assigned to
+                      is not a state worth allowing */}
+                  {staffEmails.map((email) => (
+                    <label key={email} className={`staff-chip ${managerEmails.includes(email) ? 'on' : ''}`}>
+                      <input type="checkbox" checked={managerEmails.includes(email)}
+                        onChange={() => toggleManager(email)} hidden />
+                      ★ {staffLabel(email)}
+                    </label>
+                  ))}
+                </div>
+              </Field>
+            )}
             <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 14, color: 'var(--ink-3)' }}>
               <input type="checkbox" checked={form.active} onChange={(e) => set('active', e.target.checked)} /> {t('active')}
             </label>

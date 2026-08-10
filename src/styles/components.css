@@ -509,6 +509,10 @@ select.input { cursor: pointer; }
 .gantt.is-editing { outline: 2px solid color-mix(in srgb, var(--green-deep) 45%, transparent);
   outline-offset: 3px; border-radius: 10px; }
 
+.gantt__alertopt { display: inline-flex; align-items: center; gap: 7px; font-size: 12.5px;
+  color: var(--ink-2); cursor: pointer; }
+.gantt__alertopt input { cursor: pointer; }
+
 /* ---------- staff picker ---------- */
 .staff-pick { display: flex; flex-wrap: wrap; gap: 8px; }
 .staff-chip { padding: 7px 13px; border-radius: 99px; border: 1px solid var(--line-strong);

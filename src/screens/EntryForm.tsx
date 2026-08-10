@@ -18,6 +18,7 @@ import type { FieldDef } from '../data'
 import { COOPS_KEY, MISSING_KEY, defaultCoop, parseCoops, parseMissing } from '../lib/reportTables'
 import type { CoopReport, MissingRow } from '../lib/reportTables'
 import { CoopReports, MissingTable } from '../components/ReportTables'
+import { notifyEntryEdited } from '../lib/notifyNewRecord'
 
 // new photo (file) or an existing one (storage path)
 interface Photo { url: string; file?: File; path?: string }
@@ -201,6 +202,7 @@ export default function EntryForm() {
     try {
       if (editing && id) {
         await updateEntry(id, project, values, newFiles, removedPaths)
+        notifyEntryEdited(project, id)
         await clearDraft(draftKey).catch(() => {})
         nav(`/entry/${id}`)
       } else if (!navigator.onLine) {

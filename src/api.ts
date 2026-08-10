@@ -308,15 +308,30 @@ export async function fetchAssignments(): Promise<Record<string, string[]>> {
   for (const r of data as { project_id: string; email: string }[]) (m[r.project_id] ||= []).push(r.email)
   return m
 }
+
+/** Who manages each project, keyed by project id. Separate from fetchAssignments because most
+ *  screens only care who is on a project, not who runs it. */
+export async function fetchProjectManagers(): Promise<Record<string, string[]>> {
+  const { data, error } = await supabase.from('project_assignments')
+    .select('project_id,email').eq('is_manager', true)
+  if (error) throw error
+  const m: Record<string, string[]> = {}
+  for (const r of data as { project_id: string; email: string }[]) (m[r.project_id] ||= []).push(r.email)
+  return m
+}
 /** Replace a project's assignments in one transaction.
  *
  *  This used to delete every row and then insert the replacements as two separate
  *  requests. A failure in between — a dropped connection on a phone is enough — left the
  *  project with nobody assigned while the UI had already moved on. */
-export async function setProjectStaff(projectId: string, emails: string[]): Promise<void> {
+export async function setProjectStaff(
+  projectId: string, emails: string[], managers: string[] = [],
+): Promise<void> {
   const { error } = await supabase.rpc('set_project_staff', {
     p_project: projectId,
     p_emails: emails,
+    // a manager must also be assigned, or nothing would reach them
+    p_managers: managers.filter((m) => emails.includes(m)),
   })
   if (error) throw error
 }

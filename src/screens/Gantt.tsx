@@ -17,6 +17,7 @@ import {
   importSchedule, logScheduleEdit, patchTasks, pingConverter, touchChart, type TaskPatch,
 } from '../gantt/api'
 import type { GanttBundle, GanttChart as Chart, GanttTask } from '../gantt/model'
+import { notifyScheduleChanged } from '../lib/notifyNewRecord'
 
 type Phase = 'idle' | 'converting' | 'saving'
 
@@ -109,6 +110,12 @@ export default function GanttScreen() {
       const patch: TaskPatch = {}
       if (c.span) { patch.start_ts = c.span.start_ts; patch.finish_ts = c.span.finish_ts }
       if (c.pct !== undefined) patch.pct = c.pct
+      if (c.alertOnOverrun !== undefined) {
+        patch.alert_on_overrun = c.alertOnOverrun
+        // Re-arm: an alert already sent once would otherwise stay silent for good, so switching
+        // it back on would look like it had no effect.
+        if (c.alertOnOverrun) patch.overdue_notified_at = null
+      }
       if (Object.keys(patch).length) patchByTask.set(c.task.id, patch)
     }
     if (!patchByTask.size) return
@@ -134,6 +141,9 @@ export default function GanttScreen() {
         await logScheduleEdit(before.chart, {
           tasks: changes.map((c) => ({ ext_uid: c.task.ext_uid, name: c.task.name, ...patchByTask.get(c.task.id) })),
         })
+        // After the write, not before: nobody should be told the schedule moved if it did not.
+        // One notice per save, however many bars were dragged.
+        notifyScheduleChanged(before.chart.project_id, patchByTask.size)
       } catch {
         setLoaded(before)
         setProblem(g('err_save_failed'))

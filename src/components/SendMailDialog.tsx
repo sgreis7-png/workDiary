@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { isPopupBlocked, parseRecipients, sendMailViaOutlook } from '../lib/outlookSend'
+import { ReportSendError, sendReportByEmail } from '../lib/sendReport'
 import { fetchLists, type DistList } from '../lib/distLists'
 import { fetchDirectory } from '../api'
 import { useDialog } from '../lib/useDialog'
@@ -70,18 +71,52 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
     if (e.key === 'Backspace' && !query && recipients.length) removeRecipient(recipients[recipients.length - 1])
   }
 
-  async function onSend() {
-    if (busy) return
+  const addressees = () => {
     const listEmails = lists.filter((l) => picked.has(l.id)).flatMap((l) => l.emails.map((e) => e.toLowerCase()))
     const typed = parseRecipients(query) // a typed-but-not-confirmed address still counts
-    const all = [...new Set([...recipients, ...typed, ...listEmails])]
+    return [...new Set([...recipients, ...typed, ...listEmails])]
+  }
+
+  const finish = () => {
+    setSent(true)
+    onSent?.()
+    setTimeout(onClose, 1800)
+  }
+
+  /** The plain send: the server does it. Nothing to sign in to. */
+  async function onSend() {
+    if (busy) return
+    const all = addressees()
+    if (!all.length) { setErr(t('send_no_recipients')); return }
+    setBusy(true); setErr('')
+    try {
+      await sendReportByEmail({ to: all, subject: subject.trim(), html })
+      finish()
+    } catch (e) {
+      // Say which thing went wrong. "failed" with a stack trace is what made the last problem
+      // take a week to find.
+      const kind = e instanceof ReportSendError ? e.kind : 'unknown'
+      const msg =
+        kind === 'not_configured' ? t('send_not_configured')
+        : kind === 'rate_limited' ? t('send_rate_limited')
+        : kind === 'too_many' ? t('send_too_many')
+        : kind === 'rejected' ? `${t('send_rejected')} ${(e as ReportSendError).detail ?? ''}`.trim()
+        : `${t('send_failed')}: ${String((e as Error).message ?? e)}`
+      setErr(msg)
+      setBusy(false)
+    }
+  }
+
+  /** Optional: send from the user's own Outlook so the copy lands in their Sent Items. Needs a
+   *  Microsoft sign-in, which is why it is no longer what the main button does. */
+  async function onSendViaOutlook() {
+    if (busy) return
+    const all = addressees()
     if (!all.length) { setErr(t('send_no_recipients')); return }
     setBusy(true); setErr('')
     try {
       await sendMailViaOutlook({ to: all, subject: subject.trim(), html, loginHint: user?.email })
-      setSent(true)
-      onSent?.()
-      setTimeout(onClose, 1800)
+      finish()
     } catch (e) {
       setErr(isPopupBlocked(e) ? t('send_popup_blocked') : `${t('send_failed')}: ${String((e as Error).message ?? e)}`)
       setBusy(false)
@@ -172,6 +207,12 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
             <input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} />
             <div className="form-actions">
               <button className="btn btn--ghost" onClick={onClose}>{t('cancel')}</button>
+              {/* Secondary, and labelled with what it costs: this is the one that asks you to
+                  sign in to Microsoft. The primary button just sends. */}
+              <button className="btn btn--ghost" disabled={busy} onClick={onSendViaOutlook}
+                title={t('send_outlook_hint')}>
+                {t('send_via_outlook')}
+              </button>
               <button className="btn btn--primary" disabled={busy} onClick={onSend}>
                 {busy ? <span className="spin" /> : t('send_now')}
               </button>

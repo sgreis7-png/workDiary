@@ -7,6 +7,7 @@ import { compressImage } from '../lib/compressImage'
 import type { GateKey, ItemStatus, Severity, DefectStatus, CoopType, Responsible, SignatureRole } from './model'
 import { cachePut, cacheGet, queueOp, isNetworkError, replayOutbox, type DefectOp } from './offline'
 import { notifyNewDefect } from '../lib/notifyNewRecord'
+import { notifyGateSigned } from '../lib/notifyNewRecord'
 
 export interface Coop {
   id: string; project_id: string; name: string
@@ -214,6 +215,7 @@ export async function signGate(coopId: string, gate: GateKey, role: SignatureRol
   const { error } = await supabase.from('coop_signatures')
     .upsert({ coop_id: coopId, gate, role, signer_name: signerName, signature_path: path, signed_at: new Date().toISOString() }, { onConflict: 'coop_id,gate,role' })
   if (error) throw error
+  notifyGateSigned(coopId, `${gate} · ${role}`, signerName)
 }
 
 export async function removeGateSignatures(coopId: string, gate: GateKey): Promise<void> {
