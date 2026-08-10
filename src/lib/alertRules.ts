@@ -8,7 +8,9 @@ export interface AlertRule {
   /** 'overdue' is event-driven: the hourly job notices a finish date that has passed while the
    *  task is unfinished, so frequency and alert_hour carry defaults and mean nothing. */
   kind: 'missing' | 'filled' | 'overdue'
-  frequency: 'daily' | 'weekly' | 'monthly'
+  /** 'once' is the default for an overdue rule: the real-time alert fires and that is the end
+   *  of it. The others add a repeating summary of what is still late. */
+  frequency: 'once' | 'daily' | 'weekly' | 'monthly'
   alert_hour: number
   weekday: number | null
   month_day: number | null

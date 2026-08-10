@@ -24,6 +24,9 @@ export default function AlertRules() {
   const [lateNow, setLateNow] = useState<number | null>(null)
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({})
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  // How often to repeat an overdue alert. 'once' means the real-time alert only, which is the
+  // default and the right one — a late task is a fact you learn once.
+  const [repeat, setRepeat] = useState<'once' | 'daily' | 'weekly' | 'monthly'>('once')
   const [hour, setHour] = useState(20)
   const [weekday, setWeekday] = useState(0)
   const [monthDay, setMonthDay] = useState(1)
@@ -80,10 +83,10 @@ export default function AlertRules() {
         kind,
         // Overdue rules are event-driven — the hourly job notices a date that has passed — so the
         // schedule fields carry defaults rather than meaning anything.
-        frequency: kind === 'missing' ? frequency : 'daily',
-        alert_hour: kind === 'missing' ? Math.min(23, Math.max(0, hour)) : 0,
-        weekday: kind === 'missing' && frequency === 'weekly' ? weekday : null,
-        month_day: kind === 'missing' && frequency === 'monthly' ? monthDay : null,
+        frequency: kind === 'missing' ? frequency : kind === 'overdue' ? repeat : 'daily',
+        alert_hour: kind === 'filled' ? 0 : Math.min(23, Math.max(0, hour)),
+        weekday: (kind === 'missing' ? frequency : repeat) === 'weekly' ? weekday : null,
+        month_day: (kind === 'missing' ? frequency : repeat) === 'monthly' ? monthDay : null,
       })
       if (kind === 'overdue' && pickedTasks.size) {
         await setRuleTasks(r.id, [...pickedTasks])
@@ -117,9 +120,14 @@ export default function AlertRules() {
     }
     if (r.kind === 'overdue') {
       const n = taskCounts[r.id] ?? 0
+      const hh = String(r.alert_hour).padStart(2, '0')
+      const cadence = r.frequency === 'once' ? t('rule_repeat_once')
+        : r.frequency === 'daily' ? `${t('rule_daily')} · ${hh}:00`
+        : r.frequency === 'weekly' ? `${t('rule_weekly')} · ${weekdays[r.weekday ?? 0]} · ${hh}:00`
+        : `${t('rule_monthly')} · ${r.month_day ?? 1} · ${hh}:00`
       return {
         icon: '⚑', kind: t('rule_kind_overdue'), project,
-        when: t('rule_hourly'),
+        when: cadence,
         scope: n ? `${n} ${t('rule_tasks_n')}` : t('rule_all_tasks'),
         scopeAll: n === 0,
       }
@@ -197,8 +205,37 @@ export default function AlertRules() {
               {t('rule_overdue_auto')}
             </div>
 
+            <span className="field__label" style={{ display: 'block', marginBottom: 8 }}>
+              {t('rule_repeat')} <span className="field__hint">{t('rule_repeat_hint')}</span>
+            </span>
+            <div className="rule-new__fields" style={{ marginBottom: 16 }}>
+              <select className="input" value={repeat}
+                onChange={(e) => setRepeat(e.target.value as typeof repeat)}>
+                <option value="once">{t('rule_repeat_once')}</option>
+                <option value="daily">{t('rule_daily')}</option>
+                <option value="weekly">{t('rule_weekly')}</option>
+                <option value="monthly">{t('rule_monthly')}</option>
+              </select>
+              {repeat === 'weekly' && (
+                <select className="input" value={weekday} onChange={(e) => setWeekday(Number(e.target.value))}>
+                  {weekdays.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                </select>
+              )}
+              {repeat === 'monthly' && (
+                <input className="input" type="number" min={1} max={31} value={monthDay}
+                  onChange={(e) => setMonthDay(Number(e.target.value) || 1)} style={{ width: 90 }} />
+              )}
+              {repeat !== 'once' && (
+                <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                  {t('rule_at_hour')}
+                  <input className="input" type="number" min={0} max={23} value={hour}
+                    onChange={(e) => setHour(Number(e.target.value) || 0)} style={{ width: 90 }} />
+                </label>
+              )}
+            </div>
+
             {/* Already-late tasks all announce themselves on the first run. Better said now than
-              discovered as thirty-six notifications. */}
+              discovered as a burst. */}
           {lateNow !== null && lateNow > 0 && (
             <div className="alert">{t('rule_late_now')} {lateNow}</div>
           )}
