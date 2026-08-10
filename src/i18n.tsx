@@ -36,6 +36,7 @@ export const STRINGS = {
   nav_section_projects: { he: 'פרויקטים', en: 'Projects' },
   nav_section_tracking: { he: 'מעקב וניתוח', en: 'Tracking & analysis' },
   nav_fields:     { he: 'בונה הטופס', en: 'Form builder' },
+  nav_audit:      { he: 'יומן ביקורת', en: 'Audit log' },
   nav_users:      { he: 'משתמשים והרשאות', en: 'Users & permissions' },
   nav_admin:      { he: 'ניהול', en: 'Admin' },
   nav_export:     { he: 'ייצוא דוחות', en: 'Export' },

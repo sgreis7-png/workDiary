@@ -38,6 +38,7 @@ const AlertRules = lazy(() => import('./screens/AlertRules'))
 const DistLists = lazy(() => import('./screens/DistLists'))
 const Digest = lazy(() => import('./screens/Digest'))
 const Feedback = lazy(() => import('./screens/admin/Feedback'))
+const AuditLog = lazy(() => import('./screens/admin/AuditLog'))
 const GanttScreen = lazy(() => import('./screens/Gantt'))
 const ControlCenter = lazy(() => import('./screens/ControlCenter'))
 
@@ -115,6 +116,7 @@ export default function App() {
         <Route path="admin/defect-items" element={<RequirePerm area="form_builder" edit><DefectFormBuilder /></RequirePerm>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
+        <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

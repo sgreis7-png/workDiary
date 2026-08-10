@@ -4,7 +4,8 @@ import { describe, it, expect } from 'vitest'
 import { STRINGS, translate } from './i18n'
 import { D, dt } from './defects/i18n'
 import { T as TASKS_T } from './screens/Tasks'
-import { T as QCD_T, AUDIT_LABELS } from './screens/defects/QCDashboard'
+import { T as QCD_T } from './screens/defects/QCDashboard'
+import { T as AUDIT_T, AUDIT_LABELS } from './screens/admin/AuditLog'
 import { G as GANTT_G } from './gantt/i18n'
 
 // Every he/en dictionary in the app, including the per-screen ones — those sat
@@ -15,7 +16,8 @@ const dicts: [string, Record<string, { he: string; en: string }>][] = [
   ['defects/i18n.ts', D as Record<string, { he: string; en: string }>],
   ['screens/Tasks.tsx', TASKS_T as Record<string, { he: string; en: string }>],
   ['screens/defects/QCDashboard.tsx', QCD_T as Record<string, { he: string; en: string }>],
-  ['screens/defects/QCDashboard.tsx AUDIT_LABELS', AUDIT_LABELS],
+  ['screens/admin/AuditLog.tsx', AUDIT_T as Record<string, { he: string; en: string }>],
+  ['screens/admin/AuditLog.tsx AUDIT_LABELS', AUDIT_LABELS],
   ['gantt/i18n.ts', GANTT_G as Record<string, { he: string; en: string }>],
 ]
 

@@ -66,6 +66,10 @@ describe('alert deep links', () => {
     expect(safeInternalPath(`/gantt?project=${PROJ}`)).toBe(`/gantt?project=${PROJ}`)
   })
 
+  it('accepts the audit log, which is a new admin route', () => {
+    expect(safeInternalPath('/admin/audit')).toBe('/admin/audit')
+  })
+
   it('keeps the gate on an awaiting-approval link', () => {
     expect(safeInternalPath(`/defects/coop/${COOP}?gate=gate1`))
       .toBe(`/defects/coop/${COOP}?gate=gate1`)

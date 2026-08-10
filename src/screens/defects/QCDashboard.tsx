@@ -2,14 +2,13 @@ import { useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
-import { useAuth } from '../../auth'
 import { useI18n } from '../../i18n'
 import { supabase } from '../../lib/supabase'
 import { GATES, GATE_ORDER, type GateKey } from '../../defects/model'
 import { gateSummary } from '../../defects/rules'
 import { loadGateDefs, itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, gateShortName } from '../../defects/i18n'
-import { fetchAllCoops, fetchDefectsForSearch, fetchAuditLog, type Coop, type DefectSearchRow, type AuditRow } from '../../defects/api'
+import { fetchAllCoops, fetchDefectsForSearch, type Coop, type DefectSearchRow } from '../../defects/api'
 
 // exported so the i18n completeness test covers these strings too
 export const T = {
@@ -24,30 +23,19 @@ export const T = {
   recurring: { he: 'ליקויים חוזרים — הסעיפים שנכשלים הכי הרבה', en: 'Recurring defects — most-failing items' },
   recurring_hint: { he: 'ריכוז בין כל הפרויקטים. סעיף שחוזר שוב ושוב = בעיה תהליכית או ספק.', en: 'Across all projects. A repeating item = process or supplier issue.' },
   times: { he: 'פעמים', en: 'times' },
-  audit: { he: 'יומן שינויים (אדמין)', en: 'Audit log (admin)' },
   loading: { he: 'טוען נתונים…', en: 'Loading…' },
   none: { he: 'אין נתונים עדיין.', en: 'No data yet.' },
 } as const
-
-export const AUDIT_LABELS: Record<string, { he: string; en: string }> = {
-  gate_signed: { he: 'חתם על שער', en: 'signed gate' },
-  gate_unsigned: { he: 'הסיר חתימות משער', en: 'removed gate signatures' },
-  defect_open: { he: 'פתח ליקוי', en: 'opened defect' },
-  defect_closed: { he: 'סגר ליקוי', en: 'closed defect' },
-  defect_assigned: { he: 'הקצה ליקוי', en: 'assigned defect' },
-}
 
 export default function QCDashboard() {
   const { lang } = useI18n()
   const t = (k: keyof typeof T) => T[k][lang]
   const { dt } = useDT()
   const { projectName } = useStore()
-  const { isAdmin } = useAuth()
   const nav = useNavigate()
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [items, setItems] = useState<{ coop_id: string; gate: GateKey; item_no: number; status: 'done' | 'not_done' | 'na' | null }[]>([])
   const [defects, setDefects] = useState<DefectSearchRow[]>([])
-  const [audit, setAudit] = useState<AuditRow[]>([])
   const [defs, setDefs] = useState<GateDefs>(GATES)
 
   useEffect(() => {
@@ -56,8 +44,7 @@ export default function QCDashboard() {
       .then(({ data }) => setItems((data ?? []) as typeof items))
     fetchDefectsForSearch().then(setDefects).catch(() => {})
     loadGateDefs().then(setDefs)
-    if (isAdmin) fetchAuditLog(60).then(setAudit).catch(() => {})
-  }, [isAdmin])  
+  }, [])  
 
   const today = new Date().toISOString().slice(0, 10)
   const open = defects.filter((d) => d.status === 'open')
@@ -154,25 +141,6 @@ export default function QCDashboard() {
           </div>
         )}
       </div>
-
-      {isAdmin && (
-        <div className="gate-panel" style={{ marginTop: 20 }}>
-          <h2 className="gate-panel__title">{t('audit')}</h2>
-          {audit.length === 0 ? <div className="empty">{t('none')}</div> : (
-            <div className="qc-audit">
-              {audit.map((a) => (
-                <div key={a.id} className="qc-audit__row">
-                  <small className="mono">{new Date(a.created_at).toLocaleString('he-IL', { dateStyle: 'short', timeStyle: 'short' })}</small>
-                  <b>{a.actor_email.split('@')[0]}</b>
-                  <span>{AUDIT_LABELS[a.action]?.[lang] ?? a.action}</span>
-                  {a.details?.coop != null && <span className="tag tag--muted">{String(a.details.coop)}</span>}
-                  {a.details?.to != null && <span className="tag tag--green">→ {String(a.details.to).split('@')[0]}</span>}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
     </div>
   )
 }
