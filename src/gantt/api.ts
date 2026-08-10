@@ -6,7 +6,7 @@ import { toRows, type ConvertedProject, type GanttBundle, type GanttChart, type 
 const CHART_COLS =
   'id,project_id,name,source_file,source_path,status_date,span_start,span_finish,imported_by,imported_at,updated_at,active'
 const TASK_COLS =
-  'id,chart_id,ext_uid,parent_ext_uid,sort_order,depth,wbs,name,start_ts,finish_ts,base_start_ts,base_finish_ts,duration_days,pct,milestone,is_summary,critical,notes,resources,alert_on_overrun'
+  'id,chart_id,ext_uid,parent_ext_uid,sort_order,depth,wbs,name,start_ts,finish_ts,base_start_ts,base_finish_ts,duration_days,pct,milestone,is_summary,critical,notes,resources'
 const LINK_COLS = 'id,chart_id,pred_ext_uid,succ_ext_uid,kind,lag_days'
 
 /** Formats accepted for import; anything MPXJ can read. */
@@ -244,12 +244,7 @@ async function insertRows(table: 'gantt_tasks' | 'gantt_links', rows: Record<str
 
 // ---------- editing ----------
 
-export interface TaskPatch extends Partial<Span> {
-  pct?: number; name?: string; notes?: string | null
-  alert_on_overrun?: boolean
-  /** Clearing the stamp re-arms the alert, so turning it back on notifies again. */
-  overdue_notified_at?: string | null
-}
+export interface TaskPatch extends Partial<Span> { pct?: number; name?: string; notes?: string | null }
 
 export async function patchTask(taskId: string, patch: TaskPatch): Promise<void> {
   const { error } = await supabase.from('gantt_tasks')

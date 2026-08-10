@@ -39,9 +39,6 @@ export interface GanttTask {
   pct: number
   milestone: boolean
   is_summary: boolean
-  /** Raise an alert when this task's finish date passes while it is unfinished. Per row,
-   *  because a schedule has a handful of dates that matter and a hundred that do not. */
-  alert_on_overrun?: boolean
   critical: boolean
   notes: string | null
   resources: string[]

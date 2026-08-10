@@ -114,12 +114,6 @@ export default function GanttScreen() {
       const patch: TaskPatch = {}
       if (c.span) { patch.start_ts = c.span.start_ts; patch.finish_ts = c.span.finish_ts }
       if (c.pct !== undefined) patch.pct = c.pct
-      if (c.alertOnOverrun !== undefined) {
-        patch.alert_on_overrun = c.alertOnOverrun
-        // Re-arm: an alert already sent once would otherwise stay silent for good, so switching
-        // it back on would look like it had no effect.
-        if (c.alertOnOverrun) patch.overdue_notified_at = null
-      }
       if (Object.keys(patch).length) patchByTask.set(c.task.id, patch)
     }
     if (!patchByTask.size) return

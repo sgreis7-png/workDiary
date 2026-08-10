@@ -2,7 +2,10 @@ import { useEffect, useState } from 'react'
 import { useStore } from '../store'
 import { useI18n } from '../i18n'
 import { Loader } from '../components/Loader'
-import { fetchMyRules, createRule, deleteRule, toggleRule, type AlertRule } from '../lib/alertRules'
+import {
+  fetchMyRules, createRule, deleteRule, toggleRule, fetchSchedulableTasks, setRuleTasks,
+  fetchRuleTaskCounts, countLateTasks, type AlertRule, type OverdueTaskChoice,
+} from '../lib/alertRules'
 
 const WEEKDAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 const WEEKDAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -14,7 +17,12 @@ export default function AlertRules() {
   const [err, setErr] = useState('')
   // new-rule form
   const [projectId, setProjectId] = useState('')
-  const [kind, setKind] = useState<'missing' | 'filled'>('missing')
+  const [kind, setKind] = useState<'missing' | 'filled' | 'overdue'>('missing')
+  // Overdue rules: watch the whole project, or name the few tasks that matter.
+  const [tasks, setTasks] = useState<OverdueTaskChoice[] | null>(null)
+  const [pickedTasks, setPickedTasks] = useState<Set<string>>(new Set())
+  const [lateNow, setLateNow] = useState<number | null>(null)
+  const [taskCounts, setTaskCounts] = useState<Record<string, number>>({})
   const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
   const [hour, setHour] = useState(20)
   const [weekday, setWeekday] = useState(0)
@@ -23,7 +31,29 @@ export default function AlertRules() {
 
   useEffect(() => {
     fetchMyRules().then(setRules).catch((e) => setErr(String((e as Error).message ?? e)))
+    fetchRuleTaskCounts().then(setTaskCounts).catch(() => setTaskCounts({}))
   }, [])
+
+  // The task list only exists for an overdue rule on one named project — "all projects" has no
+  // single schedule to pick from.
+  useEffect(() => {
+    if (kind !== 'overdue' || !projectId) { setTasks(null); setPickedTasks(new Set()); return }
+    let alive = true
+    fetchSchedulableTasks(projectId)
+      .then((ts) => { if (alive) setTasks(ts) })
+      .catch(() => { if (alive) setTasks([]) })
+    return () => { alive = false }
+  }, [kind, projectId])
+
+  // How much noise saving this rule would make right now.
+  useEffect(() => {
+    if (kind !== 'overdue') { setLateNow(null); return }
+    let alive = true
+    countLateTasks(projectId || null)
+      .then((n) => { if (alive) setLateNow(n) })
+      .catch(() => { if (alive) setLateNow(null) })
+    return () => { alive = false }
+  }, [kind, projectId])
 
   const weekdays = lang === 'he' ? WEEKDAYS_HE : WEEKDAYS_EN
 
@@ -34,11 +64,18 @@ export default function AlertRules() {
       const r = await createRule({
         project_id: projectId || null,
         kind,
-        frequency: kind === 'filled' ? 'daily' : frequency,
-        alert_hour: Math.min(23, Math.max(0, hour)),
+        // Overdue rules are event-driven — the hourly job notices a date that has passed — so the
+        // schedule fields carry defaults rather than meaning anything.
+        frequency: kind === 'missing' ? frequency : 'daily',
+        alert_hour: kind === 'missing' ? Math.min(23, Math.max(0, hour)) : 0,
         weekday: kind === 'missing' && frequency === 'weekly' ? weekday : null,
         month_day: kind === 'missing' && frequency === 'monthly' ? monthDay : null,
       })
+      if (kind === 'overdue' && pickedTasks.size) {
+        await setRuleTasks(r.id, [...pickedTasks])
+        setTaskCounts((m) => ({ ...m, [r.id]: pickedTasks.size }))
+      }
+      setPickedTasks(new Set())
       setRules((rs) => [...(rs ?? []), r])
     } catch (e) { setErr(String((e as Error).message ?? e)) } finally { setBusy(false) }
   }
@@ -57,6 +94,10 @@ export default function AlertRules() {
   function ruleText(r: AlertRule): string {
     const proj = r.project_id ? (projects.find((p) => p.id === r.project_id)?.name ?? '—') : t('rule_all_projects')
     if (r.kind === 'filled') return `${t('rule_kind_filled')} · ${proj}`
+    if (r.kind === 'overdue') {
+      const n = taskCounts[r.id] ?? 0
+      return `${t('rule_kind_overdue')} · ${proj} · ${n ? `${n} ${t('rule_tasks_n')}` : t('rule_all_tasks')}`
+    }
     const freq = r.frequency === 'daily' ? t('rule_daily')
       : r.frequency === 'weekly' ? `${t('rule_weekly')} (${weekdays[r.weekday ?? 0]})`
       : `${t('rule_monthly')} (${r.month_day ?? 1})`
@@ -79,9 +120,10 @@ export default function AlertRules() {
       {err && <div className="alert">{err}</div>}
 
       <div className="coop-new" style={{ flexWrap: 'wrap' }}>
-        <select className="input" value={kind} onChange={(e) => setKind(e.target.value as 'missing' | 'filled')}>
+        <select className="input" value={kind} onChange={(e) => setKind(e.target.value as typeof kind)}>
           <option value="missing">{t('rule_kind_missing')}</option>
           <option value="filled">{t('rule_kind_filled')}</option>
+          <option value="overdue">{t('rule_kind_overdue')}</option>
         </select>
         <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}>
           <option value="">{t('rule_all_projects')}</option>
@@ -112,6 +154,50 @@ export default function AlertRules() {
         )}
         <button className="btn btn--primary" disabled={busy} onClick={onAdd}>{t('rule_add')}</button>
       </div>
+
+      {kind === 'overdue' && (
+        <div className="card" style={{ marginTop: 12 }}>
+          <p className="coop-intro" style={{ marginTop: 0 }}>{t('rule_overdue_hint')}</p>
+
+          {/* Already-late tasks all announce themselves on the first run. Better said now than
+              discovered as thirty-six notifications. */}
+          {lateNow !== null && lateNow > 0 && (
+            <div className="alert">{t('rule_late_now')} {lateNow}</div>
+          )}
+
+          {!projectId ? (
+            <p className="coop-intro">{t('rule_pick_project_for_tasks')}</p>
+          ) : tasks === null ? (
+            <span className="count mono"><span className="spin" /></span>
+          ) : tasks.length === 0 ? (
+            <p className="coop-intro">{t('rule_no_schedule')}</p>
+          ) : (
+            <>
+              <span className="field__label">
+                {t('rule_pick_tasks')} <span className="field__hint">{t('rule_pick_tasks_hint')}</span>
+              </span>
+              <div className="staff-pick" style={{ maxHeight: 260, overflowY: 'auto', marginTop: 8 }}>
+                {tasks.map((tk) => (
+                  <label key={tk.id} className={`staff-chip ${pickedTasks.has(tk.id) ? 'on' : ''}`}>
+                    <input
+                      type="checkbox" hidden
+                      checked={pickedTasks.has(tk.id)}
+                      onChange={() => setPickedTasks((p) => {
+                        const n = new Set(p)
+                        if (n.has(tk.id)) n.delete(tk.id); else n.add(tk.id)
+                        return n
+                      })}
+                    />
+                    {tk.name} <span className="mono" style={{ opacity: .6, fontSize: 11 }}>
+                      {tk.finish_ts.slice(0, 10)}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+      )}
 
       {(rules ?? []).length === 0 ? (
         <div className="empty">{t('alert_rules_empty')}</div>

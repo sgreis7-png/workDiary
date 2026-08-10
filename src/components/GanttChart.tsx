@@ -29,9 +29,6 @@ export interface TaskChange {
   task: GanttTask
   span?: Span
   pct?: number
-  /** Toggling the per-task overrun alert. Carried on the same channel as a date change so the
-   *  screen has one save path rather than two. */
-  alertOnOverrun?: boolean
 }
 
 interface Props {
@@ -788,21 +785,6 @@ function TaskEditor({
         <span className="gantt__slip" title={g('g_edit_slip')}>
           {slip > 0 ? '+' : ''}{slip} {g('g_edit_days')}
         </span>
-      )}
-
-      {/* Per row, not per chart: a schedule has a handful of dates worth chasing and a hundred
-          that are not, and alerting on all of them is the same as alerting on none. Summary rows
-          are excluded because their dates are rolled up from their children. */}
-      {!isSummary && (
-        <label className="gantt__alertopt" title={g('g_alert_hint')}>
-          <input
-            type="checkbox"
-            checked={task.alert_on_overrun ?? false}
-            disabled={locked}
-            onChange={(e) => onEdit([{ task, alertOnOverrun: e.target.checked }])}
-          />
-          {g('g_alert_overrun')}
-        </label>
       )}
 
       <p className="gantt__hint" style={{ flex: '1 1 100%', margin: 0 }}>
