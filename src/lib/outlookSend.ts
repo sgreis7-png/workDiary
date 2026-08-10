@@ -28,9 +28,38 @@ function getMsal(): Promise<PublicClientApplication> {
       system: { popupBridgeTimeout: 300000 },
     })
     await app.initialize()
+    // Clears a stale "interaction_in_progress". MSAL sets that flag when an interactive
+    // request starts and clears it when one finishes — and a popup that was closed, blocked or
+    // abandoned never finishes. The cache is localStorage so the flag outlives the tab, which
+    // is why sending stayed broken across reloads instead of recovering by itself. Calling
+    // this on start-up is the supported way to settle a half-finished interaction; it is a
+    // no-op when there was none.
+    await app.handleRedirectPromise().catch(() => {})
     return app
   })()
   return msalPromise
+}
+
+/** True when MSAL is refusing because it believes a sign-in is still in progress. */
+export function isInteractionInProgress(e: unknown): boolean {
+  return (e as { errorCode?: string })?.errorCode === 'interaction_in_progress'
+}
+
+/**
+ * The cache keys holding MSAL's "an interaction is running" flag.
+ *
+ * Exported for the test: the shape of these keys is MSAL's, not ours, so it is worth pinning
+ * that we match the flag and nothing else — clearing a token or an account here would sign the
+ * user out of Microsoft instead of unsticking them.
+ */
+export function stuckInteractionKeys(keys: string[]): string[] {
+  return keys.filter((k) => k.startsWith('msal.') && k.endsWith('.interaction.status'))
+}
+
+function clearStuckInteraction(): void {
+  try {
+    for (const k of stuckInteractionKeys(Object.keys(localStorage))) localStorage.removeItem(k)
+  } catch { /* private mode — nothing cached, nothing stuck */ }
 }
 
 async function getToken(loginHint?: string): Promise<string> {
@@ -44,9 +73,19 @@ async function getToken(loginHint?: string): Promise<string> {
       // expired session, revoked consent, missing cache — fall through to popup
     }
   }
-  const res = await app.acquireTokenPopup({ scopes: SCOPES, account, loginHint })
-  app.setActiveAccount(res.account)
-  return res.accessToken
+  try {
+    const res = await app.acquireTokenPopup({ scopes: SCOPES, account, loginHint })
+    app.setActiveAccount(res.account)
+    return res.accessToken
+  } catch (e) {
+    // A flag left by an earlier abandoned popup blocks every later attempt for good. Clear it
+    // and try once more; a second failure is a real one and is reported.
+    if (!isInteractionInProgress(e)) throw e
+    clearStuckInteraction()
+    const res = await app.acquireTokenPopup({ scopes: SCOPES, account, loginHint })
+    app.setActiveAccount(res.account)
+    return res.accessToken
+  }
 }
 
 /** True when the failure is the browser blocking the Microsoft login popup. */
