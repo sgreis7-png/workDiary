@@ -49,12 +49,12 @@ Deno.serve(async (req) => {
 
     const db = createClient(URL_, SERVICE)
 
-    // Only an active member may send, and only 30 sends an hour. Both checks already exist for
-    // the other functions; reusing them keeps one definition of "may act".
-    const { data: member } = await db
-      .from('allowed_emails').select('active')
-      .eq('email', user.email.toLowerCase()).maybeSingle()
-    if (!member?.active) return json({ error: 'not_a_member' }, 403)
+    // Being an active member was the only gate, and the body comes from the client — so anyone
+    // signed in could post arbitrary HTML to any address through the company's sending identity,
+    // 30 times an hour at 50 recipients a time. may_send_report() ties sending to being allowed
+    // to read a report in the first place, which is the thing a sender is supposed to be doing.
+    const { data: maySend } = await userClient.rpc('may_send_report')
+    if (maySend !== true) return json({ error: 'not_allowed' }, 403)
 
     const { data: allowed } = await db.rpc('rl_check', {
       p_actor: user.id, p_action: 'send', p_max: 30, p_window_seconds: 3600,
@@ -114,6 +114,16 @@ Deno.serve(async (req) => {
         detail: detail.slice(0, 400),
       }, 502)
     }
+
+    // Recipients are not restricted — sending outside the company is a requirement — so the
+    // control is attribution. Logged after a confirmed send, and never from the client: the
+    // logging function is service-role only so nobody can forge their own trail.
+    await db.rpc('log_report_send', {
+      p_actor: user.email,
+      p_subject: subject,
+      p_recipients: [...recipients],
+      p_sent_as: asUser ? user.email : fromAddress,
+    })
 
     return json({ ok: true, sent: recipients.size, from: asUser ? user.email : 'system' })
   } catch (e) {
