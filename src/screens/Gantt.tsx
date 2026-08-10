@@ -19,6 +19,7 @@ import {
 import type { GanttBundle, GanttChart as Chart, GanttTask } from '../gantt/model'
 import { notifyScheduleChanged } from '../lib/notifyNewRecord'
 import { useMediaQuery } from '../lib/useMediaQuery'
+import { useAuth } from '../auth'
 
 type Phase = 'idle' | 'converting' | 'saving'
 
@@ -26,7 +27,7 @@ export default function GanttScreen() {
   const { lang } = useI18n()
   const g = useCallback((k: string) => gt(lang, k), [lang])
   const { projects } = useStore()
-  const { canEdit } = usePerms()
+  const { canEdit, perm } = usePerms()
   // May edit at all, versus editing right now. The schedule is the one screen where a stray
   // drag silently moves a date somebody else is working to, so editing is a mode you enter.
   const mayEdit = canEdit('gantt')
@@ -34,6 +35,8 @@ export default function GanttScreen() {
   // Same breakpoint the board uses, so the toolbar and the board never disagree about
   // whether editing is possible.
   const phone = useMediaQuery('(max-width: 760px)')
+  const { user } = useAuth()
+  const roleLabel = user?.role ?? '—'
 
   // Loaded data is tagged with what it was loaded for, and read back only when the tag
   // still matches. Nothing has to be cleared when the selection changes, so switching
@@ -263,7 +266,15 @@ export default function GanttScreen() {
                   {editing && <span className="gantt__editnote">{g('g_edit_on')}</span>}
                 </>
               ) : (
-                <span className="gantt__editnote">{g('g_edit_locked')}</span>
+                <span className="gantt__editnote">
+                  {g('g_edit_locked')}
+                  {/* What it actually resolved. "Why can't I edit, I'm an admin" is otherwise a
+                      question only the database can answer, and the answer is usually that the
+                      session resolved to a different role than the person expects. */}
+                  <span className="mono" style={{ opacity: .75, marginInlineStart: 8, fontSize: 11.5 }}>
+                    ({g('g_edit_asrole')} {roleLabel} · {g('g_edit_level')}: {perm('gantt')})
+                  </span>
+                </span>
               )}
             </div>
             <GanttChart

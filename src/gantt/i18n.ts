@@ -71,6 +71,8 @@ export const G = {
   g_edit_off:       { he: '✎ עריכת לוח זמנים',            en: '✎ Edit schedule' },
   g_edit_done:      { he: '✓ סיום עריכה',                 en: '✓ Done editing' },
   g_edit_locked:    { he: 'לצפייה בלבד — נדרשת הרשאת עריכה ללוח הזמנים.', en: 'View only — editing the schedule needs permission.' },
+  g_edit_asrole:    { he: 'מחובר כ', en: 'signed in as' },
+  g_edit_level:     { he: 'הרשאה ללוח זמנים', en: 'schedule permission' },
   g_edit_readonly:  { he: 'אין לך הרשאת עריכה ללוח הזמנים.', en: 'You do not have permission to edit the schedule.' },
   g_edit_phone:     { he: 'בטלפון הלוח לצפייה בלבד. לעריכת תאריכים פתח אותו במחשב.', en: 'View only on a phone — open it on a computer to change dates.' },
   g_edit_hint:      { he: 'גרור בר כדי להזיז, גרור קצה כדי לשנות משך. משימות עוקבות נדחות בהתאם.', en: 'Drag a bar to move it, drag an edge to change its length. Successors are pushed out to match.' },
