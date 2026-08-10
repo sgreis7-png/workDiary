@@ -191,6 +191,11 @@ export default function AlertRules() {
         {kind === 'overdue' && (
           <div className="rule-new__tasks">
             <p className="rule-new__hint" style={{ marginTop: 0 }}>{t('rule_overdue_hint')}</p>
+            {/* Nobody should think a rule is required: the roles already cover it. Said here
+                rather than left to be discovered by not needing it. */}
+            <div className="alert" style={{ background: 'var(--green-tint)', color: 'var(--green-dark)' }}>
+              {t('rule_overdue_auto')}
+            </div>
 
             {/* Already-late tasks all announce themselves on the first run. Better said now than
               discovered as thirty-six notifications. */}
