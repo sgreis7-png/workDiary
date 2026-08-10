@@ -214,6 +214,15 @@ export const STRINGS = {
                       en: 'Too many emails in the last hour. Try again shortly.' },
   send_too_many:    { he: 'יותר מדי נמענים בשליחה אחת.', en: 'Too many recipients for one send.' },
   send_rejected:    { he: 'שרת הדואר דחה את השליחה:', en: 'The mail server refused the send:' },
+  send_any_address: { he: 'הרשימה מציגה עובדי החברה, אבל אפשר להקליד כל כתובת — גם מחוץ לחברה.',
+                      en: 'The list shows company staff, but you can type any address — outside the company too.' },
+  mailtest_title:   { he: 'בדיקת שליחת מייל', en: 'Test email sending' },
+  mailtest_hint:    { he: 'שולח הודעת בדיקה קצרה באותו נתיב שבו נשלחים הדוחות, ומציג את התשובה המדויקת של השרת.',
+                      en: 'Sends a short test message down the same path reports use, and shows exactly what the server answered.' },
+  mailtest_to:      { he: 'שליחה אל', en: 'Send to' },
+  mailtest_send:    { he: '✉ שלח בדיקה', en: '✉ Send test' },
+  mailtest_ok_me:   { he: '✓ נשלח — מהכתובת שלך', en: '✓ Sent — from your own address' },
+  mailtest_ok_sys:  { he: '✓ נשלח — מכתובת המערכת, עם תשובה אליך', en: '✓ Sent — from the system address, replies come to you' },
   send_no_domain:   { he: 'שליחת מייל עדיין במצב בדיקה: לא אומת דומיין ב-Resend, ולכן אפשר לשלוח רק לכתובת של בעל החשבון. '
                         + 'עד שיאומת דומיין — השתמשו ב"צור דוח למייל" והדביקו בדואר שלכם, או בשליחה מ-Outlook.',
                       en: 'Email is still in test mode: no domain is verified in Resend, so only the account owner can receive. '

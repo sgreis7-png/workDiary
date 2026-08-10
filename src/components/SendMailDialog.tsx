@@ -135,6 +135,11 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
             <p style={{ color: 'var(--ink-2)', fontSize: 13.5, marginTop: 4 }}>
               {t('send_intro')}{user?.email ? ` (${user.email})` : ''}
             </p>
+            {/* The directory is company-only on purpose; sending is not. Saying so beats leaving
+                people to guess whether an outside address will be accepted. */}
+            <p style={{ color: 'var(--ink-3)', fontSize: 12.5, margin: '2px 0 0' }}>
+              {t('send_any_address')}
+            </p>
             {err && <div className="alert">{err}</div>}
 
             {lists.length > 0 && (

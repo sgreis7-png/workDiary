@@ -67,3 +67,24 @@ async function readErrorBody(error: unknown): Promise<{ error?: string; detail?:
   if (!res || typeof res.json !== 'function') return null
   return await res.json().catch(() => null)
 }
+
+/**
+ * Send a short test message, to prove the mail path end to end without generating a report.
+ *
+ * Worth having as its own thing: the failure we spent the longest on was invisible from inside
+ * the app — the key was fine, the function was fine, and the sending address was wrong. This
+ * exercises exactly the same route as a real report and reports precisely what came back, so the
+ * next misconfiguration is one click to diagnose instead of a guess.
+ */
+export async function sendTestEmail(to: string): Promise<{ from: 'me' | 'system'; sent: number }> {
+  const when = new Date().toLocaleString('he-IL')
+  return sendReportByEmail({
+    to: [to],
+    subject: 'בדיקת שליחת מייל · יומן עבודה Agrotop',
+    html: `<!doctype html><html dir="rtl" lang="he"><body dir="rtl" style="font-family:system-ui,Arial;padding:24px">
+      <h2 style="color:#3aaa35;margin:0 0 12px">בדיקת שליחה הצליחה</h2>
+      <p style="margin:0 0 8px">ההודעה הזאת נשלחה מיומן העבודה כדי לאמת שנתיב הדואר עובד.</p>
+      <p style="color:#68766f;font-size:13px;margin:0">${when}</p>
+    </body></html>`,
+  })
+}

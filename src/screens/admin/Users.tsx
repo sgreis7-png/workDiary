@@ -5,6 +5,7 @@ import { Loader } from '../../components/Loader'
 import { useI18n } from '../../i18n'
 import { deleteUser, fetchUsers, fetchRegistrationCodes, inviteUser, setUserActive, setUserRole } from '../../api'
 import { useAuth } from '../../auth'
+import { ReportSendError, sendTestEmail } from '../../lib/sendReport'
 import { useDialog } from '../../lib/useDialog'
 import type { AppUser, Role } from '../../data'
 import {
@@ -81,6 +82,12 @@ export default function Users() {
   const [permsFor, setPermsFor] = useState<AppUser | null>(null)
   const [copied, setCopied] = useState('')
   const [codes, setCodes] = useState<Record<string, string>>({})
+  // Mail diagnostics. The failure that took longest to find was invisible from inside the
+  // app — key fine, function fine, sending address wrong — so this exercises the real path
+  // and shows exactly what came back.
+  const [testTo, setTestTo] = useState('')
+  const [testMsg, setTestMsg] = useState('')
+  const [testing, setTesting] = useState(false)
 
   const roleLabels = { admin: t('role_admin'), manager: t('role_manager'), member: t('role_member') }
   const reload = () => Promise.all([
@@ -106,6 +113,25 @@ export default function Users() {
     } catch (e) {
       setErr(String((e as Error).message ?? e))
     } finally { setBusy(false) }
+  }
+
+  const runMailTest = async () => {
+    const to = testTo.trim()
+    if (!to || testing) return
+    setTesting(true); setTestMsg('')
+    try {
+      const res = await sendTestEmail(to)
+      setTestMsg(res.from === 'me' ? t('mailtest_ok_me') : t('mailtest_ok_sys'))
+    } catch (e) {
+      const kind = e instanceof ReportSendError ? e.kind : 'unknown'
+      setTestMsg(
+        kind === 'domain_not_verified' ? t('send_no_domain')
+        : kind === 'not_configured' ? t('send_not_configured')
+        : kind === 'rate_limited' ? t('send_rate_limited')
+        // the provider's own words, which is the part worth reading when it is none of the above
+        : `${t('send_rejected')} ${(e as ReportSendError).detail ?? (e as Error).message}`,
+      )
+    } finally { setTesting(false) }
   }
 
   if (!users) return <Loader full />
@@ -165,6 +191,28 @@ export default function Users() {
             <Button variant="primary" onClick={invite} disabled={busy}>✦ {t('invite_user')}</Button>
           </div>
           {err && <p className="alert">⚠ {err}</p>}
+        </div>
+      </div>
+
+      {/* Mail diagnostics. Any address, company or not — the recipient list is company-only by
+          design, but sending is not restricted to it. */}
+      <div className="card" style={{ marginTop: 18 }}>
+        <div className="add-row" style={{ flexDirection: 'column', alignItems: 'stretch', gap: 10 }}>
+          <span className="field__label">
+            {t('mailtest_title')} <span className="field__hint">{t('mailtest_hint')}</span>
+          </span>
+          <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+            <input
+              className="input" style={{ flex: '1 1 240px' }} type="email" dir="ltr"
+              placeholder={t('mailtest_to')} value={testTo}
+              onChange={(e) => setTestTo(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && runMailTest()}
+            />
+            <Button variant="ghost" onClick={runMailTest} disabled={testing || !testTo.trim()}>
+              {testing ? <span className="spin" /> : t('mailtest_send')}
+            </Button>
+          </div>
+          {testMsg && <p className="alert">{testMsg}</p>}
         </div>
       </div>
 
