@@ -18,6 +18,7 @@ import {
 } from '../gantt/api'
 import type { GanttBundle, GanttChart as Chart, GanttTask } from '../gantt/model'
 import { notifyScheduleChanged } from '../lib/notifyNewRecord'
+import { useMediaQuery } from '../lib/useMediaQuery'
 
 type Phase = 'idle' | 'converting' | 'saving'
 
@@ -30,6 +31,9 @@ export default function GanttScreen() {
   // drag silently moves a date somebody else is working to, so editing is a mode you enter.
   const mayEdit = canEdit('gantt')
   const [editing, setEditing] = useState(false)
+  // Same breakpoint the board uses, so the toolbar and the board never disagree about
+  // whether editing is possible.
+  const phone = useMediaQuery('(max-width: 760px)')
 
   // Loaded data is tagged with what it was loaded for, and read back only when the tag
   // still matches. Nothing has to be cleared when the selection changes, so switching
@@ -249,7 +253,12 @@ export default function GanttScreen() {
               <span>{g('g_imported_on')}: {new Date(chart.imported_at).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB')}</span>
             </div>
             <div className="gantt__editbar">
-              {mayEdit ? (
+              {/* The board is view-only on a phone by design — the bars are a few pixels wide and
+                  a stray drag moves a date somebody is working to. Offering an edit button there
+                  would promise something the board then refuses, so say why instead. */}
+              {phone ? (
+                <span className="gantt__editnote">{g('g_edit_phone')}</span>
+              ) : mayEdit ? (
                 <>
                   <button
                     type="button"
