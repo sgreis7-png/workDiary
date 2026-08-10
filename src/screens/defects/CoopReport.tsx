@@ -9,6 +9,7 @@ import { loadGateDefs, type GateDefs } from '../../defects/defs'
 import { GATES } from '../../defects/model'
 import { useDT } from '../../defects/i18n'
 import { useI18n } from '../../i18n'
+import { printPage } from '../../lib/printPage'
 import { SendMailDialog } from '../../components/SendMailDialog'
 
 export default function CoopReport() {
@@ -79,6 +80,12 @@ export default function CoopReport() {
     return ok
   }
 
+  const print = () => {
+    const outcome = printPage()
+    if (outcome === 'opened') setCopyMsg(t('print_in_browser'))
+    else if (outcome === 'blocked') setCopyMsg(t('print_blocked'))
+  }
+
   async function onCopy() {
     if (!bundle) return
     setErr(''); setCopyMsg('')
@@ -111,7 +118,7 @@ export default function CoopReport() {
           <button className="btn btn--ghost" onClick={() => nav(`/defects/coop/${id}`)}>{dt('rep_back')}</button>
           <button className="btn btn--ghost" onClick={onCopy}>{dt('rep_copy')}</button>
           <button className="btn btn--ghost" onClick={() => setSendOpen(true)}>{t('send_outlook')}</button>
-          <button className="btn btn--primary" onClick={() => window.print()}>{dt('rep_print')}</button>
+          <button className="btn btn--primary" onClick={print}>{dt('rep_print')}</button>
         </div>
       </div>
       {sendOpen && (

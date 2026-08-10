@@ -40,6 +40,8 @@
 .role { font-family: var(--font-mono); font-size: 10.5px; text-transform: uppercase; letter-spacing: .12em;
   padding: 3px 8px; border-radius: 4px; }
 .role--admin { color: #fff; background: var(--green-deep); }
+.role--manager { color: var(--green-deep); background: color-mix(in srgb, var(--green-deep) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--green-deep) 35%, transparent); }
 .role--member { color: var(--ink-2); background: var(--paper-2); border: 1px solid var(--line); }
 
 /* ============ forms ============ */
@@ -497,6 +499,15 @@ select.input { cursor: pointer; }
   .export-entry { page-break-after: always; margin-bottom: 0; }
   .export-entry:last-child { page-break-after: auto; }
 }
+
+/* ---------- gantt edit mode ---------- */
+/* The bar sits above the board so entering edit mode is a visible state, not a guess. */
+.gantt__editbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.gantt__editnote { font-size: 12.5px; color: var(--ink-2); }
+/* While editing, the board carries a border in the accent colour: the same signal as the
+   button, for someone whose eyes are on the bars rather than the toolbar. */
+.gantt.is-editing { outline: 2px solid color-mix(in srgb, var(--green-deep) 45%, transparent);
+  outline-offset: 3px; border-radius: 10px; }
 
 /* ---------- staff picker ---------- */
 .staff-pick { display: flex; flex-wrap: wrap; gap: 8px; }

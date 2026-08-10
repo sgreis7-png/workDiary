@@ -1,7 +1,9 @@
 // Shared types + pure helpers. All data access lives in ./api (Supabase) and the
 // reference-data cache in ./store. (This file used to hold the in-memory mock.)
 
-export type Role = 'member' | 'admin'
+/** 'manager' sits between the two: sees every project, administers nobody. Being answerable
+ *  for a particular project is separate — project_assignments.is_manager. */
+export type Role = 'member' | 'manager' | 'admin'
 export type FieldType = 'text' | 'long_text' | 'number' | 'date' | 'phone' | 'select' | 'photo'
 export interface Option { he: string; en: string }
 

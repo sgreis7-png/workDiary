@@ -82,7 +82,7 @@ export default function Users() {
   const [copied, setCopied] = useState('')
   const [codes, setCodes] = useState<Record<string, string>>({})
 
-  const roleLabels = { admin: t('role_admin'), member: t('role_member') }
+  const roleLabels = { admin: t('role_admin'), manager: t('role_manager'), member: t('role_member') }
   const reload = () => Promise.all([
     fetchUsers().then(setUsers).catch(() => setUsers([])),
     fetchRegistrationCodes().then(setCodes).catch(() => setCodes({})),
@@ -132,6 +132,7 @@ export default function Users() {
 
               <div className="lang-toggle" title={t('permissions')}>
                 <button className={u.role === 'member' ? 'on' : ''} onClick={() => setRole(u.email, 'member')}>{t('role_member')}</button>
+                <button className={u.role === 'manager' ? 'on' : ''} onClick={() => setRole(u.email, 'manager')}>{t('role_manager')}</button>
                 <button className={u.role === 'admin' ? 'on' : ''} onClick={() => setRole(u.email, 'admin')}>{t('role_admin')}</button>
               </div>
 

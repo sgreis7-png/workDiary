@@ -8,11 +8,12 @@ import { getEntry } from '../api'
 import { buildReportHtml, buildReportText } from '../report'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
+import { printPage } from '../lib/printPage'
 import { SendMailDialog } from '../components/SendMailDialog'
 import type { Entry } from '../data'
 
-// Standalone, print-optimized report. Same layout on every device. Save as PDF
-// (works on phones) or copy (desktop) — then attach/paste into any email.
+// Standalone, print-optimized report. Same layout on every device. Printing goes through
+// printPage(), because window.print() does nothing in an installed app — see there.
 export default function ReportView() {
   const { id } = useParams()
   const { t } = useI18n()
@@ -44,6 +45,14 @@ export default function ReportView() {
     if (idx >= 0) { e.preventDefault(); setLightbox(idx) }
   }
 
+  // The installed app cannot print; printPage hands the report to the browser instead, and
+  // says so, rather than leaving a button that looks broken.
+  const print = () => {
+    const outcome = printPage()
+    if (outcome === 'opened') setCopyMsg(t('print_in_browser'))
+    else if (outcome === 'blocked') setCopyMsg(t('print_blocked'))
+  }
+
   const copy = async () => {
     const text = buildReportText({ projectName: projectName(entry.project_id), authorName: userName(entry.created_by), entry, defs })
     try {
@@ -59,7 +68,7 @@ export default function ReportView() {
         <div style={{ display: 'flex', gap: 10, marginInlineStart: 'auto', flexWrap: 'wrap' }}>
           <button className="btn btn--ghost" onClick={copy}>📋 {t('copy_report')}</button>
           <button className="btn btn--ghost" onClick={() => setSendOpen(true)}>{t('send_outlook')}</button>
-          <button className="btn btn--primary" onClick={() => window.print()}>📄 {t('print_pdf')}</button>
+          <button className="btn btn--primary" onClick={print}>📄 {t('print_pdf')}</button>
         </div>
       </div>
       {sendOpen && (

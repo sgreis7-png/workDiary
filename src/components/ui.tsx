@@ -36,8 +36,11 @@ export function Avatar({ name, size = 34 }: { name: string; size?: number }) {
   return <span className="avatar" style={{ width: size, height: size, fontSize: size * 0.4 }}>{initials}</span>
 }
 
-export function RoleBadge({ role, labels }: { role: 'admin' | 'member'; labels: { admin: string; member: string } }) {
-  return <span className={`role role--${role}`}>{role === 'admin' ? labels.admin : labels.member}</span>
+export function RoleBadge({ role, labels }: {
+  role: 'admin' | 'manager' | 'member'
+  labels: { admin: string; manager: string; member: string }
+}) {
+  return <span className={`role role--${role}`}>{labels[role] ?? labels.member}</span>
 }
 
 export function Field({ label, hint, children }: { label: string; hint?: ReactNode; children: ReactNode }) {

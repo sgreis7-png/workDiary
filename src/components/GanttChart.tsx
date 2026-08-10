@@ -273,7 +273,7 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
   const rowIndex = new Map(rows.map((t, i) => [t.ext_uid, i]))
 
   return (
-    <div className="gantt">
+    <div className={`gantt ${mayEdit ? 'is-editing' : ''}`}>
       <div className="stat-grid gantt__stats">
         <Stat label={g('g_progress')} value={`${stats.overallPct}%`} />
         <Stat label={g('g_start')} value={stats.spanStart ? fmtDay(dayOf(stats.spanStart)) : '—'} />

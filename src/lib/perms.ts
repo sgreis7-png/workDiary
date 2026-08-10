@@ -38,9 +38,33 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   alert_rules: 'none',  // כללי התראות אישיים — לאדמין, אלא אם הוענקה
 }
 
+/** Manager defaults — the schedule, the control centre and the statistics are the point of the
+ *  role. Editing the schedule stays a deliberate grant, which is what the Gantt edit mode
+ *  guards. Kept in step with perm_defaults(role='manager') in migration 0050 by
+ *  perms.sql.test.ts. */
+const MANAGER_DEFAULTS: Record<PermArea, PermLevel> = {
+  logbook: 'edit',
+  calendar: 'view',
+  search: 'view',
+  projects: 'view',
+  export: 'view',
+  dashboard: 'view',
+  gantt: 'view',
+  control_center: 'view',
+  defects: 'edit',
+  form_builder: 'none',
+  coops_manage: 'none',
+  alert_rules: 'view',
+}
+
+export const ROLE_DEFAULTS: Record<Exclude<Role, 'admin'>, Record<PermArea, PermLevel>> = {
+  member: MEMBER_DEFAULTS,
+  manager: MANAGER_DEFAULTS,
+}
+
 export function resolvePerm(role: Role, overrides: Record<string, PermLevel>, area: PermArea): PermLevel {
   if (role === 'admin') return 'edit'
-  return overrides[area] ?? MEMBER_DEFAULTS[area]
+  return overrides[area] ?? ROLE_DEFAULTS[role][area]
 }
 
 /** Area→level overrides for a user (own rows for members; any row for admins). */

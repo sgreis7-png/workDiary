@@ -25,7 +25,10 @@ export default function GanttScreen() {
   const g = useCallback((k: string) => gt(lang, k), [lang])
   const { projects } = useStore()
   const { canEdit } = usePerms()
+  // May edit at all, versus editing right now. The schedule is the one screen where a stray
+  // drag silently moves a date somebody else is working to, so editing is a mode you enter.
   const mayEdit = canEdit('gantt')
+  const [editing, setEditing] = useState(false)
 
   // Loaded data is tagged with what it was loaded for, and read back only when the tag
   // still matches. Nothing has to be cleared when the selection changes, so switching
@@ -235,11 +238,26 @@ export default function GanttScreen() {
               {chart.source_file && <span>{g('g_source')}: <code className="mono">{chart.source_file}</code></span>}
               <span>{g('g_imported_on')}: {new Date(chart.imported_at).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB')}</span>
             </div>
+            <div className="gantt__editbar">
+              {mayEdit ? (
+                <>
+                  <button
+                    type="button"
+                    className={`btn ${editing ? 'btn--primary' : 'btn--ghost'}`}
+                    aria-pressed={editing}
+                    onClick={() => setEditing((v) => !v)}
+                  >{editing ? g('g_edit_done') : g('g_edit_off')}</button>
+                  {editing && <span className="gantt__editnote">{g('g_edit_on')}</span>}
+                </>
+              ) : (
+                <span className="gantt__editnote">{g('g_edit_locked')}</span>
+              )}
+            </div>
             <GanttChart
               key={chart.id}
               tasks={bundle.tasks}
               links={bundle.links}
-              canEdit={mayEdit}
+              canEdit={mayEdit && editing}
               onEdit={onEdit}
             />
           </motion.div>

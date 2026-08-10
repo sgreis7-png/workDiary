@@ -8,6 +8,7 @@ import { useStore } from '../store'
 import { SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from '../data'
 import { parseCoops } from '../lib/reportTables'
 import type { Entry } from '../data'
+import { printPage } from '../lib/printPage'
 
 // Date-range / per-project bulk export. Renders every matching entry as a report
 // and prints to PDF (one entry per page) — for client billing / handover.
@@ -20,6 +21,7 @@ export default function ExportView() {
   const [to, setTo] = useState('')
   const [entries, setEntries] = useState<Entry[] | null>(null)
   const [truncated, setTruncated] = useState(false)
+  const [printMsg, setPrintMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
   const defs = fieldDefs.filter((f) => f.active)
@@ -39,6 +41,12 @@ export default function ExportView() {
 
   // One row per entry: fixed columns, every active field, then the derived
   // progress/safety values the office actually filters on in Excel.
+  // window.print() is inert in the installed app; printPage hands it to the browser
+  const doPrint = () => {
+    const outcome = printPage()
+    setPrintMsg(outcome === 'opened' ? t('print_in_browser') : outcome === 'blocked' ? t('print_blocked') : '')
+  }
+
   const exportCsv = (rows: Entry[]) => {
     const headers = [
       t('work_date_col'), t('project'), t('created_by'),
@@ -77,7 +85,7 @@ export default function ExportView() {
         <Field label={t('from_date')}><input className="input" type="date" value={from} onChange={(e) => setFrom(e.target.value)} /></Field>
         <Field label={t('to_date')}><input className="input" type="date" value={to} onChange={(e) => setTo(e.target.value)} /></Field>
         <Button variant="ghost" onClick={generate} disabled={busy}>{busy ? <><span className="spin" /> {t('search')}</> : <>⌕ {t('search')}</>}</Button>
-        {entries && entries.length > 0 && <Button variant="primary" onClick={() => window.print()}>📄 {t('print_pdf')}</Button>}
+        {entries && entries.length > 0 && <Button variant="primary" onClick={doPrint}>📄 {t('print_pdf')}</Button>}
         {entries && entries.length > 0 && (
           <Button variant="ghost" onClick={() => exportCsv(entries)}>⭳ {t('export_csv')}</Button>
         )}
@@ -88,6 +96,7 @@ export default function ExportView() {
           <div className="no-print" style={{ marginBottom: 16 }}><span className="count mono">{entries.length} {t('results_n')}</span></div>
           {/* an export that silently stopped at the cap would look like a complete record */}
           {truncated && <div className="alert no-print">{t('search_truncated')}</div>}
+          {printMsg && <div className="alert no-print">{printMsg}</div>}
           {entries.length === 0 && <div className="empty no-print"><div className="big">{t('no_entries')}</div></div>}
           {entries.map((e) => (
             <div key={e.id} className="export-entry"
