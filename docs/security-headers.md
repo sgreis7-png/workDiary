@@ -48,3 +48,24 @@ Then open the app signed in, with the console visible, and exercise the parts th
 another origin: load the diary (Supabase), open a photo (signed URL), send a report
 (Outlook), import a schedule (the converter). A CSP violation reports itself in the console
 and nowhere else, so a policy mistake is invisible on the server side.
+
+## Cross-Origin-Opener-Policy is deliberately `unsafe-none`
+
+Not `same-origin-allow-popups`, and not `same-origin`.
+
+Report email can be sent from the user's own Outlook mailbox via MSAL's popup flow, and MSAL
+returns its token through `window.opener`. When the sign-in popup navigates back to this origin,
+COOP is re-evaluated, and a restrictive value can sever that reference — the popup then has no way
+to hand the token back, so the sign-in never completes.
+
+The failure does not look like a header problem. MSAL sets an `interaction_in_progress` flag when
+an interactive sign-in starts and clears it when one finishes; a popup that can never report back
+never finishes, so the flag stays set in localStorage and *every later send is refused before it
+begins*, across reloads. That is what happened when COOP was introduced in `493fb4a` on
+2026-08-09: Outlook sending had been working the day before and stopped.
+
+Do not tighten this value without sending a real report from Outlook and confirming it arrives.
+
+Note also that Vercel validates each entry in `headers[].headers` against `{key, value}` — an
+extra key such as `"//"` for a comment fails the deployment. Comments about the header set belong
+in this file.

@@ -16,10 +16,7 @@
           "key": "Permissions-Policy",
           "value": "camera=(self), microphone=(self), geolocation=(self), accelerometer=(), gyroscope=(), magnetometer=(), payment=(), usb=(), bluetooth=(), midi=(), serial=(), hid=(), display-capture=(), idle-detection=()"
         },
-        {
-          "//": "unsafe-none, not same-origin-allow-popups. MSAL returns its token through window.opener; when the sign-in popup navigates back to this origin, COOP is re-evaluated and can sever that reference, so the sign-in never completes and MSAL is left with a stuck interaction_in_progress flag. Setting COOP here broke Outlook sending on 2026-08-09 (493fb4a) after it had been working. Do not tighten this without testing a real Outlook send.",
-          "key": "Cross-Origin-Opener-Policy", "value": "unsafe-none"
-        },
+        { "key": "Cross-Origin-Opener-Policy", "value": "unsafe-none" },
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains" }
       ]
     }
