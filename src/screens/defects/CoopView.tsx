@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router-dom'
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
 import {
@@ -52,7 +52,13 @@ export default function CoopView() {
   const [photos, setPhotos] = useState<DefectPhoto[]>([])
   const [bundle, setBundle] = useState<CoopBundle | null>(null)
   const [defs, setDefs] = useState<GateDefs>(GATES)
-  const [tab, setTab] = useState<TabKey>('project_open')
+  // ?gate=gate1 opens that gate directly. The "awaiting approval" notification carries it, so
+  // pressing the notification lands on the gate that is waiting instead of the house and a
+  // hunt through seven tabs. An unknown value is ignored rather than trusted.
+  const [params] = useSearchParams()
+  const askedGate = params.get('gate')
+  const [tab, setTab] = useState<TabKey>(
+    (TAB_KEYS as string[]).includes(askedGate ?? '') ? (askedGate as TabKey) : 'project_open')
   const [err, setErr] = useState('')
 
   useEffect(() => {

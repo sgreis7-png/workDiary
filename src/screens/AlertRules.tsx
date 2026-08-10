@@ -105,17 +105,33 @@ export default function AlertRules() {
     try { await toggleRule(r.id, !r.active) } catch (e) { setErr(String((e as Error).message ?? e)) }
   }
 
-  function ruleText(r: AlertRule): string {
-    const proj = r.project_id ? (projects.find((p) => p.id === r.project_id)?.name ?? '—') : t('rule_all_projects')
-    if (r.kind === 'filled') return `${t('rule_kind_filled')} · ${proj}`
+  /** A rule broken into its parts, so the row can lay them out and style each one for what it
+   *  is — a name, a schedule, a scope — instead of joining everything with a middot. */
+  function ruleParts(r: AlertRule) {
+    const project = r.project_id
+      ? (projects.find((p) => p.id === r.project_id)?.name ?? '—')
+      : t('rule_all_projects')
+
+    if (r.kind === 'filled') {
+      return { icon: '✓', kind: t('rule_kind_filled'), project, when: '', scope: null as string | null, scopeAll: false }
+    }
     if (r.kind === 'overdue') {
       const n = taskCounts[r.id] ?? 0
-      return `${t('rule_kind_overdue')} · ${proj} · ${n ? `${n} ${t('rule_tasks_n')}` : t('rule_all_tasks')}`
+      return {
+        icon: '⚑', kind: t('rule_kind_overdue'), project,
+        when: t('rule_hourly'),
+        scope: n ? `${n} ${t('rule_tasks_n')}` : t('rule_all_tasks'),
+        scopeAll: n === 0,
+      }
     }
     const freq = r.frequency === 'daily' ? t('rule_daily')
-      : r.frequency === 'weekly' ? `${t('rule_weekly')} (${weekdays[r.weekday ?? 0]})`
-      : `${t('rule_monthly')} (${r.month_day ?? 1})`
-    return `${t('rule_kind_missing')} · ${proj} · ${freq} · ${t('rule_until_hour')} ${r.alert_hour}:00`
+      : r.frequency === 'weekly' ? `${t('rule_weekly')} · ${weekdays[r.weekday ?? 0]}`
+      : `${t('rule_monthly')} · ${r.month_day ?? 1}`
+    return {
+      icon: '☐', kind: t('rule_kind_missing'), project,
+      when: `${freq} · ${String(r.alert_hour).padStart(2, '0')}:00`,
+      scope: null, scopeAll: false,
+    }
   }
 
   if (rules === null && !err) return <Loader label={t('loading')} />
@@ -133,7 +149,10 @@ export default function AlertRules() {
 
       {err && <div className="alert">{err}</div>}
 
-      <div className="coop-new" style={{ flexWrap: 'wrap' }}>
+      <div className="rule-new">
+        <p className="rule-new__title">{t('rule_new_title')}</p>
+        <p className="rule-new__hint">{t('rule_new_hint')}</p>
+        <div className="rule-new__fields">
         <select className="input" value={kind} onChange={(e) => changeScope({ kind: e.target.value as typeof kind })}>
           <option value="missing">{t('rule_kind_missing')}</option>
           <option value="filled">{t('rule_kind_filled')}</option>
@@ -167,13 +186,13 @@ export default function AlertRules() {
           </>
         )}
         <button className="btn btn--primary" disabled={busy} onClick={onAdd}>{t('rule_add')}</button>
-      </div>
+        </div>
 
-      {kind === 'overdue' && (
-        <div className="card" style={{ marginTop: 12 }}>
-          <p className="coop-intro" style={{ marginTop: 0 }}>{t('rule_overdue_hint')}</p>
+        {kind === 'overdue' && (
+          <div className="rule-new__tasks">
+            <p className="rule-new__hint" style={{ marginTop: 0 }}>{t('rule_overdue_hint')}</p>
 
-          {/* Already-late tasks all announce themselves on the first run. Better said now than
+            {/* Already-late tasks all announce themselves on the first run. Better said now than
               discovered as thirty-six notifications. */}
           {lateNow !== null && lateNow > 0 && (
             <div className="alert">{t('rule_late_now')} {lateNow}</div>
@@ -210,23 +229,40 @@ export default function AlertRules() {
               </div>
             </>
           )}
-        </div>
-      )}
+          </div>
+        )}
+      </div>
 
       {(rules ?? []).length === 0 ? (
         <div className="empty">{t('alert_rules_empty')}</div>
       ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 16 }}>
-          {(rules ?? []).map((r) => (
-            <div key={r.id} className="coop-card" style={{ display: 'flex', alignItems: 'center', gap: 12, cursor: 'default', opacity: r.active ? 1 : 0.55 }}>
-              <span style={{ flex: 1 }}>{ruleText(r)}</span>
-              <label style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, cursor: 'pointer' }}>
-                <input type="checkbox" checked={r.active} onChange={() => onToggle(r)} />
-                {t('rule_active')}
-              </label>
-              <button className="btn btn--ghost" onClick={() => onDelete(r.id)}>🗑</button>
-            </div>
-          ))}
+        <div className="rules">
+          {(rules ?? []).map((r) => {
+            const parts = ruleParts(r)
+            return (
+              <div key={r.id} className={`rule-row ${r.active ? '' : 'is-off'}`}>
+                <span className="rule-row__icon" aria-hidden="true">{parts.icon}</span>
+                <div className="rule-row__main">
+                  <span className="rule-row__kind">{parts.kind}</span>
+                  <span className="rule-row__project">{parts.project}</span>
+                  {parts.when && <span className="rule-row__when">{parts.when}</span>}
+                  {parts.scope && (
+                    <span className={`rule-row__scope ${parts.scopeAll ? 'rule-row__scope--all' : ''}`}>
+                      {parts.scope}
+                    </span>
+                  )}
+                </div>
+                <div className="rule-row__actions">
+                  <label className="rule-toggle">
+                    <input type="checkbox" checked={r.active} onChange={() => onToggle(r)} />
+                    {t('rule_active')}
+                  </label>
+                  <button className="btn btn--ghost" onClick={() => onDelete(r.id)}
+                    aria-label={t('delete')}>🗑</button>
+                </div>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

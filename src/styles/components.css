@@ -513,6 +513,69 @@ select.input { cursor: pointer; }
   color: var(--ink-2); cursor: pointer; }
 .gantt__alertopt input { cursor: pointer; }
 
+/* ---------- alert rules ----------
+
+   A rule is a setting, not a destination. These were borrowing .coop-card, which is a big
+   clickable tile with a hover lift and a shadow — so a list of one-line settings looked like a
+   grid of places to go, and lifted under the cursor without leading anywhere.
+
+   The row is compact and scannable instead. The stripe on the inline-start edge encodes the one
+   thing you look for when scanning your own rules — is it on — and the icon encodes which kind it
+   is. Logical properties throughout, because this list is read right-to-left. */
+
+.rules { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+
+.rule-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 12px 16px;
+  border: 1px solid var(--line); border-radius: 12px;
+  background: var(--paper);
+  border-inline-start: 3px solid var(--green-deep);
+  transition: background .15s ease, border-color .15s ease;
+}
+.rule-row:hover { background: var(--paper-2); }
+/* Paused: the stripe goes quiet and the text recedes, so an off rule is obvious at a glance
+   without reading the checkbox. Not display-none — it is still a rule you own. */
+.rule-row.is-off { border-inline-start-color: var(--line-strong); }
+.rule-row.is-off .rule-row__main { opacity: .5; }
+
+.rule-row__icon { font-size: 16px; line-height: 1; flex: 0 0 auto; }
+.rule-row__main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 10px; flex: 1; min-width: 0; }
+.rule-row__kind { font-weight: 700; font-size: 14px; color: var(--ink); }
+.rule-row__project { font-size: 13.5px; color: var(--ink-2); }
+/* Hours and dates line up down the column. */
+.rule-row__when {
+  font-family: var(--font-mono); font-size: 12px; color: var(--ink-faint);
+  font-variant-numeric: tabular-nums;
+}
+.rule-row__scope {
+  font-size: 11.5px; padding: 2px 8px; border-radius: 99px;
+  background: var(--green-tint); color: var(--green-dark);
+}
+.rule-row__scope--all { background: var(--amber-tint); color: var(--amber); }
+
+.rule-row__actions { display: flex; align-items: center; gap: 6px; flex: 0 0 auto; }
+.rule-toggle {
+  display: inline-flex; align-items: center; gap: 6px;
+  font-size: 12.5px; color: var(--ink-3); cursor: pointer;
+  padding: 5px 10px; border-radius: 99px; border: 1px solid transparent;
+}
+.rule-toggle:hover { border-color: var(--line-strong); }
+
+/* The new-rule panel: a titled area rather than a bare row of dropdowns, so it reads as one
+   action instead of five loose controls. */
+.rule-new { border: 1px solid var(--line); border-radius: 14px; padding: 16px; background: var(--paper); }
+.rule-new__title { font-weight: 800; font-size: 15px; margin: 0 0 4px; }
+.rule-new__hint { color: var(--ink-faint); font-size: 12.5px; margin: 0 0 14px; }
+.rule-new__fields { display: flex; gap: 10px; flex-wrap: wrap; align-items: flex-end; }
+.rule-new__fields .input { width: auto; min-width: 180px; flex: 1 1 180px; }
+.rule-new__tasks { margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--rule); }
+
+@media (max-width: 760px) {
+  .rule-row { align-items: flex-start; }
+  .rule-row__actions { flex-direction: column; align-items: stretch; }
+}
+
 /* ---------- staff picker ---------- */
 .staff-pick { display: flex; flex-wrap: wrap; gap: 8px; }
 .staff-chip { padding: 7px 13px; border-radius: 99px; border: 1px solid var(--line-strong);
