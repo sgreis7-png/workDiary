@@ -20,6 +20,7 @@ import type { GanttBundle, GanttChart as Chart, GanttTask } from '../gantt/model
 import { notifyScheduleChanged } from '../lib/notifyNewRecord'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { useAuth } from '../auth'
+import { useSearchParams } from 'react-router-dom'
 
 type Phase = 'idle' | 'converting' | 'saving'
 
@@ -51,7 +52,17 @@ export default function GanttScreen() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const active = useMemo(() => projects.filter((p) => p.active), [projects])
-  const projectId = pickedProject || active[0]?.id || ''
+
+  // ?project=<id> so a notification can open the schedule it is about. The overdue alert links
+  // here, and landing on whichever project happens to be first would defeat the point of the
+  // alert naming one. An explicit pick from the dropdown always wins, and an id that is not an
+  // active project is ignored rather than trusted — the link is attacker-controlled, like every
+  // notification link.
+  const [params] = useSearchParams()
+  const linkedProject = params.get('project') ?? ''
+  const projectId = pickedProject
+    || (active.some((pr) => pr.id === linkedProject) ? linkedProject : '')
+    || active[0]?.id || ''
   const charts = chartList?.project === projectId ? chartList.rows : null
   const chartId = charts?.some((c) => c.id === pickedChart) ? pickedChart : charts?.[0]?.id ?? ''
   const bundle = loaded?.chart.id === chartId ? loaded : null

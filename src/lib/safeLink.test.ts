@@ -53,3 +53,26 @@ describe('notificationTarget', () => {
     expect(notificationTarget(null)).toBe(FALLBACK_LINK)
   })
 })
+
+// Deep links from the alert notifications. These carry a query string, and the whole point of the
+// alert is that pressing it lands on the thing that is late or waiting — so if the validator ever
+// strips the query, the notification still "works" while opening the wrong project or the wrong
+// gate, which is worse than failing outright.
+describe('alert deep links', () => {
+  const COOP = '404db974-64ed-4bf5-80e1-7ec8a11cf07a'
+  const PROJ = 'a72117c1-0ecc-47dd-994d-6357ab86d696'
+
+  it('keeps the project on a schedule-overrun link', () => {
+    expect(safeInternalPath(`/gantt?project=${PROJ}`)).toBe(`/gantt?project=${PROJ}`)
+  })
+
+  it('keeps the gate on an awaiting-approval link', () => {
+    expect(safeInternalPath(`/defects/coop/${COOP}?gate=gate1`))
+      .toBe(`/defects/coop/${COOP}?gate=gate1`)
+  })
+
+  it('still refuses an off-origin link that carries a plausible query', () => {
+    expect(safeInternalPath(`//evil.example/gantt?project=${PROJ}`)).toBeNull()
+    expect(safeInternalPath(`https://evil.example/gantt?project=${PROJ}`)).toBeNull()
+  })
+})
