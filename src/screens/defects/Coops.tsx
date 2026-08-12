@@ -17,6 +17,20 @@ export default function Coops() {
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [projectId, setProjectId] = useState('')
   const [favs, setFavs] = useState<string[]>(readFavs)
+  // collapsed project blocks — persisted so the screen opens the way it was left
+  const [closed, setClosed] = useState<Set<string>>(() => {
+    try {
+      const a = JSON.parse(localStorage.getItem('coops_closed_projects') ?? '[]')
+      return new Set(Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : [])
+    } catch { return new Set() }
+  })
+  const toggleClosed = (id: string) => setClosed((prev) => {
+    const next = new Set(prev)
+    if (next.has(id)) next.delete(id)
+    else next.add(id)
+    try { localStorage.setItem('coops_closed_projects', JSON.stringify([...next])) } catch { /* private browsing */ }
+    return next
+  })
   const [newName, setNewName] = useState('')
   const [newProjectId, setNewProjectId] = useState('')
   const [newCount, setNewCount] = useState(1)
@@ -134,12 +148,14 @@ export default function Coops() {
         <div style={{ display: 'grid', gap: 14 }}>
           {groups.map(({ id, coops: cs }) => (
             <div key={id} className="panel" style={{ padding: 0, overflow: 'hidden' }}>
-              <div className="coop-group__head">
+              <button type="button" className="coop-group__head" aria-expanded={!closed.has(id)}
+                onClick={() => toggleClosed(id)}>
+                <span className="coop-group__chev">{closed.has(id) ? '▸' : '▾'}</span>
                 <span className="coop-card__dot" style={{ background: projectColor(id) }} />
                 <b>{projectName(id) || '—'}</b>
                 <span className="count mono">{cs.length} {dt('coops_count')}</span>
-              </div>
-              <div className="row-list">
+              </button>
+              {!closed.has(id) && <div className="row-list">
                 {cs.map((c) => (
                   <div key={c.id} className="row-item" style={{ cursor: 'pointer' }}
                     role="button" tabIndex={0}
@@ -159,7 +175,7 @@ export default function Coops() {
                     )}
                   </div>
                 ))}
-              </div>
+              </div>}
             </div>
           ))}
         </div>
