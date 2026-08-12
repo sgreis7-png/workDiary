@@ -386,14 +386,19 @@ export function summarize(tasks: GanttTask[], todayISO: string): ScheduleSummary
   }
 }
 
+/** The rows the header tiles count: real work items — not summaries, not milestones. */
+export function leafTasks(tasks: GanttTask[]): GanttTask[] {
+  const tree = buildTree(tasks)
+  return tasks.filter((t) => !hasChildren(tree, t.ext_uid) && !t.milestone)
+}
+
 export interface OverdueTask { task: GanttTask; daysLate: number }
 
 /** The tasks behind overdueCount: unfinished leaves past their finish date, most late first. */
 export function overdueTasks(tasks: GanttTask[], todayISO: string): OverdueTask[] {
-  const tree = buildTree(tasks)
   const today = dayOf(todayISO)
-  return tasks
-    .filter((t) => !hasChildren(tree, t.ext_uid) && !t.milestone && t.pct < 100 && dayOf(t.finish_ts) < today)
+  return leafTasks(tasks)
+    .filter((t) => t.pct < 100 && dayOf(t.finish_ts) < today)
     .map((t) => ({ task: t, daysLate: today - dayOf(t.finish_ts) }))
     .sort((a, b) => b.daysLate - a.daysLate)
 }

@@ -11,7 +11,7 @@ import { gt } from '../gantt/i18n'
 import {
   DAY_MS, DEFAULT_FINISH_TIME, DEFAULT_START_TIME,
   buildTree, cascade, dayOf, hasChildren, paymentMilestones, rollUp,
-  overdueTasks, spanDays, summarize, visibleRows, withDay,
+  leafTasks, overdueTasks, spanDays, summarize, visibleRows, withDay,
   type GanttLink, type GanttTask, type PaymentMilestone, type Span,
 } from '../gantt/model'
 import '../styles/gantt.css'
@@ -123,7 +123,14 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
   const paidPct = pays.filter((p) => p.paid).reduce((a, p) => a + p.pct, 0)
   const stats = useMemo(() => summarize(tasks, todayISO), [tasks, todayISO])
   const overdue = useMemo(() => overdueTasks(tasks, todayISO), [tasks, todayISO])
-  const [showOverdue, setShowOverdue] = useState(false)
+  const leaves = useMemo(() => leafTasks(tasks), [tasks])
+  // recently finished first / closest to done first — the most informative end of each list
+  const doneList = useMemo(() => leaves.filter((t) => t.pct >= 100)
+    .sort((a, b) => dayOf(b.finish_ts) - dayOf(a.finish_ts)), [leaves])
+  const wipList = useMemo(() => leaves.filter((t) => t.pct > 0 && t.pct < 100)
+    .sort((a, b) => b.pct - a.pct), [leaves])
+  const [openList, setOpenList] = useState<'done' | 'wip' | 'overdue' | null>(null)
+  const toggleList = (k: 'done' | 'wip' | 'overdue') => setOpenList((v) => (v === k ? null : k))
 
   // ---------- drag ----------
   // Pointer capture would be lost the moment React re-renders the bar, so the move and
@@ -284,29 +291,45 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
         <Stat label={g('g_progress')} value={`${stats.overallPct}%`} />
         <Stat label={g('g_start')} value={stats.spanStart ? fmtDay(dayOf(stats.spanStart)) : '—'} />
         <Stat label={g('g_finish')} value={stats.spanFinish ? fmtDay(dayOf(stats.spanFinish)) : '—'} />
-        <Stat label={g('g_done')} value={`${stats.doneCount}/${stats.leafCount}`} />
-        <Stat label={g('g_wip')} value={String(stats.wipCount)} />
+        <Stat label={g('g_done')} value={`${stats.doneCount}/${stats.leafCount}`}
+          onClick={() => toggleList('done')} open={openList === 'done'} />
+        <Stat label={g('g_wip')} value={String(stats.wipCount)}
+          onClick={() => toggleList('wip')} open={openList === 'wip'} />
         <Stat label={g('g_overdue')} value={String(stats.overdueCount)} tone={stats.overdueCount ? 'warn' : undefined}
-          onClick={() => setShowOverdue((v) => !v)} open={showOverdue} />
+          onClick={() => toggleList('overdue')} open={openList === 'overdue'} />
       </div>
 
-      {showOverdue && (
-        <div className="panel gantt__overdue">
-          {overdue.length === 0 && <div className="empty" style={{ padding: '6px 0' }}>{g('g_no_overdue')}</div>}
-          {overdue.map(({ task, daysLate }) => (
-            <button
-              key={task.ext_uid} type="button"
-              className={`gantt__overdue-row ${selected === task.ext_uid ? 'on' : ''}`}
-              onClick={() => setSelected(task.ext_uid)}
-            >
-              <span className="gantt__overdue-name">{task.name}</span>
-              <span className="gantt__overdue-due">{g('g_due_col')}: <b>{fmtDay(dayOf(task.finish_ts))}</b></span>
-              <span className="gantt__overdue-late"><b>{daysLate}</b> {g('g_days_late')}</span>
-              <span className="gantt__overdue-pct">{task.pct}%</span>
-            </button>
-          ))}
-        </div>
-      )}
+      {openList && (() => {
+        const list = openList === 'done' ? doneList : openList === 'wip' ? wipList : overdue.map((o) => o.task)
+        const lateBy = new Map(overdue.map((o) => [o.task.ext_uid, o.daysLate]))
+        const empty = { done: 'g_no_done', wip: 'g_no_wip', overdue: 'g_no_overdue' }[openList]
+        return (
+          <div className="panel gantt__overdue">
+            {list.length === 0 && <div className="empty" style={{ padding: '6px 0' }}>{g(empty)}</div>}
+            {list.map((t) => (
+              <button
+                key={t.ext_uid} type="button"
+                className={`gantt__overdue-row ${openList === 'done' ? 'gantt__overdue-row--done' : ''} ${selected === t.ext_uid ? 'on' : ''}`}
+                onClick={() => setSelected(t.ext_uid)}
+              >
+                <span className="gantt__overdue-name">{openList === 'done' ? '✓ ' : ''}{t.name}</span>
+                <span className="gantt__overdue-due">{g('g_due_col')}: <b>{fmtDay(dayOf(t.finish_ts))}</b></span>
+                {openList !== 'done' && lateBy.has(t.ext_uid)
+                  ? <span className="gantt__overdue-late"><b>{lateBy.get(t.ext_uid)}</b> {g('g_days_late')}</span>
+                  : <span />}
+                {openList === 'wip'
+                  ? (
+                    <span className="gantt__wip-pct">
+                      <span className="vbar__track"><span className="vbar__fill" style={{ width: `${t.pct}%` }} /></span>
+                      <b>{t.pct}%</b>
+                    </span>
+                  )
+                  : <span className="gantt__overdue-pct">{t.pct}%</span>}
+              </button>
+            ))}
+          </div>
+        )
+      })()}
 
       {pays.length > 0 && (
         <div className="panel gantt__pay" style={{ padding: '12px 14px', display: 'grid', gap: 8 }}>

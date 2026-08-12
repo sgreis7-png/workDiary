@@ -41,7 +41,7 @@ html[data-theme='dark'] .gantt {
 .gantt__overdue { display: grid; gap: 2px; padding: 10px 12px; }
 .gantt__overdue-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto 44px;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   gap: 4px 14px;
   align-items: baseline;
   padding: 7px 8px;
@@ -59,7 +59,11 @@ html[data-theme='dark'] .gantt {
 .gantt__overdue-due b { font-family: var(--font-mono); font-weight: 600; color: var(--ink-2); }
 .gantt__overdue-late { color: var(--clay); font-size: 12.5px; }
 .gantt__overdue-late b { font-family: var(--font-mono); font-size: 14px; }
-.gantt__overdue-pct { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3); text-align: end; }
+.gantt__overdue-pct { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3); text-align: end; min-width: 44px; }
+.gantt__overdue-row--done .gantt__overdue-name { color: var(--green-deep); }
+.gantt__wip-pct { display: inline-flex; align-items: center; gap: 7px; width: 150px; }
+.gantt__wip-pct .vbar__track { flex: 1; }
+.gantt__wip-pct b { font-family: var(--font-mono); font-size: 12.5px; color: var(--green-deep); }
 
 @media (max-width: 640px) {
   .gantt__overdue-row { grid-template-columns: minmax(0, 1fr) auto; }

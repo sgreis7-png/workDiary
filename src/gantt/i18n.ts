@@ -55,6 +55,8 @@ export const G = {
   g_days_late:      { he: 'ימי איחור',                     en: 'days late' },
   g_due_col:        { he: 'יעד סיום',                      en: 'Due' },
   g_no_overdue:     { he: 'אין משימות חורגות.',             en: 'No tasks past due.' },
+  g_no_done:        { he: 'עוד לא הושלמו משימות.',           en: 'No tasks completed yet.' },
+  g_no_wip:         { he: 'אין משימות בביצוע.',              en: 'No tasks in progress.' },
   g_milestones:     { he: 'אבני דרך',                      en: 'Milestones' },
 
   // payment strip

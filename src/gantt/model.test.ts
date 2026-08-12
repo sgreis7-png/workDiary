@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildTree, cascade, dayOf, overdueTasks, paymentMilestones, rollUp, shiftTs, spanDays,
+  buildTree, cascade, dayOf, leafTasks, overdueTasks, paymentMilestones, rollUp, shiftTs, spanDays,
   summarize, toRows, visibleRows, withDay,
   type ConvertedProject, type GanttLink, type GanttTask, type Span,
 } from './model'
@@ -216,6 +216,10 @@ describe('summarize', () => {
 
   it('reports zero progress for an empty schedule', () => {
     expect(summarize([], '2026-06-01T00:00:00').overallPct).toBe(0)
+  })
+
+  it('leafTasks returns the rows the tiles count — no summaries, no milestones', () => {
+    expect(leafTasks(tasks).map((t) => t.ext_uid)).toEqual([2, 3, 4])
   })
 
   it('overdueTasks names the same tasks overdueCount counts, with days late', () => {
