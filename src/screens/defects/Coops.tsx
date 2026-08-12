@@ -38,6 +38,16 @@ export default function Coops() {
         || a.name.localeCompare(b.name, 'he', { numeric: true })),
     [coops, projectId, projectName],
   )
+  // one block per project — `shown` is already project-sorted, so grouping is a fold
+  const groups = useMemo(() => {
+    const out: { id: string; coops: Coop[] }[] = []
+    for (const c of shown) {
+      const last = out[out.length - 1]
+      if (last && last.id === c.project_id) last.coops.push(c)
+      else out.push({ id: c.project_id, coops: [c] })
+    }
+    return out
+  }, [shown])
 
   async function onCreate() {
     const pid = newProjectId || projectId
@@ -121,30 +131,37 @@ export default function Coops() {
       {shown.length === 0 ? (
         <div className="empty">{dt('coops_empty')}</div>
       ) : (
-        <div className="coop-grid">
-          {shown.map((c) => {
-            const proj = projects.find((p) => p.id === c.project_id)
-            return (
-              <div key={c.id} style={{ position: 'relative' }}>
-                <button className="coop-card" style={{ width: '100%' }} onClick={() => nav(`/defects/coop/${c.id}`)}>
-                  <span className="coop-card__dot" style={{ background: projectColor(c.project_id) }} />
-                  <span className="coop-card__name">{c.name}</span>
-                  <span className="coop-card__meta">
-                    {proj?.name ?? '—'}
-                    {c.coop_type ? ` · ${coopTypeLabel(lang, c.coop_type)}` : ''}
-                  </span>
-                </button>
-                {canEdit('coops_manage') && (
-                  <span
-                    role="button" tabIndex={0} title={dt('coop_delete')}
-                    style={{ position: 'absolute', top: 8, insetInlineEnd: 8, cursor: 'pointer', fontSize: 15, opacity: 0.75 }}
-                    onClick={(e) => { e.stopPropagation(); void onDelete(c) }}
-                    onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); void onDelete(c) } }}
-                  >🗑</span>
-                )}
+        <div style={{ display: 'grid', gap: 14 }}>
+          {groups.map(({ id, coops: cs }) => (
+            <div key={id} className="panel" style={{ padding: 0, overflow: 'hidden' }}>
+              <div className="coop-group__head">
+                <span className="coop-card__dot" style={{ background: projectColor(id) }} />
+                <b>{projectName(id) || '—'}</b>
+                <span className="count mono">{cs.length} {dt('coops_count')}</span>
               </div>
-            )
-          })}
+              <div className="row-list">
+                {cs.map((c) => (
+                  <div key={c.id} className="row-item" style={{ cursor: 'pointer' }}
+                    role="button" tabIndex={0}
+                    onClick={() => nav(`/defects/coop/${c.id}`)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') nav(`/defects/coop/${c.id}`) }}>
+                    <div className="grow">
+                      <b>{c.name}</b>
+                      {c.coop_type && <small style={{ marginInlineStart: 10 }}>{coopTypeLabel(lang, c.coop_type)}</small>}
+                    </div>
+                    {canEdit('coops_manage') && (
+                      <span
+                        role="button" tabIndex={0} title={dt('coop_delete')}
+                        style={{ cursor: 'pointer', fontSize: 15, opacity: 0.75 }}
+                        onClick={(e) => { e.stopPropagation(); void onDelete(c) }}
+                        onKeyDown={(e) => { if (e.key === 'Enter') { e.stopPropagation(); void onDelete(c) } }}
+                      >🗑</span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
         </div>
       )}
     </div>

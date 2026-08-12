@@ -1027,6 +1027,18 @@ select.input { cursor: pointer; }
 .qc-stat span { color: var(--ink-3); font-size: 13.5px; }
 .qc-stat--bad { border-color: rgba(193,74,21,.5); }
 .qc-stat--bad b { color: var(--clay); }
+/* Coop management: one block per project, coops as rows. */
+.coop-group__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 13px 22px;
+  border-bottom: 1px solid var(--line);
+  background: var(--paper-2);
+}
+.coop-group__head b { font-family: var(--font-display); font-size: 16px; }
+.coop-group__head .count { margin-inline-start: auto; }
+
 /* Favourite projects — star toggle beside a project picker, shared across screens. */
 .cc-star {
   display: grid;
