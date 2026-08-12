@@ -5,7 +5,7 @@ import { describe, expect, it, vi } from 'vitest'
 
 vi.mock('../lib/supabase', () => ({ supabase: {} }))
 
-const { mergeDiaryCoops, progressSeries } = await import('./api')
+const { latestCoopReports, mergeDiaryCoops, normCoopName, progressSeries } = await import('./api')
 const { GATE_ORDER } = await import('../defects/model')
 
 const gates = Object.fromEntries(GATE_ORDER.map((g) => [g, null])) as Record<(typeof GATE_ORDER)[number], number | null>
@@ -46,6 +46,29 @@ describe('mergeDiaryCoops', () => {
   it('sorts the union numerically by name', () => {
     const merged = mergeDiaryCoops([record('a', 'לול 10')], [series('לול 2', 5)])
     expect(merged.map((c) => c.name)).toEqual(['לול 2', 'לול 10'])
+  })
+})
+
+describe('latestCoopReports', () => {
+  const entry = (id: string, date: string, coops: object[]) => ({
+    id, work_date: date, created_by: 'u', created_at: '',
+    values: { progress_coops: JSON.stringify(coops) },
+  })
+  it('keeps the newest report per coop (entries arrive newest-first)', () => {
+    const reports = latestCoopReports([
+      entry('new', '2026-08-10', [{ name: 'לול 1', pct: 55, rows: [{ task: 'גג', pct: 50, remarks: '' }] }]),
+      entry('old', '2026-08-05', [{ name: 'לול 1', pct: 20, rows: [] }, { name: 'לול 2', pct: 10, rows: [] }]),
+    ])
+    const c1 = reports.get(normCoopName('לול 1'))!
+    expect(c1.entryId).toBe('new')
+    expect(c1.date).toBe('2026-08-10')
+    expect(c1.report.rows[0].task).toBe('גג')
+    // לול 2 was not in the newest entry — its latest is the older one
+    expect(reports.get(normCoopName('לול 2'))!.entryId).toBe('old')
+  })
+  it('matches "Coop 1" and "לול 1" to the same coop', () => {
+    const reports = latestCoopReports([entry('e', '2026-08-10', [{ name: 'Coop 1', pct: 5, rows: [] }])])
+    expect(reports.get(normCoopName('לול 1'))).toBeDefined()
   })
 })
 

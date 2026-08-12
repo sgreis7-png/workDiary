@@ -21,9 +21,10 @@ import { deptLabel } from '../data'
 import { fetchBundle, fetchCharts } from '../gantt/api'
 import { summarize, type GanttBundle } from '../gantt/model'
 import {
-  fetchProjectSnapshot, reportedProgress,
-  type ProjectSnapshot, type SnapshotCoop, type SnapshotDefect, type SnapshotPerson, type LeanEntry,
+  fetchProjectSnapshot, latestCoopReports, normCoopName, reportedProgress,
+  type CoopLastReport, type ProjectSnapshot, type SnapshotCoop, type SnapshotDefect, type SnapshotPerson, type LeanEntry,
 } from '../control/api'
+import { bdActive, type ProgressRow } from '../lib/reportTables'
 import type { Project } from '../data'
 import '../styles/control.css'
 import { useTabStrip } from '../lib/useTabStrip'
@@ -133,7 +134,7 @@ export default function ControlCenter() {
       key: 'coops',
       label: g('o_tab_coops'),
       count: data.coops.length,
-      node: <CoopsBlock coops={data.coops} fmt={fmt} />,
+      node: <CoopsBlock coops={data.coops} entries={data.entries} fmt={fmt} />,
     },
     {
       key: 'defects',
@@ -305,53 +306,97 @@ function ScheduleBlock({ bundle }: { bundle: GanttBundle }) {
   )
 }
 
-function CoopsBlock({ coops, fmt }: { coops: SnapshotCoop[]; fmt: Fmt }) {
+function CoopsBlock({ coops, entries, fmt }: { coops: SnapshotCoop[]; entries: LeanEntry[]; fmt: Fmt }) {
   const { lang } = useI18n()
   const g = (k: string) => gt(lang, k)
+  const [open, setOpen] = useState<string | null>(null)
+  const reports = useMemo(() => latestCoopReports(entries, lang), [entries, lang])
   if (!coops.length) return <div className="panel cc-block"><div className="empty">{g('o_no_coops')}</div></div>
   return (
     <div className="cc-cards">
-      {coops.map((c) => c.diaryOnly ? (
-        // reported from the field, but no quality-control record to open yet
-        <div key={c.id} className="panel cc-card">
-          <div className="cc-card__head">
-            <b>{c.name}</b>
-            <Tag tone="muted">{g('o_diary_only')}</Tag>
+      {coops.map((c) => {
+        const rep = reports.get(normCoopName(c.name))
+        const on = open === c.id
+        return (
+          <div key={c.id} className="panel cc-card" style={on ? { gridColumn: '1 / -1' } : undefined}>
+            <button type="button" className="cc-card__toggle" aria-expanded={on}
+              onClick={() => setOpen(on ? null : c.id)}>
+              <div className="cc-card__head">
+                <b>{c.name}</b>
+                {c.diaryOnly
+                  ? <Tag tone="muted">{g('o_diary_only')}</Tag>
+                  : <>
+                    {c.overdueDefects > 0 && <Tag tone="clay">{c.overdueDefects} {g('o_overdue')}</Tag>}
+                    {c.overdueDefects === 0 && c.openDefects > 0 && <Tag tone="amber">{c.openDefects} {g('o_open_defects')}</Tag>}
+                    {c.openDefects === 0 && <Tag tone="green">✓</Tag>}
+                  </>}
+              </div>
+              {!c.diaryOnly && (
+                <div className="qc-gates">
+                  {GATE_ORDER.map((gate) => {
+                    const pct = c.gates[gate]
+                    return (
+                      <span
+                        key={gate}
+                        className={`qc-gate ${pct === 100 ? 'qc-gate--done' : pct !== null ? 'qc-gate--part' : ''}`}
+                        title={`${gateShortName(lang, gate)} · ${pct ?? '—'}%`}
+                      >
+                        {gateShortName(lang, gate).replace(/[^0-9]/g, '') || '⚒'}
+                        <small>{pct === null ? '—' : `${pct}%`}</small>
+                      </span>
+                    )
+                  })}
+                </div>
+              )}
+              <div className="cc-card__meta">
+                {c.execution_manager && <span>{c.execution_manager}</span>}
+                {c.opened_on && <span>{fmt(c.opened_on)}</span>}
+                {c.reportedPct !== null && <span>{g('o_reported_short')}: {c.reportedPct}%</span>}
+                {rep && <span>{g('o_last_report')}: {fmt(rep.date)}</span>}
+              </div>
+            </button>
+            {on && (rep
+              ? <CoopReportDetail rep={rep} fmt={fmt} />
+              : <div className="empty" style={{ padding: '10px 0' }}>{g('o_no_report_coop')}</div>)}
+            {on && !c.diaryOnly && (
+              <Link className="btn btn--ghost" style={{ alignSelf: 'start' }} to={`/defects/coop/${c.id}`}>
+                {g('o_open_qc')}
+              </Link>
+            )}
           </div>
-          <div className="cc-card__meta">
-            <span>{g('o_reported_short')}: {c.reportedPct !== null ? `${c.reportedPct}%` : '—'}</span>
-          </div>
-        </div>
-      ) : (
-        <Link key={c.id} to={`/defects/coop/${c.id}`} className="panel cc-card">
-          <div className="cc-card__head">
-            <b>{c.name}</b>
-            {c.overdueDefects > 0 && <Tag tone="clay">{c.overdueDefects} {g('o_overdue')}</Tag>}
-            {c.overdueDefects === 0 && c.openDefects > 0 && <Tag tone="amber">{c.openDefects} {g('o_open_defects')}</Tag>}
-            {c.openDefects === 0 && <Tag tone="green">✓</Tag>}
-          </div>
-          <div className="qc-gates">
-            {GATE_ORDER.map((gate) => {
-              const pct = c.gates[gate]
-              return (
-                <span
-                  key={gate}
-                  className={`qc-gate ${pct === 100 ? 'qc-gate--done' : pct !== null ? 'qc-gate--part' : ''}`}
-                  title={`${gateShortName(lang, gate)} · ${pct ?? '—'}%`}
-                >
-                  {gateShortName(lang, gate).replace(/[^0-9]/g, '') || '⚒'}
-                  <small>{pct === null ? '—' : `${pct}%`}</small>
-                </span>
-              )
-            })}
-          </div>
-          <div className="cc-card__meta">
-            {c.execution_manager && <span>{c.execution_manager}</span>}
-            {c.opened_on && <span>{fmt(c.opened_on)}</span>}
-            {c.reportedPct !== null && <span>{g('o_reported_short')}: {c.reportedPct}%</span>}
-          </div>
-        </Link>
-      ))}
+        )
+      })}
+    </div>
+  )
+}
+
+/** The task table as it stood in the coop's latest diary report — status, not the entry. */
+function CoopReportDetail({ rep, fmt }: { rep: CoopLastReport; fmt: Fmt }) {
+  const { lang } = useI18n()
+  const g = (k: string) => gt(lang, k)
+  const taskRow = (r: ProgressRow, i: number) => (
+    <div key={i} className={`cc-task ${r.pct === 100 ? 'cc-task--done' : ''}`}>
+      <span className="cc-task__name">{r.pct === 100 ? '✓ ' : ''}{r.task || '—'}</span>
+      <span className="vbar">
+        <span className="vbar__track"><span className="vbar__fill" style={{ width: `${r.pct}%` }} /></span>
+        <b>{r.pct}%</b>
+      </span>
+      {r.remarks.trim() && <span className="cc-task__rem">{r.remarks}</span>}
+    </div>
+  )
+  return (
+    <div className="cc-report">
+      <div className="cc-report__meta">
+        <span>{g('o_last_report')}: {fmt(rep.date)}</span>
+        <Link to={`/entry/${rep.entryId}`}>{g('o_open_entry')}</Link>
+      </div>
+      {rep.report.rows.map(taskRow)}
+      {bdActive(rep.report.bd) && (
+        <>
+          <div className="cc-report__sub">{g('o_bd')}</div>
+          {rep.report.bd.map(taskRow)}
+        </>
+      )}
     </div>
   )
 }

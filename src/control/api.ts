@@ -10,7 +10,7 @@
 // entry, which is wasted work when only `values` is wanted.
 import { supabase } from '../lib/supabase'
 import { deptIdOf, hasMalfunction, type Project } from '../data'
-import { coopLabel, parseCoops } from '../lib/reportTables'
+import { coopLabel, parseCoops, type CoopReport } from '../lib/reportTables'
 import { gateSummary } from '../defects/rules'
 import { GATE_ORDER, type GateKey, type ItemStatus, type Severity } from '../defects/model'
 import type { ProgressSeries } from '../components/ProgressChart'
@@ -104,7 +104,26 @@ export function progressSeries(entries: LeanEntry[]): ProgressSeries[] {
 }
 
 // "לול 3", "Coop 3" and " לול 3 " are the same coop; free-typed names match case-blind.
-const normCoopName = (name: string) => coopLabel(name, 'he').trim().toLowerCase()
+export const normCoopName = (name: string) => coopLabel(name, 'he').trim().toLowerCase()
+
+export interface CoopLastReport { date: string; entryId: string; report: CoopReport }
+
+/**
+ * The most recent diary report per coop, keyed by normalized name — what the coop
+ * drill-down shows: the tasks as they stood in the last report, not the entry itself.
+ */
+export function latestCoopReports(entries: LeanEntry[], lang: 'he' | 'en' = 'he'): Map<string, CoopLastReport> {
+  const out = new Map<string, CoopLastReport>()
+  // entries arrive newest-first, so the first report seen for a coop is its latest
+  for (const e of entries) {
+    if (!e.work_date) continue
+    for (const r of parseCoops(e.values, lang)) {
+      const key = normCoopName(r.name)
+      if (!out.has(key)) out.set(key, { date: e.work_date, entryId: e.id, report: r })
+    }
+  }
+  return out
+}
 
 /**
  * One coop list for the whole screen: quality-control records, plus coops that so far
