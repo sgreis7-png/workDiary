@@ -1,6 +1,7 @@
 <title>יומן עבודה אגרוטופ — היכרות עם המערכת</title>
 <style>
   :root {
+    color-scheme: light; /* fixed light palette — keep forced-dark browsers from inverting it */
     --paper:      #eef2f0;
     --panel:      #ffffff;
     --edge:       #d7dfdb;
@@ -53,10 +54,18 @@
     background: linear-gradient(168deg, var(--forest-2), var(--forest) 70%);
     color: #eaf3ee;
     border-bottom: 0;
+    /* the gradient must survive printing and forced-dark browsers — white text
+       on a stripped-to-white background is invisible */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
   }
   .slide--dark .eyebrow { color: #8fb7a0; }
-  .slide--dark h2, .slide--dark h1 { color: #ffffff; }
+  /* every text role gets an explicit colour on dark — nothing is left to
+     inheritance, so no viewer theme or print path can lose the contrast */
+  .slide--dark h1, .slide--dark h2, .slide--dark h3 { color: #ffffff; }
   .slide--dark p, .slide--dark li { color: #cfe0d6; }
+  .slide--dark figcaption { color: #9dbcab; }
+  .slide--dark .stat b { color: #ffffff; }
 
   .eyebrow {
     margin: 0;
@@ -67,9 +76,9 @@
     color: var(--faint);
   }
 
-  h1 { margin: 0; font-size: clamp(34px, 5.6vw, 62px); line-height: 1.06; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; }
-  h2 { margin: 0; font-size: clamp(25px, 3.4vw, 40px); line-height: 1.14; font-weight: 800; letter-spacing: -.015em; text-wrap: balance; }
-  h3 { margin: 0 0 6px; font-size: 17px; font-weight: 750; }
+  h1 { margin: 0; font-size: clamp(34px, 5.6vw, 62px); line-height: 1.06; font-weight: 800; letter-spacing: -.02em; text-wrap: balance; color: var(--ink); }
+  h2 { margin: 0; font-size: clamp(25px, 3.4vw, 40px); line-height: 1.14; font-weight: 800; letter-spacing: -.015em; text-wrap: balance; color: var(--ink); }
+  h3 { margin: 0 0 6px; font-size: 17px; font-weight: 750; color: var(--ink); }
   p  { margin: 0; color: var(--ink-2); max-width: 68ch; }
   .lead { font-size: clamp(17px, 1.5vw, 20px); color: var(--ink-2); }
 
@@ -201,6 +210,7 @@
   @page { size: 13.333in 7.5in; margin: 0; }
 
   @media print {
+    * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
     html, body { height: auto; }
     .deck { height: auto; overflow: visible; scroll-snap-type: none; }
     .slide {
@@ -371,10 +381,10 @@
     <span class="num">07</span>
     <p class="eyebrow">התקדמות</p>
     <h2>גרף התקדמות לכל לול, לאורך זמן</h2>
-    <p>העובד מזיז מחוון אחוזים לכל לול בדיווח היומי. מזה נבנית עקומה — ורואים מיד מי מתקדם, מי נעצר ומתי בדיוק זה קרה. בלי להרכיב אקסל, בלי לשאול אף אחד.</p>
+    <p>העובד מדווח אחוז לכל משימת בנייה בדיווח היומי, והסה״כ לכל לול מחושב אוטומטית מהמשימות — לא מספר שמוקלד ביד. מזה נבנית עקומה, ורואים מיד מי מתקדם, מי נעצר ומתי בדיוק זה קרה. הגרף, הדוח והטבלאות מציגים תמיד את אותו מספר.</p>
     <div class="shot-wrap"><figure>
       <img class="shot" src="__IMG_progress__" alt="גרף התקדמות לאורך זמן">
-      <figcaption>שני לולים באותו פרויקט — לול 1 הגיע ל־80% וירד ל־40% לאחר עדכון, לול 2 יציב על 25%</figcaption>
+      <figcaption>שני לולים באותו פרויקט — כל נקודה היא דיווח יומי מהשטח; התווית בקצה הקו מציגה את המצב העדכני</figcaption>
     </figure></div>
   </section>
 
@@ -542,9 +552,10 @@
     <span class="num">19</span>
     <p class="eyebrow">למנהלים · עומק</p>
     <h2>לא רק כמה חורגים — אילו משימות, ובכמה ימים</h2>
-    <p>הקוביות של לוח הזמנים נפתחות: «הושלם» מציג את מה שנגמר, «בביצוע» את מה שרץ עכשיו עם פס התקדמות לכל משימה, ו«חורג מיעד» את הרשימה המלאה — שם המשימה, יעד הסיום, וכמה ימי איחור, מהחמור לקל. לחיצה על שורה מסמנת את המשימה בלוח עצמו.</p>
+    <p>הקוביות של לוח הזמנים נפתחות — גם במסך לוח הזמנים וגם במרכז הבקרה: «הושלם» מציג את מה שנגמר, «בביצוע» את מה שרץ עכשיו עם פס התקדמות לכל משימה, ו«חורג מיעד» את הרשימה המלאה — שם המשימה, יעד הסיום, וכמה ימי איחור, מהחמור לקל. לחיצה על שורה מסמנת את המשימה בלוח עצמו.</p>
     <div class="shot-wrap"><figure>
-      <img class="shot" src="__IMG_cc_overdue__" alt="רשימת המשימות החורגות מיעד">
+      <img class="shot" src="__IMG_cc_overdue__" alt="רשימת המשימות עם ימי איחור ופסי התקדמות">
+      <figcaption>למעלה: ★ כפר יובל כקיצור דרך — המועדפים זמינים גם כאן</figcaption>
     </figure></div>
   </section>
 

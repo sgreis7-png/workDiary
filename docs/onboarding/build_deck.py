@@ -32,7 +32,7 @@ IMAGES = {
     "qc_report":   (SHOTS / "qc_report.jpg", 1200, False),
     "menu":        (SHOTS / "menu.jpg", 1500, False),
     "digest":      (SHOTS / "digest.jpg", 1500, True),
-    "progress":    (SHOTS / "progress.jpg", 1500, True),
+    "progress":    (SHOTS / "progress.png", 1500, True),
     "logbook":     (SHOTS / "logbook.jpg", 1500, True),
     "control":     (SHOTS / "control.jpg", 1500, True),
     # revision 2 — the drill-down / favourites / alerts update (2026-08-12)
