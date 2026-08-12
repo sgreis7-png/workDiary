@@ -30,6 +30,8 @@ export const T = {
   col_assignee: { he: 'באחריות', en: 'Assignee' },
   col_due: { he: 'תאריך יעד', en: 'Due' },
   days_late: { he: 'ימי איחור', en: 'Days late' },
+  col_opened_by: { he: 'נפתח ע״י', en: 'Opened by' },
+  col_opened: { he: 'נפתח בתאריך', en: 'Opened on' },
 } as const
 
 export default function QCDashboard() {
@@ -138,6 +140,7 @@ export default function QCDashboard() {
                     <th>{dt('rep_house')}</th><th>{dt('qc_project')}</th><th>#</th>
                     <th>{t('col_desc')}</th><th>{t('col_sev')}</th><th>{t('col_assignee')}</th>
                     <th>{t('col_due')}</th><th>{t('days_late')}</th>
+                    <th>{t('col_opened_by')}</th><th>{t('col_opened')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -148,11 +151,13 @@ export default function QCDashboard() {
                         <td><button className="summary-gate-link" onClick={() => nav(`/defects/coop/${d.coop_id}`)}>{d.coop_name}</button></td>
                         <td>{projectName(d.project_id)}</td>
                         <td className="mono">{d.seq}</td>
-                        <td>{d.description ?? '—'}</td>
+                        <td>{d.description?.trim() || (d.item_no ? `${gateShortName(lang, d.gate)} · ${itemLabel(defs, d.gate, d.item_no)}` : '') || '—'}</td>
                         <td>{d.severity ? SEVERITY_LABELS[d.severity] : '—'}</td>
                         <td>{d.assignee_email ?? d.assignee ?? '—'}</td>
                         <td className="mono">{d.due_date ?? '—'}</td>
                         <td className={`mono ${daysLate(d) !== null ? 'summary-bad' : ''}`}>{daysLate(d) ?? '—'}</td>
+                        <td>{d.created_by_email ?? '—'}</td>
+                        <td className="mono">{d.created_at.slice(0, 10)}</td>
                       </tr>
                     ))}
                 </tbody>

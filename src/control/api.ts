@@ -46,9 +46,12 @@ export interface SnapshotDefect {
   coopName: string
   seq: number
   gate: GateKey
+  item_no: number | null
   description: string | null
   severity: Severity | null
   assignee_email: string | null
+  created_by_email: string | null
+  created_at: string
   due_date: string | null
   status: 'open' | 'closed'
   overdue: boolean
@@ -200,7 +203,7 @@ export async function fetchProjectSnapshot(project: Project): Promise<ProjectSna
     ? await Promise.all([
       supabase.from('coop_checklist_items').select('coop_id,gate,item_no,status').in('coop_id', coopIds),
       supabase.from('coop_defects')
-        .select('id,coop_id,seq,gate,description,severity,assignee_email,due_date,status')
+        .select('id,coop_id,seq,gate,item_no,description,severity,assignee_email,created_by_email,created_at,due_date,status')
         .in('coop_id', coopIds),
     ])
     : [{ data: [], error: null }, { data: [], error: null }]
@@ -211,8 +214,9 @@ export async function fetchProjectSnapshot(project: Project): Promise<ProjectSna
   const coopName = new Map(coopRows.map((c) => [c.id, c.name]))
 
   const defects: SnapshotDefect[] = ((defectQ.data ?? []) as {
-    id: string; coop_id: string; seq: number; gate: GateKey; description: string | null
-    severity: Severity | null; assignee_email: string | null; due_date: string | null; status: 'open' | 'closed'
+    id: string; coop_id: string; seq: number; gate: GateKey; item_no: number | null; description: string | null
+    severity: Severity | null; assignee_email: string | null; created_by_email: string | null; created_at: string
+    due_date: string | null; status: 'open' | 'closed'
   }[]).map((d) => ({
     ...d,
     coopName: coopName.get(d.coop_id) ?? '',

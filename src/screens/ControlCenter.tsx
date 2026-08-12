@@ -15,8 +15,9 @@ import { Tag, riseIn, stagger } from '../components/ui'
 import { ProgressChart } from '../components/ProgressChart'
 import { GanttChart, type TaskChange } from '../components/GanttChart'
 import { gt } from '../gantt/i18n'
-import { GATE_ORDER, SEVERITY_LABELS } from '../defects/model'
+import { GATES, GATE_ORDER, SEVERITY_LABELS } from '../defects/model'
 import { gateShortName } from '../defects/i18n'
+import { loadGateDefs, itemLabel, type GateDefs } from '../defects/defs'
 import { deptLabel } from '../data'
 import { fetchBundle, fetchCharts } from '../gantt/api'
 import { summarize, type GanttBundle } from '../gantt/model'
@@ -59,6 +60,8 @@ export default function ControlCenter() {
   const [section, setSection] = useState<SectionKey>('summary')
   const [view, setView] = useState<View>(readView)
   const [snap, setSnap] = useState<ProjectSnapshot | null>(null)
+  const [defs, setDefs] = useState<GateDefs>(GATES)
+  const [defectSeverity, setDefectSeverity] = useState<'all' | 'critical'>('all')
   const [schedule, setSchedule] = useState<{ project: string; bundle: GanttBundle | null } | null>(null)
   const [failure, setFailure] = useState<string | null>(null)
 
@@ -77,6 +80,8 @@ export default function ControlCenter() {
   const data = snap?.project.id === projectId ? snap : null
   const bundle = schedule?.project === projectId ? schedule.bundle : null
   const problem = failure === projectId ? g('o_load_failed') : null
+
+  useEffect(() => { loadGateDefs().then(setDefs) }, [])
 
   useEffect(() => {
     if (!project) return
@@ -157,7 +162,8 @@ export default function ControlCenter() {
       key: 'defects',
       label: g('o_tab_defects'),
       count: openDefects.length,
-      node: <DefectsBlock defects={openDefects} fmt={fmt} />,
+      node: <DefectsBlock defects={openDefects} defs={defs} severity={defectSeverity}
+        onShowAll={() => setDefectSeverity('all')} fmt={fmt} />,
     },
     {
       key: 'people',
@@ -235,11 +241,14 @@ export default function ControlCenter() {
               label={g('o_schedule_prog')}
               value={scheduleStats ? `${scheduleStats.overallPct}%` : reported !== null ? `${reported}%` : '—'}
               note={!scheduleStats && reported !== null ? g('o_reported_prog') : undefined}
+              onClick={maySeeSchedule ? () => goTo('schedule') : undefined}
             />
-            <Kpi label={g('o_open_defects')} value={String(openDefects.length)} bad={openDefects.length > 0} />
-            <Kpi label={g('o_critical')} value={String(critical.length)} bad={critical.length > 0} />
-            <Kpi label={g('o_houses')} value={String(data.coops.length)} />
-            <Kpi label={g('o_entries')} value={String(data.entries.length)} />
+            <Kpi label={g('o_open_defects')} value={String(openDefects.length)} bad={openDefects.length > 0}
+              onClick={() => { setDefectSeverity('all'); goTo('defects') }} />
+            <Kpi label={g('o_critical')} value={String(critical.length)} bad={critical.length > 0}
+              onClick={() => { setDefectSeverity('critical'); goTo('defects') }} />
+            <Kpi label={g('o_houses')} value={String(data.coops.length)} onClick={() => goTo('coops')} />
+            <Kpi label={g('o_entries')} value={String(data.entries.length)} onClick={() => goTo('diary')} />
             <Kpi
               label={left !== null && left < 0 ? g('o_days_over') : g('o_days_left')}
               value={left === null ? '—' : String(Math.abs(left))}
@@ -444,38 +453,57 @@ function CoopReportDetail({ rep, fmt }: { rep: CoopLastReport; fmt: Fmt }) {
   )
 }
 
-function DefectsBlock({ defects, fmt }: { defects: SnapshotDefect[]; fmt: Fmt }) {
+function DefectsBlock({ defects, defs, severity, onShowAll, fmt }: {
+  defects: SnapshotDefect[]; defs: GateDefs; severity: 'all' | 'critical'; onShowAll: () => void; fmt: Fmt
+}) {
   const { lang } = useI18n()
   const g = (k: string) => gt(lang, k)
-  if (!defects.length) return <div className="panel cc-block"><div className="empty">{g('o_no_defects')}</div></div>
+  const shown = severity === 'critical' ? defects.filter((d) => d.severity === 'critical') : defects
+  // a defect opened from a checklist item carries no free text — its wording is the item's
+  const describe = (d: SnapshotDefect) =>
+    d.description?.trim() || (d.item_no !== null ? itemLabel(defs, d.gate, d.item_no) : '') || '—'
   return (
     <div className="panel cc-block" style={{ overflowX: 'auto' }}>
-      <table className="defect-table">
-        <thead>
-          <tr>
-            <th>{g('o_tab_coops')}</th>
-            <th>#</th>
-            <th>{g('o_tab_defects')}</th>
-            <th>{g('o_severity')}</th>
-            <th>{g('o_assignee')}</th>
-            <th>{g('o_due')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {[...defects]
-            .sort((a, b) => Number(b.overdue) - Number(a.overdue) || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999'))
-            .map((d) => (
-              <tr key={d.id} className={d.overdue ? 'gate-row--bad' : undefined}>
-                <td><Link to={`/defects/coop/${d.coop_id}`}>{d.coopName}</Link></td>
-                <td className="mono">{d.seq}</td>
-                <td>{d.description ?? '—'}</td>
-                <td>{d.severity ? SEVERITY_LABELS[d.severity] : '—'}</td>
-                <td>{d.assignee_email ?? '—'}</td>
-                <td className={d.overdue ? 'cell-warn mono' : 'mono'}>{fmt(d.due_date)}</td>
-              </tr>
-            ))}
-        </tbody>
-      </table>
+      {severity === 'critical' && (
+        <div className="cc-filter">
+          <Tag tone="clay">{SEVERITY_LABELS.critical}</Tag>
+          <button type="button" className="btn btn--quiet" onClick={onShowAll}>{g('o_show_all')}</button>
+        </div>
+      )}
+      {!shown.length ? <div className="empty">{g('o_no_defects')}</div> : (
+        <table className="defect-table">
+          <thead>
+            <tr>
+              <th>{g('o_tab_coops')}</th>
+              <th>#</th>
+              <th>{g('o_gate')}</th>
+              <th>{g('o_tab_defects')}</th>
+              <th>{g('o_severity')}</th>
+              <th>{g('o_assignee')}</th>
+              <th>{g('o_due')}</th>
+              <th>{g('o_opened_by')}</th>
+              <th>{g('o_opened_on')}</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[...shown]
+              .sort((a, b) => Number(b.overdue) - Number(a.overdue) || (a.due_date ?? '9999').localeCompare(b.due_date ?? '9999'))
+              .map((d) => (
+                <tr key={d.id} className={d.overdue ? 'gate-row--bad' : undefined}>
+                  <td><Link to={`/defects/coop/${d.coop_id}`}>{d.coopName}</Link></td>
+                  <td className="mono">{d.seq}</td>
+                  <td>{gateShortName(lang, d.gate)}</td>
+                  <td>{describe(d)}</td>
+                  <td>{d.severity ? SEVERITY_LABELS[d.severity] : '—'}</td>
+                  <td>{d.assignee_email ?? '—'}</td>
+                  <td className={d.overdue ? 'cell-warn mono' : 'mono'}>{fmt(d.due_date)}</td>
+                  <td>{d.created_by_email ?? '—'}</td>
+                  <td className="mono">{fmt(d.created_at)}</td>
+                </tr>
+              ))}
+          </tbody>
+        </table>
+      )}
     </div>
   )
 }
@@ -520,14 +548,19 @@ function DiaryBlock({ entries, fmt, userName }: { entries: LeanEntry[]; fmt: Fmt
   )
 }
 
-function Kpi({ label, value, note, bad }: { label: string; value: string; note?: string; bad?: boolean }) {
-  return (
-    <div className="panel stat" style={bad ? { borderColor: 'var(--clay)' } : undefined}>
+function Kpi({ label, value, note, bad, onClick }: {
+  label: string; value: string; note?: string; bad?: boolean; onClick?: () => void
+}) {
+  const body = (
+    <>
       <div className="stat__value" style={bad ? { color: 'var(--clay)' } : undefined}>{value}</div>
       <div className="stat__label">{label}</div>
       {note && <div className="cc-kpi__note">{note}</div>}
-    </div>
+    </>
   )
+  const style = bad ? { borderColor: 'var(--clay)' } : undefined
+  if (!onClick) return <div className="panel stat" style={style}>{body}</div>
+  return <button type="button" className="panel stat stat--btn" style={style} onClick={onClick}>{body}</button>
 }
 
 function Row({ label, value }: { label: string; value: string | null | undefined }) {

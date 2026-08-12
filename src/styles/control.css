@@ -115,6 +115,8 @@ a.cc-card:hover { border-color: var(--green); transform: translateY(-2px); }
 
 .cc-pickrow { display: flex; align-items: center; gap: 8px; }
 
+.cc-filter { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+
 /* Star toggle beside the project picker. */
 .cc-star {
   display: grid;

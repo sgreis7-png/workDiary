@@ -31,6 +31,8 @@ export interface Defect {
   assignee_email: string | null
   due_date: string | null; status: DefectStatus; closed_on: string | null; closure_note: string | null
   created_at: string
+  /** captured by a column default from the inserting user's JWT; null on rows predating 0059 */
+  created_by_email: string | null
 }
 export interface GateSignature {
   coop_id: string; gate: GateKey; role: SignatureRole
