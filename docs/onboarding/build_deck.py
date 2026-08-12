@@ -12,27 +12,35 @@ import sys
 
 from PIL import Image
 
-SHOTS = pathlib.Path(r"C:\APPS\WorkDiary\.shots-tmp\deck")
-CHROME = pathlib.Path(r"C:\Users\yegudish\AppData\Local\Temp\claude-chrome-screenshots-ZSWC1X")
+# Everything is sourced from shots/ — the committed, already-cropped set — so a rebuild
+# works on any machine with the repo, not only the one that captured the screenshots.
+HERE = pathlib.Path(__file__).parent
+SHOTS = HERE / "shots"
 APP = pathlib.Path(r"C:\APPS\WorkDiary")
 
 # key -> (source file, max width, whether to trim uniform margins)
 IMAGES = {
     "logo":        (APP / "public" / "agrotop-logo.png", 520, False),
-    "login":       (SHOTS / "login.png", 1500, False),
-    "gantt":       (SHOTS / "gantt-board.png", 1600, False),
-    "gantt_hover": (SHOTS / "gantt-hover.png", 1500, False),
-    "gantt_phone": (SHOTS / "gantt-phone.png", 460, False),
-    "qc_gate":     (SHOTS / "qc-gate.png", 1400, False),
-    "qc_log":      (SHOTS / "qc-defect-log.png", 1400, False),
-    "qc_summary":  (SHOTS / "qc-status-summary.png", 1400, False),
-    "qc_open":     (SHOTS / "qc-project-open.png", 1400, False),
-    "qc_report":   (SHOTS / "qc-report.png", 1200, False),
-    "menu":        (CHROME / "screenshot-1786295359364-0.jpg", 1500, False),
-    "digest":      (CHROME / "screenshot-1786295724841-4.jpg", 1500, True),
-    "progress":    (CHROME / "screenshot-1786295779943-5.jpg", 1500, True),
-    "logbook":     (CHROME / "screenshot-1786295825376-6.jpg", 1500, True),
-    "control":     (CHROME / "screenshot-1786295877596-7.jpg", 1500, True),
+    "login":       (SHOTS / "login.jpg", 1500, False),
+    "gantt":       (SHOTS / "gantt.jpg", 1600, False),
+    "gantt_hover": (SHOTS / "gantt_hover.jpg", 1500, False),
+    "gantt_phone": (SHOTS / "gantt_phone.jpg", 460, False),
+    "qc_gate":     (SHOTS / "qc_gate.jpg", 1400, False),
+    "qc_log":      (SHOTS / "qc_log.jpg", 1400, False),
+    "qc_summary":  (SHOTS / "qc_summary.jpg", 1400, False),
+    "qc_open":     (SHOTS / "qc_open.jpg", 1400, False),
+    "qc_report":   (SHOTS / "qc_report.jpg", 1200, False),
+    "menu":        (SHOTS / "menu.jpg", 1500, False),
+    "digest":      (SHOTS / "digest.jpg", 1500, True),
+    "progress":    (SHOTS / "progress.jpg", 1500, True),
+    "logbook":     (SHOTS / "logbook.jpg", 1500, True),
+    "control":     (SHOTS / "control.jpg", 1500, True),
+    # revision 2 — the drill-down / favourites / alerts update (2026-08-12)
+    "cc_coop":     (SHOTS / "cc_coop.jpg", 1500, True),
+    "cc_overdue":  (SHOTS / "cc_overdue.jpg", 1500, True),
+    "qc_dash":     (SHOTS / "qc_dash.jpg", 1500, True),
+    "coops_list":  (SHOTS / "coops_list.jpg", 1500, True),
+    "alerts":      (SHOTS / "alerts.jpg", 1500, True),
 }
 
 
