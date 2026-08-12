@@ -1,7 +1,7 @@
 import { CSSProperties, Fragment, ReactNode, useRef, useState } from 'react'
 import { Button } from './ui'
 import { useI18n } from '../i18n'
-import { CoopReport, MISSING_REASONS, MissingRow, ProgressRow, defaultBdRows, defaultCoop } from '../lib/reportTables'
+import { CoopReport, MISSING_REASONS, MissingRow, ProgressRow, computedPct, defaultBdRows, defaultCoop } from '../lib/reportTables'
 import { useDialog } from '../lib/useDialog'
 
 /** 0–100 slider rendered as a filled bar; big thumb on touch, slim bar on desktop. */
@@ -65,8 +65,14 @@ export function CoopReports({ coops, onChange }: { coops: CoopReport[]; onChange
   // has to be told when it is actually on screen.
   const panel = useRef<HTMLDivElement>(null)
   useDialog(panel, () => setBdOpen(null), bdOpen !== null)
+  // the overall percent is derived, never typed: any task edit recomputes it
   const upd = (i: number, patch: Partial<CoopReport>) =>
-    onChange(coops.map((c, k) => (k === i ? { ...c, ...patch } : c)))
+    onChange(coops.map((c, k) => {
+      if (k !== i) return c
+      const next = { ...c, ...patch }
+      if (patch.rows || patch.bd) next.pct = computedPct(next.rows, next.bd)
+      return next
+    }))
   const remove = (i: number) => {
     if (!window.confirm(`${t('confirm_remove_coop')}\n\n${coops[i].name}`)) return
     onChange(coops.filter((_, k) => k !== i))
@@ -96,7 +102,10 @@ export function CoopReports({ coops, onChange }: { coops: CoopReport[]; onChange
           </div>
           <div className="house-pct">
             <span className="house-pct__label">{t('house_pct')}</span>
-            <PctSlider value={c.pct} onChange={(v) => upd(i, { pct: v })} />
+            <span className="vbar">
+              <span className="vbar__track"><span className="vbar__fill" style={{ width: `${computedPct(c.rows, c.bd)}%` }} /></span>
+              <b>{computedPct(c.rows, c.bd)}%</b>
+            </span>
           </div>
           <ProgressTable rows={c.rows} onChange={(rows) => upd(i, { rows })}
             injectAfter={bdSlot(c.rows)}

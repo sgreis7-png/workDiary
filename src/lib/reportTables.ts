@@ -89,6 +89,17 @@ export const defaultCoop = (lang: Lang, n = 1): CoopReport =>
 export const bdActive = (bd: ProgressRow[]): boolean =>
   bd.some((r) => r.pct > 0 || r.remarks.trim() !== '')
 
+/**
+ * Overall coop percent — the mean of the entered tasks, never a hand-typed number.
+ * The BD sub-form joins the pool only once something was filled there, so an
+ * untouched all-zero BD table does not drag a structure-only report down.
+ */
+export function computedPct(rows: ProgressRow[], bd: ProgressRow[]): number {
+  const pool = bdActive(bd) ? [...rows, ...bd] : rows
+  if (!pool.length) return 0
+  return Math.round(pool.reduce((s, r) => s + r.pct, 0) / pool.length)
+}
+
 const normRow = (r: unknown): ProgressRow => {
   const o = r as Record<string, unknown> | null
   return { task: String(o?.task ?? ''), pct: clampPct(o?.pct), remarks: String(o?.remarks ?? '') }
@@ -110,11 +121,15 @@ export function parseCoops(values: Record<string, string | undefined>, lang: Lan
         const langRow = (r: ProgressRow): ProgressRow => ({ ...r, task: taskLabel(r.task, lang) })
         return a.map((c, i) => {
           const o = c as Record<string, unknown> | null
+          const rows = Array.isArray(o?.rows) ? (o.rows as unknown[]).map(normRow).map(langRow) : []
+          const bd = Array.isArray(o?.bd) ? (o.bd as unknown[]).map(normRow).map(langRow) : []
           return {
             name: coopLabel(String(o?.name ?? '') || coopName(lang, i + 1), lang),
-            pct: clampPct(o?.pct),
-            rows: Array.isArray(o?.rows) ? (o.rows as unknown[]).map(normRow).map(langRow) : [],
-            bd: Array.isArray(o?.bd) ? (o.bd as unknown[]).map(normRow).map(langRow) : [],
+            // derived from the tasks whenever any exist — a stored hand-typed total
+            // (entries saved before the total became computed) is deliberately ignored
+            pct: rows.length || bdActive(bd) ? computedPct(rows, bd) : clampPct(o?.pct),
+            rows,
+            bd,
           }
         })
       }

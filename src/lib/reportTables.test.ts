@@ -1,7 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   COOPS_KEY, DEFAULT_TASKS, HOUSE_PCT_KEY, PROGRESS_KEY,
-  bdActive, defaultCoop, defaultProgressRows, filledMissing, parseCoops, parseMissing, parseProgress, reasonLabel,
+  bdActive, computedPct, defaultCoop, defaultProgressRows, filledMissing, parseCoops, parseMissing, parseProgress, reasonLabel,
 } from './reportTables'
 
 describe('parseProgress', () => {
@@ -29,12 +29,16 @@ describe('parseCoops', () => {
   it('returns [] when the entry has no progress data at all', () => {
     expect(parseCoops({}, 'he')).toEqual([])
   })
-  it('round-trips the per-coop format (incl. the BD sub-form)', () => {
+  it('round-trips the per-coop format; totals derive from the tasks, not the stored number', () => {
     const coops = [
+      // stored pct 75 is a hand-typed relic — the tasks say (100+40)/2 = 70
       { name: 'לול 1', pct: 75, rows: [{ task: 'כיסוי גג', pct: 100, remarks: '' }], bd: [{ task: 'מערכת', pct: 40, remarks: '' }] },
-      { name: 'לול 2', pct: 25, rows: [], bd: [] },
+      { name: 'לול 2', pct: 25, rows: [], bd: [] }, // no tasks at all → stored pct survives
     ]
-    expect(parseCoops({ [COOPS_KEY]: JSON.stringify(coops) }, 'he')).toEqual(coops)
+    expect(parseCoops({ [COOPS_KEY]: JSON.stringify(coops) }, 'he')).toEqual([
+      { ...coops[0], pct: 70 },
+      coops[1],
+    ])
   })
   it('falls back to legacy flat keys as a single coop', () => {
     const legacy = {
@@ -61,6 +65,22 @@ describe('parseCoops', () => {
     expect(c.bd.map((r) => r.task)).toContain('מסועי זבל')
     expect(bdActive(c.bd)).toBe(false)
     expect(bdActive([{ task: 'מערכת', pct: 10, remarks: '' }])).toBe(true)
+  })
+})
+
+describe('computedPct', () => {
+  const r = (pct: number) => ({ task: 'x', pct, remarks: '' })
+  it('averages the construction tasks', () => {
+    expect(computedPct([r(100), r(0)], [])).toBe(50)
+    expect(computedPct([r(100), r(100), r(100), r(100), r(0), r(5), r(0), r(10), r(0)], [])).toBe(46)
+  })
+  it('ignores an untouched all-zero BD table but counts a started one', () => {
+    expect(computedPct([r(100)], [r(0), r(0)])).toBe(100)
+    expect(computedPct([r(100)], [r(40)])).toBe(70)
+    expect(computedPct([r(100)], [{ task: 'x', pct: 0, remarks: 'הוזמן' }, r(0)])).toBe(33)
+  })
+  it('is 0 when nothing was entered', () => {
+    expect(computedPct([], [])).toBe(0)
   })
 })
 

@@ -116,9 +116,11 @@ describe('multi-coop progress rendering', () => {
     expect(html).toContain('מסוע ביצים')
     expect(html).not.toContain('ציוד BD — לול 2')
   })
-  it('renders one block per coop in plain text', () => {
-    expect(text).toContain('דו״ח התקדמות — לול 1 — 75%')
-    expect(text).toContain('דו״ח התקדמות — לול 2 — 25%')
+  it('renders one block per coop in plain text, totals computed from the tasks', () => {
+    // (100 + 60 + 0) / 3 — the stored hand-typed 75 is ignored
+    expect(text).toContain('דו״ח התקדמות — לול 1 — 53%')
+    // untouched BD stays out of the pool: 50 alone, not (50+0)/2
+    expect(text).toContain('דו״ח התקדמות — לול 2 — 50%')
     expect(text).toContain('חשמל ובקרה: 50% — בהמתנה')
     expect(text).toContain('ציוד BD:')
     expect(text).toContain('מסוע ביצים: 60%')
