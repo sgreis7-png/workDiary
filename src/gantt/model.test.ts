@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  buildTree, cascade, dayOf, paymentMilestones, rollUp, shiftTs, spanDays,
+  buildTree, cascade, dayOf, overdueTasks, paymentMilestones, rollUp, shiftTs, spanDays,
   summarize, toRows, visibleRows, withDay,
   type ConvertedProject, type GanttLink, type GanttTask, type Span,
 } from './model'
@@ -216,6 +216,24 @@ describe('summarize', () => {
 
   it('reports zero progress for an empty schedule', () => {
     expect(summarize([], '2026-06-01T00:00:00').overallPct).toBe(0)
+  })
+
+  it('overdueTasks names the same tasks overdueCount counts, with days late', () => {
+    const late = overdueTasks(tasks, '2026-06-01T00:00:00')
+    expect(late.map((o) => o.task.ext_uid)).toEqual([3])
+    expect(late[0].daysLate).toBe(21) // finish May 11, today Jun 1
+    expect(late.length).toBe(summarize(tasks, '2026-06-01T00:00:00').overdueCount)
+  })
+
+  it('overdueTasks sorts the most late first and skips summaries, milestones and done work', () => {
+    const many = [
+      task({ ext_uid: 1, start_ts: '2026-05-01T08:00:00', finish_ts: '2026-05-30T17:00:00', is_summary: true }),
+      task({ ext_uid: 2, parent_ext_uid: 1, start_ts: '2026-05-01T08:00:00', finish_ts: '2026-05-02T17:00:00', pct: 10 }),
+      task({ ext_uid: 3, parent_ext_uid: 1, start_ts: '2026-05-20T08:00:00', finish_ts: '2026-05-25T17:00:00', pct: 0 }),
+      task({ ext_uid: 4, parent_ext_uid: 1, start_ts: '2026-05-01T08:00:00', finish_ts: '2026-05-02T17:00:00', pct: 100 }),
+      task({ ext_uid: 5, parent_ext_uid: 1, start_ts: '2026-05-03T08:00:00', finish_ts: '2026-05-03T08:00:00', milestone: true }),
+    ]
+    expect(overdueTasks(many, '2026-06-01T00:00:00').map((o) => o.task.ext_uid)).toEqual([2, 3])
   })
 })
 

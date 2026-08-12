@@ -33,6 +33,38 @@ html[data-theme='dark'] .gantt {
 
 /* Six tiles of dates and counts, so smaller than the dashboard's single big numbers. */
 .gantt__stats { grid-template-columns: repeat(auto-fit, minmax(124px, 1fr)); gap: 10px; min-width: 0; }
+
+/* The past-due tile opens this: exactly which tasks are late, and by how much. */
+.stat--btn { cursor: pointer; font: inherit; text-align: inherit; width: 100%; }
+.stat--btn:hover { border-color: var(--clay); }
+
+.gantt__overdue { display: grid; gap: 2px; padding: 10px 12px; }
+.gantt__overdue-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto 44px;
+  gap: 4px 14px;
+  align-items: baseline;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: none;
+  font: inherit;
+  font-size: 13px;
+  text-align: inherit;
+  cursor: pointer;
+}
+.gantt__overdue-row:hover, .gantt__overdue-row.on { background: var(--paper-2); }
+.gantt__overdue-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 600; }
+.gantt__overdue-due { color: var(--ink-3); font-size: 12.5px; }
+.gantt__overdue-due b { font-family: var(--font-mono); font-weight: 600; color: var(--ink-2); }
+.gantt__overdue-late { color: var(--clay); font-size: 12.5px; }
+.gantt__overdue-late b { font-family: var(--font-mono); font-size: 14px; }
+.gantt__overdue-pct { font-family: var(--font-mono); font-size: 12.5px; color: var(--ink-3); text-align: end; }
+
+@media (max-width: 640px) {
+  .gantt__overdue-row { grid-template-columns: minmax(0, 1fr) auto; }
+  .gantt__overdue-name { grid-column: 1 / -1; white-space: normal; }
+}
 .gantt__stats .stat { padding: 13px 10px; }
 .gantt__stats .stat__value { font-size: 23px; letter-spacing: -0.02em; }
 .gantt__stats .stat__label {

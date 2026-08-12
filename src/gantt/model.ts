@@ -386,6 +386,18 @@ export function summarize(tasks: GanttTask[], todayISO: string): ScheduleSummary
   }
 }
 
+export interface OverdueTask { task: GanttTask; daysLate: number }
+
+/** The tasks behind overdueCount: unfinished leaves past their finish date, most late first. */
+export function overdueTasks(tasks: GanttTask[], todayISO: string): OverdueTask[] {
+  const tree = buildTree(tasks)
+  const today = dayOf(todayISO)
+  return tasks
+    .filter((t) => !hasChildren(tree, t.ext_uid) && !t.milestone && t.pct < 100 && dayOf(t.finish_ts) < today)
+    .map((t) => ({ task: t, daysLate: today - dayOf(t.finish_ts) }))
+    .sort((a, b) => b.daysLate - a.daysLate)
+}
+
 /** Payment milestones are encoded in the task name, e.g. "30% מקדמה עם אישור הפרויקט". */
 export interface PaymentMilestone { ext_uid: number; pct: number; label: string; date: string; paid: boolean }
 

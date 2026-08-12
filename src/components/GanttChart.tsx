@@ -11,7 +11,7 @@ import { gt } from '../gantt/i18n'
 import {
   DAY_MS, DEFAULT_FINISH_TIME, DEFAULT_START_TIME,
   buildTree, cascade, dayOf, hasChildren, paymentMilestones, rollUp,
-  spanDays, summarize, visibleRows, withDay,
+  overdueTasks, spanDays, summarize, visibleRows, withDay,
   type GanttLink, type GanttTask, type PaymentMilestone, type Span,
 } from '../gantt/model'
 import '../styles/gantt.css'
@@ -122,6 +122,8 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
   const pays = useMemo(() => paymentMilestones(tasks), [tasks])
   const paidPct = pays.filter((p) => p.paid).reduce((a, p) => a + p.pct, 0)
   const stats = useMemo(() => summarize(tasks, todayISO), [tasks, todayISO])
+  const overdue = useMemo(() => overdueTasks(tasks, todayISO), [tasks, todayISO])
+  const [showOverdue, setShowOverdue] = useState(false)
 
   // ---------- drag ----------
   // Pointer capture would be lost the moment React re-renders the bar, so the move and
@@ -284,8 +286,27 @@ export function GanttChart({ tasks, links, canEdit, today, busy, onEdit }: Props
         <Stat label={g('g_finish')} value={stats.spanFinish ? fmtDay(dayOf(stats.spanFinish)) : '—'} />
         <Stat label={g('g_done')} value={`${stats.doneCount}/${stats.leafCount}`} />
         <Stat label={g('g_wip')} value={String(stats.wipCount)} />
-        <Stat label={g('g_overdue')} value={String(stats.overdueCount)} tone={stats.overdueCount ? 'warn' : undefined} />
+        <Stat label={g('g_overdue')} value={String(stats.overdueCount)} tone={stats.overdueCount ? 'warn' : undefined}
+          onClick={() => setShowOverdue((v) => !v)} open={showOverdue} />
       </div>
+
+      {showOverdue && (
+        <div className="panel gantt__overdue">
+          {overdue.length === 0 && <div className="empty" style={{ padding: '6px 0' }}>{g('g_no_overdue')}</div>}
+          {overdue.map(({ task, daysLate }) => (
+            <button
+              key={task.ext_uid} type="button"
+              className={`gantt__overdue-row ${selected === task.ext_uid ? 'on' : ''}`}
+              onClick={() => setSelected(task.ext_uid)}
+            >
+              <span className="gantt__overdue-name">{task.name}</span>
+              <span className="gantt__overdue-due">{g('g_due_col')}: <b>{fmtDay(dayOf(task.finish_ts))}</b></span>
+              <span className="gantt__overdue-late"><b>{daysLate}</b> {g('g_days_late')}</span>
+              <span className="gantt__overdue-pct">{task.pct}%</span>
+            </button>
+          ))}
+        </div>
+      )}
 
       {pays.length > 0 && (
         <div className="panel gantt__pay" style={{ padding: '12px 14px', display: 'grid', gap: 8 }}>
@@ -667,12 +688,22 @@ function HoverCard({
   )
 }
 
-function Stat({ label, value, tone }: { label: string; value: string; tone?: 'warn' }) {
-  return (
-    <div className="panel stat" style={tone === 'warn' ? { borderColor: 'var(--clay)' } : undefined}>
-      <div className="stat__value" style={tone === 'warn' ? { color: 'var(--clay)' } : undefined}>{value}</div>
+function Stat({ label, value, tone, onClick, open }: {
+  label: string; value: string; tone?: 'warn'; onClick?: () => void; open?: boolean
+}) {
+  const style = tone === 'warn' ? { borderColor: 'var(--clay)' } : undefined
+  const valueStyle = tone === 'warn' ? { color: 'var(--clay)' } : undefined
+  const body = (
+    <>
+      <div className="stat__value" style={valueStyle}>{value}</div>
       <div className="stat__label">{label}</div>
-    </div>
+    </>
+  )
+  if (!onClick) return <div className="panel stat" style={style}>{body}</div>
+  return (
+    <button type="button" className="panel stat stat--btn" style={style} onClick={onClick} aria-expanded={open}>
+      {body}
+    </button>
   )
 }
 
