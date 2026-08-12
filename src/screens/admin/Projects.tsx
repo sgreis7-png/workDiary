@@ -7,6 +7,8 @@ import { createProject, deleteProject, fetchProjectManagers, fetchUsers, notifyA
 import { useStore } from '../../store'
 import { useAuth } from '../../auth'
 import type { AppUser, Project, ProjectInput } from '../../data'
+import { readFavs, toggleFav } from '../../lib/favorites'
+import { FavChips, FavStar } from '../../components/FavProjects'
 
 const empty: ProjectInput = {
   name: '', active: true, location: '', budget: null, pmo: '',
@@ -25,6 +27,14 @@ export default function Projects() {
   const [params] = useSearchParams()
   const focusId = params.get('p')
   const [flash, setFlash] = useState<string | null>(null)
+  const [favs, setFavs] = useState<string[]>(readFavs)
+
+  // a favourite chip jumps to the project card, same as the deep-link path
+  const jumpTo = (id: string) => {
+    document.getElementById(`project-${id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' })
+    setFlash(id)
+    setTimeout(() => setFlash(null), 2400)
+  }
 
   // deep-link from an assignment notification: scroll to + briefly highlight the project
   useEffect(() => {
@@ -73,12 +83,15 @@ export default function Projects() {
         {isAdmin && <Button variant="primary" onClick={() => setEditing('new')}>＋ {t('add_project')}</Button>}
       </div>
 
+      <FavChips projects={projects} favs={favs} onPick={jumpTo} />
+
       <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 14 }}>
         {projects.map((p) => (
           <motion.div key={p.id} id={`project-${p.id}`} variants={riseIn}
             className={`panel ${flash === p.id ? 'panel--flash' : ''}`} style={{ padding: 20, opacity: p.active ? 1 : 0.6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
               <h3 style={{ fontSize: 20 }}>{p.name}</h3>
+              <FavStar on={favs.includes(p.id)} onToggle={() => setFavs((f) => toggleFav(f, p.id))} />
               {p.active ? <Tag tone="green">{t('active')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               {isAdmin && (
                 <div style={{ display: 'flex', gap: 8, marginInlineStart: 'auto', flexWrap: 'wrap' }}>

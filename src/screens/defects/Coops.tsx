@@ -6,6 +6,8 @@ import { fetchAllCoops, createCoop, deleteCoop, type Coop } from '../../defects/
 import { usePerms } from '../../lib/usePerms'
 import { useDT, coopTypeLabel } from '../../defects/i18n'
 import { MicButton } from '../../components/MicButton'
+import { readFavs, toggleFav } from '../../lib/favorites'
+import { FavChips, FavStar } from '../../components/FavProjects'
 
 export default function Coops() {
   const { projects, projectColor, projectName, ready } = useStore()
@@ -14,6 +16,7 @@ export default function Coops() {
   const nav = useNavigate()
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [projectId, setProjectId] = useState('')
+  const [favs, setFavs] = useState<string[]>(readFavs)
   const [newName, setNewName] = useState('')
   const [newProjectId, setNewProjectId] = useState('')
   const [newCount, setNewCount] = useState(1)
@@ -77,9 +80,15 @@ export default function Coops() {
             <option value="">{dt('coops_all_projects')}</option>
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
+          {projectId && (
+            <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav(f, projectId))} />
+          )}
           <span className="count mono">{shown.length} {dt('coops_count')}</span>
         </div>
       </div>
+
+      <FavChips projects={active} favs={favs} activeId={projectId} onPick={setProjectId} />
+
       <p className="coop-intro">{dt('coops_intro')}</p>
 
       {err && <div className="alert">{err}</div>}

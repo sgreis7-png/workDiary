@@ -29,21 +29,15 @@ import { bdActive, type ProgressRow } from '../lib/reportTables'
 import type { Project } from '../data'
 import '../styles/control.css'
 import { useTabStrip } from '../lib/useTabStrip'
+import { readFavs, toggleFav } from '../lib/favorites'
+import { FavChips, FavStar } from '../components/FavProjects'
 
 type SectionKey = 'summary' | 'schedule' | 'coops' | 'defects' | 'people' | 'diary'
 type View = 'tabs' | 'all'
 const VIEW_KEY = 'cc_view'
-const FAV_KEY = 'cc_favs'
 
 function readView(): View {
   return localStorage.getItem(VIEW_KEY) === 'all' ? 'all' : 'tabs'
-}
-
-function readFavs(): string[] {
-  try {
-    const a = JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]')
-    return Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
-  } catch { return [] }
 }
 
 export default function ControlCenter() {
@@ -107,15 +101,6 @@ export default function ControlCenter() {
     try { localStorage.setItem(VIEW_KEY, next) } catch { /* private browsing */ }
   }
 
-  const toggleFav = (id: string) => setFavs((f) => {
-    const next = f.includes(id) ? f.filter((x) => x !== id) : [...f, id]
-    try { localStorage.setItem(FAV_KEY, JSON.stringify(next)) } catch { /* private browsing */ }
-    return next
-  })
-  // in saved order, so the user's most-used projects stay where they put them
-  const favProjects = favs
-    .map((id) => active.find((p) => p.id === id))
-    .filter((p): p is Project => p !== undefined)
 
   const openDefects = data?.defects.filter((d) => d.status === 'open') ?? []
   const critical = openDefects.filter((d) => d.severity === 'critical')
@@ -202,33 +187,12 @@ export default function ControlCenter() {
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           {projectId && (
-            <button
-              type="button"
-              className={`cc-star ${favs.includes(projectId) ? 'on' : ''}`}
-              aria-pressed={favs.includes(projectId)}
-              title={favs.includes(projectId) ? g('o_fav_remove') : g('o_fav_add')}
-              onClick={() => toggleFav(projectId)}
-            >
-              {favs.includes(projectId) ? '★' : '☆'}
-            </button>
+            <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav(f, projectId))} />
           )}
         </div>
       </div>
 
-      {favProjects.length > 0 && (
-        <div className="cc-favs" role="group" aria-label={g('o_favs')}>
-          {favProjects.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              className={`coop-tab ${p.id === projectId ? 'on' : ''}`}
-              onClick={() => setPickedProject(p.id)}
-            >
-              ★ {p.name}
-            </button>
-          ))}
-        </div>
-      )}
+      <FavChips projects={active} favs={favs} activeId={projectId} onPick={setPickedProject} />
 
       {!project && <div className="empty">{g('o_pick')}</div>}
       {problem && <div className="tag tag--clay">{problem}</div>}

@@ -1027,6 +1027,34 @@ select.input { cursor: pointer; }
 .qc-stat span { color: var(--ink-3); font-size: 13.5px; }
 .qc-stat--bad { border-color: rgba(193,74,21,.5); }
 .qc-stat--bad b { color: var(--clay); }
+/* Favourite projects — star toggle beside a project picker, shared across screens. */
+.cc-star {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 18px;
+  cursor: pointer;
+  transition: border-color .16s var(--ease), color .16s var(--ease);
+}
+.cc-star:hover { border-color: var(--green); color: var(--green-deep); }
+.cc-star.on { color: var(--amber, #c98a1b); border-color: currentColor; }
+
+/* Favourite-project shortcuts, one click to switch. Chips, not tabs — the
+   .coop-tab tab shape is drawn to sit on a tab strip and looks cut off alone. */
+.cc-favs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.cc-favs .coop-tab { border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; }
+.cc-favs .coop-tab.on { border-color: var(--green); background: var(--green-tint); color: var(--green-deep); }
+
 /* Tiles double as drill-down toggles on the QC dashboard. */
 .qc-stat--btn { font: inherit; text-align: inherit; color: inherit; cursor: pointer; }
 .qc-stat--btn:hover { border-color: var(--green); }

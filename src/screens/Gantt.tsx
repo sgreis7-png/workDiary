@@ -21,6 +21,8 @@ import { notifyScheduleChanged } from '../lib/notifyNewRecord'
 import { useMediaQuery } from '../lib/useMediaQuery'
 import { useAuth } from '../auth'
 import { useSearchParams } from 'react-router-dom'
+import { readFavs, toggleFav } from '../lib/favorites'
+import { FavChips, FavStar } from '../components/FavProjects'
 
 type Phase = 'idle' | 'converting' | 'saving'
 
@@ -44,6 +46,7 @@ export default function GanttScreen() {
   // projects never flashes the previous project's schedule.
   const [pickedProject, setPickedProject] = useState('')
   const [pickedChart, setPickedChart] = useState('')
+  const [favs, setFavs] = useState<string[]>(readFavs)
   const [chartList, setChartList] = useState<{ project: string; rows: Chart[] } | null>(null)
   const [loaded, setLoaded] = useState<GanttBundle | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -188,15 +191,22 @@ export default function GanttScreen() {
         </div>
       </div>
 
+      <FavChips projects={active} favs={favs} activeId={projectId} onPick={setPickedProject} />
+
       {/* minWidth 0 all the way down: grid and flex items otherwise refuse to shrink
           below the width of the schedule board, which then overflows the page */}
       <motion.div variants={stagger} initial="hidden" animate="show" style={{ display: 'grid', gap: 14, minWidth: 0 }}>
         <motion.div variants={riseIn} className="panel" style={{ padding: '12px 14px', display: 'flex', flexWrap: 'wrap', gap: '10px 14px', alignItems: 'flex-end' }}>
           <label style={{ display: 'grid', gap: 4 }}>
             <span className="gantt__label">{g('g_pick_project')}</span>
-            <select className="input" style={{ minWidth: 200 }} value={projectId} onChange={(e) => setPickedProject(e.target.value)}>
-              {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <select className="input" style={{ minWidth: 200 }} value={projectId} onChange={(e) => setPickedProject(e.target.value)}>
+                {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+              </select>
+              {projectId && (
+                <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav(f, projectId))} />
+              )}
+            </div>
           </label>
 
           {(charts?.length ?? 0) > 0 && (
