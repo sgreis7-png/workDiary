@@ -353,7 +353,7 @@ export const STRINGS = {
 
   progress_report:{ he: 'דו״ח התקדמות', en: 'Progress report' },
   house_pct:      { he: 'סה״כ התקדמות', en: 'Total progress' },
-  add_coop:       { he: 'צור דוח התקדמות', en: 'Create progress report' },
+  add_coop:       { he: 'הוסף לול חדש', en: 'Add new coop' },
   bd_field:       { he: 'ציוד BD', en: 'BD equipment' },
   edit_progress:  { he: 'עריכת דוחות התקדמות', en: 'Edit progress reports' },
   bd_open:        { he: 'מילוי', en: 'Fill in' },
