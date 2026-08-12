@@ -27,7 +27,7 @@ export default function Projects() {
   const [params] = useSearchParams()
   const focusId = params.get('p')
   const [flash, setFlash] = useState<string | null>(null)
-  const [favs, setFavs] = useState<string[]>(readFavs)
+  const [favs, setFavs] = useState<string[]>(() => readFavs('projects'))
 
   // a favourite chip jumps to the project card, same as the deep-link path
   const jumpTo = (id: string) => {
@@ -91,7 +91,7 @@ export default function Projects() {
             className={`panel ${flash === p.id ? 'panel--flash' : ''}`} style={{ padding: 20, opacity: p.active ? 1 : 0.6 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', marginBottom: 10 }}>
               <h3 style={{ fontSize: 20 }}>{p.name}</h3>
-              <FavStar on={favs.includes(p.id)} onToggle={() => setFavs((f) => toggleFav(f, p.id))} />
+              <FavStar on={favs.includes(p.id)} onToggle={() => setFavs((f) => toggleFav('projects', f, p.id))} />
               {p.active ? <Tag tone="green">{t('active')}</Tag> : <Tag tone="muted">{t('inactive')}</Tag>}
               {isAdmin && (
                 <div style={{ display: 'flex', gap: 8, marginInlineStart: 'auto', flexWrap: 'wrap' }}>

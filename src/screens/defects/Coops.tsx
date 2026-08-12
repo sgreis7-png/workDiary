@@ -16,7 +16,7 @@ export default function Coops() {
   const nav = useNavigate()
   const [coops, setCoops] = useState<Coop[] | null>(null)
   const [projectId, setProjectId] = useState('')
-  const [favs, setFavs] = useState<string[]>(readFavs)
+  const [favs, setFavs] = useState<string[]>(() => readFavs('coops'))
   // collapsed project blocks — persisted so the screen opens the way it was left
   const [closed, setClosed] = useState<Set<string>>(() => {
     try {
@@ -105,7 +105,7 @@ export default function Coops() {
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           {projectId && (
-            <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav(f, projectId))} />
+            <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav('coops', f, projectId))} />
           )}
           <span className="count mono">{shown.length} {dt('coops_count')}</span>
         </div>

@@ -50,7 +50,7 @@ export default function ControlCenter() {
   const maySeeSchedule = can('gantt')
 
   const [pickedProject, setPickedProject] = useState('')
-  const [favs, setFavs] = useState<string[]>(readFavs)
+  const [favs, setFavs] = useState<string[]>(() => readFavs('control'))
   const [section, setSection] = useState<SectionKey>('summary')
   const [view, setView] = useState<View>(readView)
   const [snap, setSnap] = useState<ProjectSnapshot | null>(null)
@@ -187,7 +187,7 @@ export default function ControlCenter() {
             {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
           </select>
           {projectId && (
-            <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav(f, projectId))} />
+            <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav('control', f, projectId))} />
           )}
         </div>
       </div>

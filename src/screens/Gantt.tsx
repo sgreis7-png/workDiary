@@ -46,7 +46,7 @@ export default function GanttScreen() {
   // projects never flashes the previous project's schedule.
   const [pickedProject, setPickedProject] = useState('')
   const [pickedChart, setPickedChart] = useState('')
-  const [favs, setFavs] = useState<string[]>(readFavs)
+  const [favs, setFavs] = useState<string[]>(() => readFavs('gantt'))
   const [chartList, setChartList] = useState<{ project: string; rows: Chart[] } | null>(null)
   const [loaded, setLoaded] = useState<GanttBundle | null>(null)
   const [phase, setPhase] = useState<Phase>('idle')
@@ -204,7 +204,7 @@ export default function GanttScreen() {
                 {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
               </select>
               {projectId && (
-                <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav(f, projectId))} />
+                <FavStar on={favs.includes(projectId)} onToggle={() => setFavs((f) => toggleFav('gantt', f, projectId))} />
               )}
             </div>
           </label>
