@@ -113,9 +113,7 @@ export default function ControlCenter() {
     .filter((p): p is Project => p !== undefined)
 
   const openDefects = data?.defects.filter((d) => d.status === 'open') ?? []
-  const overdue = openDefects.filter((d) => d.overdue)
   const critical = openDefects.filter((d) => d.severity === 'critical')
-  const openTasks = data?.tasks.filter((tk) => tk.status === 'open') ?? []
   const scheduleStats = bundle ? summarize(bundle.tasks, new Date().toISOString()) : null
   const reported = data ? reportedProgress(data.progress) : null
 
@@ -239,10 +237,8 @@ export default function ControlCenter() {
               note={!scheduleStats && reported !== null ? g('o_reported_prog') : undefined}
             />
             <Kpi label={g('o_open_defects')} value={String(openDefects.length)} bad={openDefects.length > 0} />
-            <Kpi label={g('o_overdue')} value={String(overdue.length)} bad={overdue.length > 0} />
             <Kpi label={g('o_critical')} value={String(critical.length)} bad={critical.length > 0} />
             <Kpi label={g('o_houses')} value={String(data.coops.length)} />
-            <Kpi label={g('o_open_tasks')} value={String(openTasks.length)} />
             <Kpi label={g('o_entries')} value={String(data.entries.length)} />
             <Kpi
               label={left !== null && left < 0 ? g('o_days_over') : g('o_days_left')}
