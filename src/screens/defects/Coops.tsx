@@ -8,7 +8,7 @@ import { useDT, coopTypeLabel } from '../../defects/i18n'
 import { MicButton } from '../../components/MicButton'
 
 export default function Coops() {
-  const { projects, projectColor, ready } = useStore()
+  const { projects, projectColor, projectName, ready } = useStore()
   const { canEdit } = usePerms()
   const { dt, lang } = useDT()
   const nav = useNavigate()
@@ -25,9 +25,15 @@ export default function Coops() {
   }, [])
 
   const active = useMemo(() => projects.filter((p) => p.active), [projects])
+  // grouped by project, coops in natural order ("לול 2" before "לול 10") — the
+  // fetch order is created_at, which reads as random once a farm has many coops
   const shown = useMemo(
-    () => (coops ?? []).filter((c) => !projectId || c.project_id === projectId),
-    [coops, projectId],
+    () => (coops ?? [])
+      .filter((c) => !projectId || c.project_id === projectId)
+      .sort((a, b) =>
+        projectName(a.project_id).localeCompare(projectName(b.project_id), 'he')
+        || a.name.localeCompare(b.name, 'he', { numeric: true })),
+    [coops, projectId, projectName],
   )
 
   async function onCreate() {

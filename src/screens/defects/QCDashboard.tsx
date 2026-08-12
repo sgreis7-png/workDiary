@@ -4,7 +4,7 @@ import { Loader } from '../../components/Loader'
 import { useStore } from '../../store'
 import { useI18n } from '../../i18n'
 import { supabase } from '../../lib/supabase'
-import { GATES, GATE_ORDER, type GateKey } from '../../defects/model'
+import { GATES, GATE_ORDER, SEVERITY_LABELS, type GateKey } from '../../defects/model'
 import { gateSummary } from '../../defects/rules'
 import { loadGateDefs, itemLabel, type GateDefs } from '../../defects/defs'
 import { useDT, gateShortName } from '../../defects/i18n'
@@ -25,6 +25,11 @@ export const T = {
   times: { he: 'פעמים', en: 'times' },
   loading: { he: 'טוען נתונים…', en: 'Loading…' },
   none: { he: 'אין נתונים עדיין.', en: 'No data yet.' },
+  col_desc: { he: 'תיאור', en: 'Description' },
+  col_sev: { he: 'חומרה', en: 'Severity' },
+  col_assignee: { he: 'באחריות', en: 'Assignee' },
+  col_due: { he: 'תאריך יעד', en: 'Due' },
+  days_late: { he: 'ימי איחור', en: 'Days late' },
 } as const
 
 export default function QCDashboard() {
@@ -37,6 +42,8 @@ export default function QCDashboard() {
   const [items, setItems] = useState<{ coop_id: string; gate: GateKey; item_no: number; status: 'done' | 'not_done' | 'na' | null }[]>([])
   const [defects, setDefects] = useState<DefectSearchRow[]>([])
   const [defs, setDefs] = useState<GateDefs>(GATES)
+  const [openTile, setOpenTile] = useState<'houses' | 'open' | 'overdue' | 'critical' | null>(null)
+  const toggleTile = (k: 'houses' | 'open' | 'overdue' | 'critical') => setOpenTile((v) => (v === k ? null : k))
 
   useEffect(() => {
     fetchAllCoops().then(setCoops).catch(() => setCoops([]))
@@ -45,6 +52,14 @@ export default function QCDashboard() {
     fetchDefectsForSearch().then(setDefects).catch(() => {})
     loadGateDefs().then(setDefs)
   }, [])  
+
+  // grouped by project, coops in natural order — fetch order is created_at
+  const sortedCoops = useMemo(
+    () => [...(coops ?? [])].sort((a, b) =>
+      projectName(a.project_id).localeCompare(projectName(b.project_id), 'he')
+      || a.name.localeCompare(b.name, 'he', { numeric: true })),
+    [coops, projectName],
+  )
 
   const today = new Date().toISOString().slice(0, 10)
   const open = defects.filter((d) => d.status === 'open')
@@ -74,15 +89,82 @@ export default function QCDashboard() {
       </div>
 
       <div className="qc-stats">
-        <div className="qc-stat"><b>{coops.length}</b><span>{t('houses')}</span></div>
-        <div className="qc-stat"><b>{open.length}</b><span>{t('open_defects')}</span></div>
-        <div className={`qc-stat ${overdue.length ? 'qc-stat--bad' : ''}`}><b>{overdue.length}</b><span>{t('overdue')}</span></div>
-        <div className={`qc-stat ${criticalOpen.length ? 'qc-stat--bad' : ''}`}><b>{criticalOpen.length}</b><span>{t('critical_open')}</span></div>
+        <button type="button" className={`qc-stat qc-stat--btn ${openTile === 'houses' ? 'on' : ''}`}
+          aria-expanded={openTile === 'houses'} onClick={() => toggleTile('houses')}>
+          <b>{coops.length}</b><span>{t('houses')}</span>
+        </button>
+        <button type="button" className={`qc-stat qc-stat--btn ${openTile === 'open' ? 'on' : ''}`}
+          aria-expanded={openTile === 'open'} onClick={() => toggleTile('open')}>
+          <b>{open.length}</b><span>{t('open_defects')}</span>
+        </button>
+        <button type="button" className={`qc-stat qc-stat--btn ${overdue.length ? 'qc-stat--bad' : ''} ${openTile === 'overdue' ? 'on' : ''}`}
+          aria-expanded={openTile === 'overdue'} onClick={() => toggleTile('overdue')}>
+          <b>{overdue.length}</b><span>{t('overdue')}</span>
+        </button>
+        <button type="button" className={`qc-stat qc-stat--btn ${criticalOpen.length ? 'qc-stat--bad' : ''} ${openTile === 'critical' ? 'on' : ''}`}
+          aria-expanded={openTile === 'critical'} onClick={() => toggleTile('critical')}>
+          <b>{criticalOpen.length}</b><span>{t('critical_open')}</span>
+        </button>
       </div>
+
+      {openTile === 'houses' && (
+        <div className="gate-panel" style={{ marginTop: 14 }}>
+          {sortedCoops.length === 0 ? <div className="empty">{t('none')}</div> : (
+            <div className="qc-recurring">
+              {sortedCoops.map((c) => (
+                <div key={c.id} className="qc-recurring__row">
+                  <button className="summary-gate-link" onClick={() => nav(`/defects/coop/${c.id}`)}><b>{c.name}</b></button>
+                  <span>{projectName(c.project_id)}</span>
+                  <span className="mono">{open.filter((d) => d.coop_id === c.id).length} {t('open_defects')}</span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {openTile && openTile !== 'houses' && (() => {
+        const list = openTile === 'open' ? open : openTile === 'overdue' ? overdue : criticalOpen
+        const daysLate = (d: DefectSearchRow) =>
+          d.due_date && d.due_date < today
+            ? Math.round((Date.parse(today) - Date.parse(d.due_date)) / 86_400_000)
+            : null
+        return (
+          <div className="gate-panel" style={{ marginTop: 14, overflowX: 'auto' }}>
+            {list.length === 0 ? <div className="empty">{t('none')}</div> : (
+              <table className="gate-table">
+                <thead>
+                  <tr>
+                    <th>{dt('rep_house')}</th><th>{dt('qc_project')}</th><th>#</th>
+                    <th>{t('col_desc')}</th><th>{t('col_sev')}</th><th>{t('col_assignee')}</th>
+                    <th>{t('col_due')}</th><th>{t('days_late')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {[...list]
+                    .sort((a, b) => (daysLate(b) ?? -1) - (daysLate(a) ?? -1))
+                    .map((d) => (
+                      <tr key={d.id} className={daysLate(d) !== null ? 'gate-row--bad' : ''}>
+                        <td><button className="summary-gate-link" onClick={() => nav(`/defects/coop/${d.coop_id}`)}>{d.coop_name}</button></td>
+                        <td>{projectName(d.project_id)}</td>
+                        <td className="mono">{d.seq}</td>
+                        <td>{d.description ?? '—'}</td>
+                        <td>{d.severity ? SEVERITY_LABELS[d.severity] : '—'}</td>
+                        <td>{d.assignee_email ?? d.assignee ?? '—'}</td>
+                        <td className="mono">{d.due_date ?? '—'}</td>
+                        <td className={`mono ${daysLate(d) !== null ? 'summary-bad' : ''}`}>{daysLate(d) ?? '—'}</td>
+                      </tr>
+                    ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        )
+      })()}
 
       <div className="gate-panel" style={{ marginTop: 20 }}>
         <h2 className="gate-panel__title">{t('by_house')}</h2>
-        {coops.length === 0 ? <div className="empty">{t('none')}</div> : (
+        {sortedCoops.length === 0 ? <div className="empty">{t('none')}</div> : (
           <div className="gate-table-wrap">
             <table className="gate-table">
               <thead>
@@ -92,7 +174,7 @@ export default function QCDashboard() {
                 </tr>
               </thead>
               <tbody>
-                {coops.map((c) => {
+                {sortedCoops.map((c) => {
                   const mine = items.filter((i) => i.coop_id === c.id).map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
                   const openN = open.filter((d) => d.coop_id === c.id).length
                   const overdueN = overdue.filter((d) => d.coop_id === c.id).length

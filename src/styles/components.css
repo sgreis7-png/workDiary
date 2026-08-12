@@ -1027,6 +1027,11 @@ select.input { cursor: pointer; }
 .qc-stat span { color: var(--ink-3); font-size: 13.5px; }
 .qc-stat--bad { border-color: rgba(193,74,21,.5); }
 .qc-stat--bad b { color: var(--clay); }
+/* Tiles double as drill-down toggles on the QC dashboard. */
+.qc-stat--btn { font: inherit; text-align: inherit; color: inherit; cursor: pointer; }
+.qc-stat--btn:hover { border-color: var(--green); }
+.qc-stat--btn.on { border-color: var(--green); background: var(--green-tint); }
+.qc-stat--btn.qc-stat--bad:hover, .qc-stat--btn.qc-stat--bad.on { border-color: var(--clay); background: rgba(193,74,21,.07); }
 .qc-gates { display: flex; gap: 4px; flex-wrap: wrap; }
 .qc-gate { display: inline-flex; flex-direction: column; align-items: center; min-width: 40px; padding: 4px 6px;
   border: 1px solid var(--line); border-radius: 8px; font-weight: 700; font-size: 13px; color: var(--ink-3); background: var(--paper); }
