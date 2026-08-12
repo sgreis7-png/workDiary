@@ -116,6 +116,8 @@ export const G = {
   o_reported_prog:  { he: 'התקדמות מדווחת בשטח',            en: 'Progress reported on site' },
   o_no_schedule:    { he: 'לא הועלה לוח זמנים.',             en: 'No schedule imported.' },
   o_no_coops:       { he: 'לא הוגדרו לולים.',                en: 'No houses defined.' },
+  o_diary_only:     { he: 'מדיווחי יומן בלבד',               en: 'Diary reports only' },
+  o_reported_short: { he: 'דווח בשטח',                       en: 'Reported on site' },
   o_no_defects:     { he: 'אין ליקויים פתוחים.',             en: 'No open defects.' },
   o_no_entries:     { he: 'אין רשומות יומן.',                en: 'No diary entries.' },
   o_no_people:      { he: 'לא הוקצו עובדים.',                en: 'No people assigned.' },

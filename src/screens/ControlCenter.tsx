@@ -311,7 +311,18 @@ function CoopsBlock({ coops, fmt }: { coops: SnapshotCoop[]; fmt: Fmt }) {
   if (!coops.length) return <div className="panel cc-block"><div className="empty">{g('o_no_coops')}</div></div>
   return (
     <div className="cc-cards">
-      {coops.map((c) => (
+      {coops.map((c) => c.diaryOnly ? (
+        // reported from the field, but no quality-control record to open yet
+        <div key={c.id} className="panel cc-card">
+          <div className="cc-card__head">
+            <b>{c.name}</b>
+            <Tag tone="muted">{g('o_diary_only')}</Tag>
+          </div>
+          <div className="cc-card__meta">
+            <span>{g('o_reported_short')}: {c.reportedPct !== null ? `${c.reportedPct}%` : '—'}</span>
+          </div>
+        </div>
+      ) : (
         <Link key={c.id} to={`/defects/coop/${c.id}`} className="panel cc-card">
           <div className="cc-card__head">
             <b>{c.name}</b>
@@ -337,6 +348,7 @@ function CoopsBlock({ coops, fmt }: { coops: SnapshotCoop[]; fmt: Fmt }) {
           <div className="cc-card__meta">
             {c.execution_manager && <span>{c.execution_manager}</span>}
             {c.opened_on && <span>{fmt(c.opened_on)}</span>}
+            {c.reportedPct !== null && <span>{g('o_reported_short')}: {c.reportedPct}%</span>}
           </div>
         </Link>
       ))}

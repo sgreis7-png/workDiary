@@ -10,7 +10,7 @@
 // entry, which is wasted work when only `values` is wanted.
 import { supabase } from '../lib/supabase'
 import { deptIdOf, hasMalfunction, type Project } from '../data'
-import { parseCoops } from '../lib/reportTables'
+import { coopLabel, parseCoops } from '../lib/reportTables'
 import { gateSummary } from '../defects/rules'
 import { GATE_ORDER, type GateKey, type ItemStatus, type Severity } from '../defects/model'
 import type { ProgressSeries } from '../components/ProgressChart'
@@ -34,6 +34,10 @@ export interface SnapshotCoop {
   gates: Record<GateKey, number | null>
   openDefects: number
   overdueDefects: number
+  /** latest diary-reported percent for this coop name, when the site reports one */
+  reportedPct: number | null
+  /** the coop exists only in diary progress reports — no quality-control record yet */
+  diaryOnly?: boolean
 }
 
 export interface SnapshotDefect {
@@ -99,6 +103,43 @@ export function progressSeries(entries: LeanEntry[]): ProgressSeries[] {
     .sort((a, b) => a.name.localeCompare(b.name, 'he', { numeric: true }))
 }
 
+// "לול 3", "Coop 3" and " לול 3 " are the same coop; free-typed names match case-blind.
+const normCoopName = (name: string) => coopLabel(name, 'he').trim().toLowerCase()
+
+/**
+ * One coop list for the whole screen: quality-control records, plus coops that so far
+ * exist only in diary progress reports. Matched records carry their reported percent,
+ * so the KPI, the tab count and the cards all read from the same union.
+ */
+export function mergeDiaryCoops(
+  coops: Omit<SnapshotCoop, 'reportedPct'>[],
+  progress: ProgressSeries[],
+): SnapshotCoop[] {
+  const latest = new Map(progress
+    .map((s) => [normCoopName(s.name), s.points[s.points.length - 1]?.pct])
+    .filter((p): p is [string, number] => p[1] !== undefined))
+  const known = new Set(coops.map((c) => normCoopName(c.name)))
+  const emptyGates = Object.fromEntries(GATE_ORDER.map((g) => [g, null])) as Record<GateKey, number | null>
+
+  const merged: SnapshotCoop[] = coops.map((c) => ({ ...c, reportedPct: latest.get(normCoopName(c.name)) ?? null }))
+  for (const s of progress) {
+    if (known.has(normCoopName(s.name))) continue
+    merged.push({
+      id: `diary:${s.name}`,
+      name: s.name,
+      coop_type: null,
+      opened_on: null,
+      execution_manager: null,
+      gates: emptyGates,
+      openDefects: 0,
+      overdueDefects: 0,
+      reportedPct: latest.get(normCoopName(s.name)) ?? null,
+      diaryOnly: true,
+    })
+  }
+  return merged.sort((a, b) => a.name.localeCompare(b.name, 'he', { numeric: true }))
+}
+
 /** Latest reported percentage per coop, for a project that has no schedule to weigh. */
 export function reportedProgress(series: ProgressSeries[]): number | null {
   const last = series.map((s) => s.points[s.points.length - 1]?.pct).filter((n): n is number => n !== undefined)
@@ -159,7 +200,9 @@ export async function fetchProjectSnapshot(project: Project): Promise<ProjectSna
     overdue: d.status === 'open' && !!d.due_date && d.due_date < day,
   }))
 
-  const coops: SnapshotCoop[] = coopRows.map((c) => {
+  const progress = progressSeries(entries)
+
+  const coopRecords = coopRows.map((c) => {
     const mine = items
       .filter((i) => i.coop_id === c.id)
       .map((i) => ({ gate: i.gate, itemNo: i.item_no, status: i.status }))
@@ -176,6 +219,7 @@ export async function fetchProjectSnapshot(project: Project): Promise<ProjectSna
       overdueDefects: defects.filter((d) => d.coop_id === c.id && d.overdue).length,
     }
   })
+  const coops = mergeDiaryCoops(coopRecords, progress)
 
   // ---- people: assigned workers, plus anyone who filed an entry ----
   const assigned = ((assignQ.data ?? []) as { email: string }[]).map((r) => r.email.toLowerCase())
@@ -217,8 +261,6 @@ export async function fetchProjectSnapshot(project: Project): Promise<ProjectSna
     }
     if ((e.values.safety_incident ?? '').trim()) safetyIncidents++
   }
-
-  const progress = progressSeries(entries)
 
   return {
     project,
