@@ -3,9 +3,11 @@ import { useStore } from '../store'
 import { useI18n } from '../i18n'
 import { Loader } from '../components/Loader'
 import {
-  fetchMyRules, createRule, deleteRule, toggleRule, fetchSchedulableTasks, setRuleTasks,
+  fetchMyRules, createRule, deleteRule, toggleRule, updateRule, fetchSchedulableTasks, setRuleTasks,
   fetchRuleTaskCounts, countLateTasks, type AlertRule, type OverdueTaskChoice,
 } from '../lib/alertRules'
+
+type Freq = 'once' | 'daily' | 'weekly' | 'monthly'
 
 const WEEKDAYS_HE = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת']
 const WEEKDAYS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
@@ -23,14 +25,22 @@ export default function AlertRules() {
   const [pickedTasks, setPickedTasks] = useState<Set<string>>(new Set())
   const [lateNow, setLateNow] = useState<number | null>(null)
   const [taskCounts, setTaskCounts] = useState<Record<string, number>>({})
-  const [frequency, setFrequency] = useState<'daily' | 'weekly' | 'monthly'>('daily')
+  // 'once' on a missing-entry rule: one alert the first day a record is missing,
+  // then silence until an entry is filed again.
+  const [frequency, setFrequency] = useState<Freq>('daily')
   // How often to repeat an overdue alert. 'once' means the real-time alert only, which is the
   // default and the right one — a late task is a fact you learn once.
-  const [repeat, setRepeat] = useState<'once' | 'daily' | 'weekly' | 'monthly'>('once')
+  const [repeat, setRepeat] = useState<Freq>('once')
   const [hour, setHour] = useState(20)
   const [weekday, setWeekday] = useState(0)
   const [monthDay, setMonthDay] = useState(1)
   const [busy, setBusy] = useState(false)
+  // in-place schedule edit of an existing rule
+  const [editId, setEditId] = useState<string | null>(null)
+  const [eFreq, setEFreq] = useState<Freq>('daily')
+  const [eHour, setEHour] = useState(20)
+  const [eWeekday, setEWeekday] = useState(0)
+  const [eMonthDay, setEMonthDay] = useState(1)
 
   useEffect(() => {
     fetchMyRules().then(setRules).catch((e) => setErr(String((e as Error).message ?? e)))
@@ -108,6 +118,27 @@ export default function AlertRules() {
     try { await toggleRule(r.id, !r.active) } catch (e) { setErr(String((e as Error).message ?? e)) }
   }
 
+  const startEdit = (r: AlertRule) => {
+    setEditId(r.id)
+    setEFreq(r.frequency)
+    setEHour(r.alert_hour)
+    setEWeekday(r.weekday ?? 0)
+    setEMonthDay(r.month_day ?? 1)
+  }
+
+  async function onSaveEdit(r: AlertRule) {
+    const patch = {
+      frequency: eFreq,
+      alert_hour: Math.min(23, Math.max(0, eHour)),
+      weekday: eFreq === 'weekly' ? eWeekday : null,
+      month_day: eFreq === 'monthly' ? eMonthDay : null,
+    }
+    const prev = rules
+    setRules((rs) => (rs ?? []).map((x) => (x.id === r.id ? { ...x, ...patch } : x)))
+    setEditId(null)
+    try { await updateRule(r.id, patch) } catch (e) { setRules(prev); setErr(String((e as Error).message ?? e)) }
+  }
+
   /** A rule broken into its parts, so the row can lay them out and style each one for what it
    *  is — a name, a schedule, a scope — instead of joining everything with a middot. */
   function ruleParts(r: AlertRule) {
@@ -132,12 +163,13 @@ export default function AlertRules() {
         scopeAll: n === 0,
       }
     }
-    const freq = r.frequency === 'daily' ? t('rule_daily')
+    const freq = r.frequency === 'once' ? t('rule_once')
+      : r.frequency === 'daily' ? t('rule_daily')
       : r.frequency === 'weekly' ? `${t('rule_weekly')} · ${weekdays[r.weekday ?? 0]}`
       : `${t('rule_monthly')} · ${r.month_day ?? 1}`
     return {
       icon: '☐', kind: t('rule_kind_missing'), project,
-      when: `${freq} · ${String(r.alert_hour).padStart(2, '0')}:00`,
+      when: `${freq} · ${t('rule_until_hour')} ${String(r.alert_hour).padStart(2, '0')}:00`,
       scope: null, scopeAll: false,
     }
   }
@@ -172,7 +204,8 @@ export default function AlertRules() {
         </select>
         {kind === 'missing' && (
           <>
-            <select className="input" value={frequency} onChange={(e) => setFrequency(e.target.value as 'daily' | 'weekly' | 'monthly')}>
+            <select className="input" value={frequency} onChange={(e) => setFrequency(e.target.value as Freq)}>
+              <option value="once">{t('rule_once')}</option>
               <option value="daily">{t('rule_daily')}</option>
               <option value="weekly">{t('rule_weekly')}</option>
               <option value="monthly">{t('rule_monthly')}</option>
@@ -191,6 +224,9 @@ export default function AlertRules() {
               <input className="input" type="number" min={0} max={23} value={hour}
                 onChange={(e) => setHour(Number(e.target.value) || 0)} style={{ width: 90 }} />
             </label>
+            {frequency === 'once' && (
+              <span className="field__hint" style={{ flexBasis: '100%' }}>{t('rule_once_hint')}</span>
+            )}
           </>
         )}
         <button className="btn btn--primary" disabled={busy} onClick={onAdd}>{t('rule_add')}</button>
@@ -284,23 +320,64 @@ export default function AlertRules() {
             return (
               <div key={r.id} className={`rule-row ${r.active ? '' : 'is-off'}`}>
                 <span className="rule-row__icon" aria-hidden="true">{parts.icon}</span>
-                <div className="rule-row__main">
-                  <span className="rule-row__kind">{parts.kind}</span>
-                  <span className="rule-row__project">{parts.project}</span>
-                  {parts.when && <span className="rule-row__when">{parts.when}</span>}
-                  {parts.scope && (
-                    <span className={`rule-row__scope ${parts.scopeAll ? 'rule-row__scope--all' : ''}`}>
-                      {parts.scope}
-                    </span>
-                  )}
-                </div>
+                {editId === r.id ? (
+                  <div className="rule-row__main" style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                    <span className="rule-row__kind">{parts.kind}</span>
+                    <span className="rule-row__project">{parts.project}</span>
+                    <select className="input" value={eFreq} onChange={(e) => setEFreq(e.target.value as Freq)}>
+                      <option value="once">{r.kind === 'overdue' ? t('rule_repeat_once') : t('rule_once')}</option>
+                      <option value="daily">{t('rule_daily')}</option>
+                      <option value="weekly">{t('rule_weekly')}</option>
+                      <option value="monthly">{t('rule_monthly')}</option>
+                    </select>
+                    {eFreq === 'weekly' && (
+                      <select className="input" value={eWeekday} onChange={(e) => setEWeekday(Number(e.target.value))}>
+                        {weekdays.map((d, i) => <option key={i} value={i}>{d}</option>)}
+                      </select>
+                    )}
+                    {eFreq === 'monthly' && (
+                      <input className="input" type="number" min={1} max={31} value={eMonthDay}
+                        onChange={(e) => setEMonthDay(Number(e.target.value) || 1)} style={{ width: 80 }} />
+                    )}
+                    {(r.kind === 'missing' || eFreq !== 'once') && (
+                      <label style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {r.kind === 'missing' ? t('rule_until_hour') : t('rule_at_hour')}
+                        <input className="input" type="number" min={0} max={23} value={eHour}
+                          onChange={(e) => setEHour(Number(e.target.value) || 0)} style={{ width: 80 }} />
+                      </label>
+                    )}
+                  </div>
+                ) : (
+                  <div className="rule-row__main">
+                    <span className="rule-row__kind">{parts.kind}</span>
+                    <span className="rule-row__project">{parts.project}</span>
+                    {parts.when && <span className="rule-row__when">{parts.when}</span>}
+                    {parts.scope && (
+                      <span className={`rule-row__scope ${parts.scopeAll ? 'rule-row__scope--all' : ''}`}>
+                        {parts.scope}
+                      </span>
+                    )}
+                  </div>
+                )}
                 <div className="rule-row__actions">
-                  <label className="rule-toggle">
-                    <input type="checkbox" checked={r.active} onChange={() => onToggle(r)} />
-                    {t('rule_active')}
-                  </label>
-                  <button className="btn btn--ghost" onClick={() => onDelete(r.id)}
-                    aria-label={t('delete')}>🗑</button>
+                  {editId === r.id ? (
+                    <>
+                      <button className="btn btn--primary" onClick={() => onSaveEdit(r)}>{t('save')}</button>
+                      <button className="btn btn--ghost" onClick={() => setEditId(null)}>{t('cancel')}</button>
+                    </>
+                  ) : (
+                    <>
+                      {r.kind !== 'filled' && (
+                        <button className="btn btn--ghost" onClick={() => startEdit(r)} aria-label={t('edit')}>✎</button>
+                      )}
+                      <label className="rule-toggle">
+                        <input type="checkbox" checked={r.active} onChange={() => onToggle(r)} />
+                        {t('rule_active')}
+                      </label>
+                      <button className="btn btn--ghost" onClick={() => onDelete(r.id)}
+                        aria-label={t('delete')}>🗑</button>
+                    </>
+                  )}
                 </div>
               </div>
             )

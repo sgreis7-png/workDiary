@@ -44,6 +44,15 @@ export async function toggleRule(id: string, active: boolean): Promise<void> {
   if (error) throw error
 }
 
+export type RuleSchedulePatch = Pick<AlertRule, 'frequency' | 'alert_hour' | 'weekday' | 'month_day'>
+
+/** Edit a rule's schedule in place. Scope (kind, project, tasks) stays what it was —
+ *  changing what a rule watches is a new rule, not an edit. */
+export async function updateRule(id: string, patch: RuleSchedulePatch): Promise<void> {
+  const { error } = await supabase.from('alert_rules').update(patch).eq('id', id)
+  if (error) throw error
+}
+
 // ---------- overdue rules: which tasks a rule watches ----------
 //
 // Empty means every task in the rule's project, which is the common case. Naming tasks is for the

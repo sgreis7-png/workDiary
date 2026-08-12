@@ -199,6 +199,8 @@ export const STRINGS = {
   rule_late_now:     { he: '⚠ משימות שכבר באיחור ויקבלו התראה מיד:', en: '⚠ Tasks already late, which will alert at once:' },
   rule_kind_filled:  { he: 'התראה כשממלאים רשומה', en: 'Alert when a record is filled' },
   rule_all_projects: { he: 'כל הפרויקטים', en: 'All projects' },
+  rule_once:         { he: 'חד פעמי', en: 'One-time' },
+  rule_once_hint:    { he: 'התראה אחת ביום הראשון שבו חסרה רשומה — ותו לא. התראה חדשה רק אחרי שתמולא רשומה ותחסר שוב.', en: 'One alert on the first day a record goes missing — and no more. A new alert only after a record is filed and goes missing again.' },
   rule_daily:        { he: 'יומי', en: 'Daily' },
   rule_weekly:       { he: 'שבועי', en: 'Weekly' },
   rule_monthly:      { he: 'חודשי', en: 'Monthly' },
