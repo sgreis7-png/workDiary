@@ -32,9 +32,17 @@ import { useTabStrip } from '../lib/useTabStrip'
 type SectionKey = 'summary' | 'schedule' | 'coops' | 'defects' | 'people' | 'diary'
 type View = 'tabs' | 'all'
 const VIEW_KEY = 'cc_view'
+const FAV_KEY = 'cc_favs'
 
 function readView(): View {
   return localStorage.getItem(VIEW_KEY) === 'all' ? 'all' : 'tabs'
+}
+
+function readFavs(): string[] {
+  try {
+    const a = JSON.parse(localStorage.getItem(FAV_KEY) ?? '[]')
+    return Array.isArray(a) ? a.filter((x): x is string => typeof x === 'string') : []
+  } catch { return [] }
 }
 
 export default function ControlCenter() {
@@ -47,6 +55,7 @@ export default function ControlCenter() {
   const maySeeSchedule = can('gantt')
 
   const [pickedProject, setPickedProject] = useState('')
+  const [favs, setFavs] = useState<string[]>(readFavs)
   const [section, setSection] = useState<SectionKey>('summary')
   const [view, setView] = useState<View>(readView)
   const [snap, setSnap] = useState<ProjectSnapshot | null>(null)
@@ -92,6 +101,16 @@ export default function ControlCenter() {
     setView(next)
     try { localStorage.setItem(VIEW_KEY, next) } catch { /* private browsing */ }
   }
+
+  const toggleFav = (id: string) => setFavs((f) => {
+    const next = f.includes(id) ? f.filter((x) => x !== id) : [...f, id]
+    try { localStorage.setItem(FAV_KEY, JSON.stringify(next)) } catch { /* private browsing */ }
+    return next
+  })
+  // in saved order, so the user's most-used projects stay where they put them
+  const favProjects = favs
+    .map((id) => active.find((p) => p.id === id))
+    .filter((p): p is Project => p !== undefined)
 
   const openDefects = data?.defects.filter((d) => d.status === 'open') ?? []
   const overdue = openDefects.filter((d) => d.overdue)
@@ -168,16 +187,44 @@ export default function ControlCenter() {
           <div className="kicker">{g('o_kicker')}</div>
           <h1 className="page-title">{g('o_title')}</h1>
         </div>
-        <select
-          className="input"
-          style={{ maxWidth: 260 }}
-          value={projectId}
-          onChange={(e) => setPickedProject(e.target.value)}
-          aria-label={g('o_pick')}
-        >
-          {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-        </select>
+        <div className="cc-pickrow">
+          <select
+            className="input"
+            style={{ maxWidth: 260 }}
+            value={projectId}
+            onChange={(e) => setPickedProject(e.target.value)}
+            aria-label={g('o_pick')}
+          >
+            {active.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
+          </select>
+          {projectId && (
+            <button
+              type="button"
+              className={`cc-star ${favs.includes(projectId) ? 'on' : ''}`}
+              aria-pressed={favs.includes(projectId)}
+              title={favs.includes(projectId) ? g('o_fav_remove') : g('o_fav_add')}
+              onClick={() => toggleFav(projectId)}
+            >
+              {favs.includes(projectId) ? '★' : '☆'}
+            </button>
+          )}
+        </div>
       </div>
+
+      {favProjects.length > 0 && (
+        <div className="cc-favs" role="group" aria-label={g('o_favs')}>
+          {favProjects.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              className={`coop-tab ${p.id === projectId ? 'on' : ''}`}
+              onClick={() => setPickedProject(p.id)}
+            >
+              ★ {p.name}
+            </button>
+          ))}
+        </div>
+      )}
 
       {!project && <div className="empty">{g('o_pick')}</div>}
       {problem && <div className="tag tag--clay">{problem}</div>}

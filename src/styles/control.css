@@ -113,6 +113,36 @@ a.cc-card:hover { border-color: var(--green); transform: translateY(-2px); }
   color: var(--ink-faint);
 }
 
+.cc-pickrow { display: flex; align-items: center; gap: 8px; }
+
+/* Star toggle beside the project picker. */
+.cc-star {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 18px;
+  cursor: pointer;
+  transition: border-color .16s var(--ease), color .16s var(--ease);
+}
+.cc-star:hover { border-color: var(--green); color: var(--green-deep); }
+.cc-star.on { color: var(--amber, #c98a1b); border-color: currentColor; }
+
+/* Favourite-project shortcuts, one click to switch. Chips, not tabs — the
+   .coop-tab tab shape is drawn to sit on a tab strip and looks cut off alone. */
+.cc-favs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 14px;
+}
+.cc-favs .coop-tab { border: 1px solid var(--line); border-radius: 99px; padding: 6px 12px; }
+.cc-favs .coop-tab.on { border-color: var(--green); background: var(--green-tint); color: var(--green-deep); }
+
 /* The whole card face is the drill-down trigger; it inherits the card's layout. */
 .cc-card__toggle {
   all: unset;
