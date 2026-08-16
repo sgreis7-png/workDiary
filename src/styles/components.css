@@ -1128,19 +1128,31 @@ button.coop-group__head[aria-expanded='false'] { border-bottom: 0; }
 .dash-sec__chev { color: var(--ink-3); font-size: 13px; flex: none; }
 .dash-sec__body { padding: 4px 20px 20px; border-top: 1px solid var(--line); padding-top: 16px; }
 
-/* ---- signature pad (fullscreen overlay) ---- */
+/* ---- signature pad (centered popup) ----
+   Child rules are scoped under .sigpad: the defects gate-sign pad reuses the
+   __canvas/__bar class names with its own styling and must not be overridden. */
 .sigpad {
   position: fixed; inset: 0; z-index: 200;
-  display: flex; flex-direction: column;
-  background: var(--bg, #fff);
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(15, 23, 32, .45); padding: 16px;
 }
-.sigpad__head { padding: 14px 18px; display: flex; gap: 12px; align-items: baseline; }
+.sigpad__card {
+  background: var(--bg, #fff); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: var(--shadow-2); width: min(560px, 100%);
+  display: flex; flex-direction: column; gap: 10px; padding: 14px 16px;
+}
+.sigpad__head { display: flex; gap: 10px; align-items: baseline; }
 .sigpad__hint { opacity: .65; font-size: .9em; }
-.sigpad__canvas {
-  flex: 1; margin: 0 14px; border: 2px dashed var(--line, #b9c2ca); border-radius: 12px;
+.sigpad__close {
+  margin-inline-start: auto; border: 0; background: none; cursor: pointer;
+  font-size: 18px; line-height: 1; color: var(--ink-3); padding: 2px 6px;
+}
+.sigpad .sigpad__canvas {
+  width: 100%; height: clamp(160px, 40vw, 260px); margin: 0;
+  border: 2px dashed var(--line, #b9c2ca); border-radius: 12px;
   touch-action: none; background: #fff;
 }
-.sigpad__bar { display: flex; gap: 10px; padding: 14px 18px; justify-content: flex-end; }
+.sigpad .sigpad__bar { display: flex; gap: 10px; margin: 0; padding: 0; justify-content: flex-end; }
 /* signature thumbnails in tables/cards */
 .sig-thumb { border: 1px solid var(--line); background: #fff; padding: 4px 8px; cursor: pointer; border-radius: var(--r); line-height: 0; }
 .sig-thumb:hover { border-color: var(--green); }

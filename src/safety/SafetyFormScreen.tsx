@@ -34,7 +34,7 @@ export function SafetyFormScreen() {
   const nav = useNavigate()
   const { id } = useParams()
   const editing = Boolean(id)
-  const { projects, userMap } = useStore()
+  const { projects } = useStore()
   const { user, isAdmin } = useAuth()
 
   const [loading, setLoading] = useState(editing)
@@ -100,7 +100,6 @@ export function SafetyFormScreen() {
             setInstructorSig(d.instructor_signature ?? null)
             setDraftNotice(true)
           } else {
-            setInstructorName(user ? (userMap[user.id] ?? '') : '')
             setFreshNew(true)
           }
         } catch { /* corrupt draft — start clean */ }

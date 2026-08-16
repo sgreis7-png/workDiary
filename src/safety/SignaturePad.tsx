@@ -3,9 +3,11 @@ import { useI18n } from '../i18n'
 import { st } from './i18n'
 import { captureToSig, sigIsEmpty, type Sig } from './signature'
 
-/** Fullscreen finger-signature pad. Collects pointer strokes on a canvas and
- *  returns them as a normalized vector Sig. Touch-action is disabled so the
- *  page does not scroll mid-signature. */
+/** Finger-signature pad in a centered popup. Collects pointer strokes on a
+ *  canvas and returns them as a normalized vector Sig. A popup rather than a
+ *  fullscreen takeover: on phones the browser chrome eats the bottom of a
+ *  100vh overlay, which is exactly where the confirm button was. Touch-action
+ *  is disabled so the page does not scroll mid-signature. */
 export function SignaturePad({ title, onDone, onClose }: {
   title: string
   onDone: (sig: Sig) => void
@@ -68,21 +70,23 @@ export function SignaturePad({ title, onDone, onClose }: {
   }
 
   return (
-    <div className="sigpad" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="sigpad__head">
-        <strong>{title}</strong>
-        <span className="sigpad__hint">{st(lang, 'sign_hint')}</span>
-      </div>
-      <canvas
-        ref={canvasRef} className="sigpad__canvas"
-        onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
-      />
-      <div className="sigpad__bar">
-        <button className="btn btn--ghost" onClick={onClose}>✕</button>
-        <button className="btn btn--ghost" onClick={clear}>{st(lang, 'sign_clear')}</button>
-        <button className="btn btn--primary" disabled={!hasInk} onClick={confirm}>
-          {st(lang, 'sign_confirm')}
-        </button>
+    <div className="sigpad" role="dialog" aria-modal="true" aria-label={title} onClick={onClose}>
+      <div className="sigpad__card" onClick={(e) => e.stopPropagation()}>
+        <div className="sigpad__head">
+          <strong>{title}</strong>
+          <span className="sigpad__hint">{st(lang, 'sign_hint')}</span>
+          <button className="sigpad__close" aria-label="close" onClick={onClose}>✕</button>
+        </div>
+        <canvas
+          ref={canvasRef} className="sigpad__canvas"
+          onPointerDown={down} onPointerMove={move} onPointerUp={up} onPointerCancel={up}
+        />
+        <div className="sigpad__bar">
+          <button className="btn btn--ghost" onClick={clear}>{st(lang, 'sign_clear')}</button>
+          <button className="btn btn--primary" disabled={!hasInk} onClick={confirm}>
+            {st(lang, 'sign_confirm')}
+          </button>
+        </div>
       </div>
     </div>
   )
