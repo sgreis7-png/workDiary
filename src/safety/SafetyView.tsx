@@ -5,6 +5,7 @@ import { useI18n } from '../i18n'
 import { useStore } from '../store'
 import { usePerms } from '../lib/usePerms'
 import { SendMailDialog } from '../components/SendMailDialog'
+import { printPage } from '../lib/printPage'
 import { getSafetyForm, deleteSafetyForm } from './api'
 import { safetyFormHtml } from './report'
 import { st } from './i18n'
@@ -21,6 +22,7 @@ export function SafetyView() {
   const { canEdit } = usePerms()
   const [form, setForm] = useState<SafetyFormRec | null | undefined>(undefined)
   const [sendOpen, setSendOpen] = useState(false)
+  const [copyMsg, setCopyMsg] = useState('')
 
   useEffect(() => {
     let alive = true
@@ -39,6 +41,14 @@ export function SafetyView() {
     nav('/safety')
   }
 
+  // The installed app cannot print; printPage hands the report to the browser instead, and
+  // says so, rather than leaving a button that looks broken.
+  const print = () => {
+    const outcome = printPage()
+    if (outcome === 'opened') setCopyMsg(t('print_in_browser'))
+    else if (outcome === 'blocked') setCopyMsg(t('print_blocked'))
+  }
+
   return (
     <div className="report-wrap">
       <div className="report-bar no-print">
@@ -51,9 +61,10 @@ export function SafetyView() {
             <button className="btn btn--ghost" onClick={onDelete}>{t('delete')}</button>
           )}
           <button className="btn btn--ghost" onClick={() => setSendOpen(true)}>{st(lang, 'view_send')}</button>
-          <button className="btn btn--primary" onClick={() => window.print()}>📄 {t('print_pdf')}</button>
+          <button className="btn btn--primary" onClick={print}>📄 {t('print_pdf')}</button>
         </div>
       </div>
+      {copyMsg && <div className="tag tag--green no-print" style={{ display: 'block', padding: '12px 16px', margin: '0 auto 16px', maxWidth: 680 }}>{copyMsg}</div>}
       {sendOpen && (
         <SendMailDialog
           subject={`הדרכת בטיחות · ${projectName(form.project_id)} · ${form.training_date}`}
