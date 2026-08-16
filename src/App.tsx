@@ -44,6 +44,7 @@ const ControlCenter = lazy(() => import('./screens/ControlCenter'))
 const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m) => ({ default: m.SafetyFormScreen })))
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
 const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
+const SafetyTopicsAdmin = lazy(() => import('./safety/SafetyTopicsAdmin').then((m) => ({ default: m.SafetyTopicsAdmin })))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -124,6 +125,7 @@ export default function App() {
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
+        <Route path="admin/safety-topics" element={<RequireAdmin><SafetyTopicsAdmin /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

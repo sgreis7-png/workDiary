@@ -296,6 +296,7 @@ export function Shell() {
                 ...(isAdmin ? [{ to: '/admin/users', icon: '◎', label: t('nav_users') }] : []),
                 ...(isAdmin ? [{ to: '/admin/feedback', icon: '📢', label: t('nav_feedback_admin') }] : []),
                 ...(isAdmin ? [{ to: '/admin/audit', icon: '⧉', label: t('nav_audit') }] : []),
+                ...(isAdmin ? [{ to: '/admin/safety-topics', icon: '⛑', label: st(lang, 'nav_safety_topics') }] : []),
               ],
             },
           ]}
