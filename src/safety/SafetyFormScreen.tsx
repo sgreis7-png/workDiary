@@ -6,7 +6,7 @@ import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
 import { useStore } from '../store'
 import { useAuth } from '../auth'
-import { createSafetyForm, fetchSafetyTopics, fetchWorkerSuggestions, getSafetyForm, updateSafetyForm } from './api'
+import { createSafetyForm, fetchLastInstructor, fetchSafetyTopics, fetchWorkerSuggestions, getSafetyForm, updateSafetyForm } from './api'
 import type { SafetyFormInput, SafetyTopic, SafetyWorker } from './model'
 import { sigIsEmpty, sigSvg, type Sig } from './signature'
 import { SignaturePad } from './SignaturePad'
@@ -128,6 +128,20 @@ export function SafetyFormScreen() {
     return () => { alive = false }
   }, [projectId])
 
+  // instructor memory: a new form inherits name+qualification from the
+  // project's latest form, so the foreman fills them once per project.
+  // Only empty fields are filled — a hand-typed value is never overwritten.
+  useEffect(() => {
+    if (editing || !restored || !projectId) return
+    let alive = true
+    fetchLastInstructor(projectId).then((last) => {
+      if (!alive || !last) return
+      setInstructorName((cur) => (cur.trim() ? cur : last.name))
+      setInstructorQual((cur) => (cur.trim() ? cur : last.qualification))
+    }).catch(() => {})
+    return () => { alive = false }
+  }, [editing, restored, projectId])
+
   // draft persistence — new forms only; signatures ride along on purpose
   useEffect(() => {
     if (editing || !restored || busy) return
@@ -176,8 +190,12 @@ export function SafetyFormScreen() {
   const save = async () => {
     const errs: string[] = []
     if (!projectId) errs.push('__project__')
+    // a row is kept if it has any content; the form is savable only when at
+    // least one worker is complete: name + id number + signature
     const validWorkers = workers.filter((w) => w.name.trim())
-    if (validWorkers.length === 0) errs.push('__worker__')
+    const fullWorkers = validWorkers.filter((w) => w.id_number.trim() && !sigIsEmpty(w.signature))
+    if (fullWorkers.length === 0) errs.push('__worker__')
+    if (!instructorName.trim() || !instructorQual.trim() || sigIsEmpty(instructorSig)) errs.push('__instructor__')
     setErrors(errs)
     if (errs.length) { window.scrollTo({ top: 0, behavior: 'smooth' }); return }
     setBusy(true); setSaveErr('')
@@ -232,6 +250,11 @@ export function SafetyFormScreen() {
         {errors.includes('__worker__') && (
           <motion.div className="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
             ⚠ {st(lang, 'form_need_worker')}
+          </motion.div>
+        )}
+        {errors.includes('__instructor__') && (
+          <motion.div className="alert" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }}>
+            ⚠ {st(lang, 'form_need_instructor')}
           </motion.div>
         )}
         {saveErr && (

@@ -32,7 +32,8 @@ export const S = {
   form_instr_name: { he: 'שם המדריך', en: 'Instructor name' },
   form_instr_qual: { he: 'כשירות המדריך', en: 'Instructor qualification' },
   form_need_project: { he: 'יש לבחור פרויקט', en: 'Pick a project' },
-  form_need_worker:  { he: 'יש להוסיף לפחות עובד אחד', en: 'Add at least one worker' },
+  form_need_worker:  { he: 'נדרש לפחות עובד אחד עם שם, תעודת זהות וחתימה', en: 'At least one worker with name, ID number and signature is required' },
+  form_need_instructor: { he: 'יש למלא שם מדריך, כשירות וחתימת מדריך', en: 'Instructor name, qualification and signature are required' },
   form_draft_restored: { he: 'שוחזרה טיוטה שלא נשמרה', en: 'Unsaved draft restored' },
 
   sign_title:   { he: 'חתימת העובד', en: 'Worker signature' },

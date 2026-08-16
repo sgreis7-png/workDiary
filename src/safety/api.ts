@@ -73,6 +73,20 @@ export async function reorderSafetyTopics(orderedIds: string[]): Promise<void> {
     supabase.from('safety_topics').update({ sort_order: (i + 1) * 10 }).eq('id', id)))
 }
 
+/** Instructor name+qualification from the project's latest form, to prefill
+ *  new forms — the same foreman runs the same project's briefings. */
+export async function fetchLastInstructor(projectId: string): Promise<{ name: string; qualification: string } | null> {
+  const { data, error } = await supabase.from('safety_forms')
+    .select('instructor_name,instructor_qualification')
+    .eq('project_id', projectId)
+    .order('training_date', { ascending: false }).order('created_at', { ascending: false })
+    .limit(1).maybeSingle()
+  if (error) throw error
+  if (!data) return null
+  const d = data as unknown as { instructor_name: string; instructor_qualification: string }
+  return { name: d.instructor_name ?? '', qualification: d.instructor_qualification ?? '' }
+}
+
 // ---------- worker suggestions ----------
 
 /** Names+ids from the project's last 20 forms, for autocomplete. */
