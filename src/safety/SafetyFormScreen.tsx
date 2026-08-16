@@ -304,7 +304,7 @@ export function SafetyFormScreen() {
                 <input className="input" list="safety-worker-suggestions" value={w.name} placeholder={st(lang, 'form_name')}
                   onChange={(e) => updWorker(i, { name: e.target.value })} />
                 <input className="input" value={w.id_number} placeholder={st(lang, 'form_id')}
-                  onChange={(e) => updWorker(i, { id_number: e.target.value })} />
+                  inputMode="numeric" onChange={(e) => updWorker(i, { id_number: e.target.value })} />
                 {sigIsEmpty(w.signature) ? (
                   <Button variant="ghost" type="button" onClick={() => setSigning({ kind: 'worker', index: i })}>
                     ✍ {st(lang, 'form_sign')}

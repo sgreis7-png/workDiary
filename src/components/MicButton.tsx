@@ -45,14 +45,15 @@ export function startRecognition(
   rec.continuous = opts?.continuous ?? false
   const flush = (e?: { results: ArrayLike<SpeechResult> }) => {
     if (sent) return
-    let finalText = ''
+    // Session is over — take every segment, final or not. On Android Chrome a
+    // continuous session stopped by hand often still holds its last segment as
+    // interim; dropping it loses exactly what was said.
+    let text = ''
     if (e) {
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '
-      }
+      for (let i = 0; i < e.results.length; i++) text += e.results[i][0].transcript + ' '
     }
-    finalText = finalText.trim()
-    if (finalText) { sent = true; onText(finalText) }
+    text = text.trim()
+    if (text) { sent = true; onText(text) }
   }
   let last: { results: ArrayLike<SpeechResult> } | undefined
   rec.onresult = (e) => { last = e }
