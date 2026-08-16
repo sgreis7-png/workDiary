@@ -15,6 +15,7 @@ import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/m
 import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
 import { st } from '../safety/i18n'
+import { GlobalDictation } from './GlobalDictation'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
 function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; onAbout: () => void; compact?: boolean }) {
@@ -343,6 +344,7 @@ export function Shell() {
           </AnimatePresence>
         </main>
       </div>
+      <GlobalDictation />
       {aboutOpen && <AboutDialog onClose={() => setAboutOpen(false)} />}
       {feedbackOpen && <FeedbackDialog onClose={() => setFeedbackOpen(false)} />}
       <AnimatePresence>

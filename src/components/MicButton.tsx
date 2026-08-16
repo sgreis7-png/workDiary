@@ -27,6 +27,39 @@ const ERR_HE: Record<string, string> = {
   'language-not-supported': 'השפה אינה נתמכת בדפדפן זה',
 }
 
+export const hasRecognizer = Boolean(Recognizer)
+
+/** Start one dictation. Returns the recognizer (call .stop() to end early) or
+ *  null when unsupported/failed to start. onText fires once with the final
+ *  transcript; onEnd always fires when the session is over. */
+export function startRecognition(
+  lang: string, onText: (t: string) => void, onEnd: () => void,
+): SpeechRec | null {
+  if (!Recognizer) return null
+  let sent = false
+  const rec = new Recognizer()
+  rec.lang = lang
+  rec.interimResults = true   // capture partials so short utterances aren't lost
+  rec.continuous = false
+  rec.onresult = (e) => {
+    let finalText = ''
+    for (let i = 0; i < e.results.length; i++) {
+      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '
+    }
+    finalText = finalText.trim()
+    if (finalText && !sent) { sent = true; onText(finalText) }
+  }
+  rec.onend = onEnd
+  rec.onerror = (e) => {
+    onEnd()
+    const code = e?.error || 'unknown'
+    const msg = code in ERR_HE ? ERR_HE[code] : `שגיאת זיהוי דיבור: ${code}`
+    if (msg) window.alert(msg)   // 'aborted' maps to '' (user stopped) — no alert
+  }
+  try { rec.start(); return rec }
+  catch { window.alert('לא ניתן להפעיל זיהוי דיבור בדפדפן זה'); return null }
+}
+
 export function MicButton({ onText, lang = 'he-IL' }: { onText: (t: string) => void; lang?: string }) {
   const [on, setOn] = useState(false)
   const ref = useRef<SpeechRec | null>(null)
@@ -34,29 +67,8 @@ export function MicButton({ onText, lang = 'he-IL' }: { onText: (t: string) => v
 
   const toggle = () => {
     if (on) { ref.current?.stop(); return }
-    let sent = false
-    const rec = new Recognizer()
-    ref.current = rec
-    rec.lang = lang
-    rec.interimResults = true   // capture partials so short utterances aren't lost
-    rec.continuous = false
-    rec.onresult = (e) => {
-      let finalText = ''
-      for (let i = 0; i < e.results.length; i++) {
-        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '
-      }
-      finalText = finalText.trim()
-      if (finalText && !sent) { sent = true; onText(finalText) }
-    }
-    rec.onend = () => setOn(false)
-    rec.onerror = (e) => {
-      setOn(false)
-      const code = e?.error || 'unknown'
-      const msg = code in ERR_HE ? ERR_HE[code] : `שגיאת זיהוי דיבור: ${code}`
-      if (msg) window.alert(msg)   // 'aborted' maps to '' (user stopped) — no alert
-    }
-    try { rec.start(); setOn(true) }
-    catch { window.alert('לא ניתן להפעיל זיהוי דיבור בדפדפן זה') }
+    const rec = startRecognition(lang, onText, () => setOn(false))
+    if (rec) { ref.current = rec; setOn(true) }
   }
 
   return (

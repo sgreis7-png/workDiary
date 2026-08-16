@@ -1128,6 +1128,17 @@ button.coop-group__head[aria-expanded='false'] { border-bottom: 0; }
 .dash-sec__chev { color: var(--ink-3); font-size: 13px; flex: none; }
 .dash-sec__body { padding: 4px 20px 20px; border-top: 1px solid var(--line); padding-top: 16px; }
 
+/* ---- global dictation mic: floats beside the focused text field ---- */
+.gmic {
+  position: fixed; z-index: 300; width: 30px; height: 30px;
+  display: grid; place-items: center; font-size: 13px; line-height: 1;
+  border: 1px solid var(--line); border-radius: 50%;
+  background: var(--bg, #fff); box-shadow: var(--shadow-1, 0 1px 4px rgba(0,0,0,.12));
+  cursor: pointer; padding: 0;
+}
+.gmic:hover { border-color: var(--green); }
+.gmic--on { background: var(--clay-tint); border-color: var(--clay); animation: micpulse 1s ease-in-out infinite; }
+
 /* ---- signature pad (centered popup) ----
    Child rules are scoped under .sigpad: the defects gate-sign pad reuses the
    __canvas/__bar class names with its own styling and must not be overridden. */
