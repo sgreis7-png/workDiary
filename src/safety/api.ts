@@ -31,15 +31,20 @@ export async function createSafetyForm(input: SafetyFormInput): Promise<string> 
   return (data as { id: string }).id
 }
 
+// RLS (migration 0061) restricts update/delete to the author or an admin; a mismatched
+// row simply matches nothing and Postgres reports success with zero rows affected — not
+// an error. .select('id') lets us tell "0 rows" apart from "it worked" and fail loudly.
 export async function updateSafetyForm(id: string, input: SafetyFormInput): Promise<void> {
-  const { error } = await supabase.from('safety_forms')
-    .update({ ...input, updated_at: new Date().toISOString() }).eq('id', id)
+  const { data, error } = await supabase.from('safety_forms')
+    .update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה לערוך טופס זה')
 }
 
 export async function deleteSafetyForm(id: string): Promise<void> {
-  const { error } = await supabase.from('safety_forms').delete().eq('id', id)
+  const { data, error } = await supabase.from('safety_forms').delete().eq('id', id).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה למחוק טופס זה')
 }
 
 // ---------- topics ----------

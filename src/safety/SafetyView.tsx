@@ -4,6 +4,7 @@ import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
 import { useStore } from '../store'
 import { usePerms } from '../lib/usePerms'
+import { useAuth } from '../auth'
 import { SendMailDialog } from '../components/SendMailDialog'
 import { printPage } from '../lib/printPage'
 import { getSafetyForm, deleteSafetyForm } from './api'
@@ -20,6 +21,7 @@ export function SafetyView() {
   const nav = useNavigate()
   const { projectName } = useStore()
   const { canEdit } = usePerms()
+  const { user, isAdmin } = useAuth()
   const [form, setForm] = useState<SafetyFormRec | null | undefined>(undefined)
   const [sendOpen, setSendOpen] = useState(false)
   const [copyMsg, setCopyMsg] = useState('')
@@ -34,11 +36,14 @@ export function SafetyView() {
   if (!form) return <div className="empty"><div className="big">404</div></div>
 
   const html = safetyFormHtml(form, projectName(form.project_id), lang)
+  // Mirrors EntryDetail's canManage: RLS only allows the author or an admin
+  // to update/delete, so the buttons must not appear for anyone else.
+  const canManage = (form.created_by === user?.id || isAdmin) && canEdit('safety')
 
   const onDelete = async () => {
     if (!window.confirm(st(lang, 'view_delete_confirm'))) return
-    await deleteSafetyForm(form.id)
-    nav('/safety')
+    try { await deleteSafetyForm(form.id); nav('/safety') }
+    catch (e) { window.alert('⚠ ' + String((e as Error).message ?? e)) }
   }
 
   // The installed app cannot print; printPage hands the report to the browser instead, and
@@ -54,10 +59,10 @@ export function SafetyView() {
       <div className="report-bar no-print">
         <button className="btn btn--ghost" onClick={() => nav('/safety')}>→ {t('back')}</button>
         <div style={{ display: 'flex', gap: 10, marginInlineStart: 'auto', flexWrap: 'wrap' }}>
-          {canEdit('safety') && (
+          {canManage && (
             <button className="btn btn--ghost" onClick={() => nav(`/safety/${form.id}/edit`)}>{st(lang, 'view_edit')}</button>
           )}
-          {canEdit('safety') && (
+          {canManage && (
             <button className="btn btn--ghost" onClick={onDelete}>{t('delete')}</button>
           )}
           <button className="btn btn--ghost" onClick={() => setSendOpen(true)}>{st(lang, 'view_send')}</button>

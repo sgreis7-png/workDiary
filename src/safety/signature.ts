@@ -41,9 +41,18 @@ export function sigIsEmpty(sig: Sig | null | undefined): boolean {
   return !sig || !Array.isArray(sig.strokes) || sig.strokes.length === 0
 }
 
+// Coordinates come from a DB row and may not be trustworthy (a compromised/tampered
+// row could carry strings instead of numbers). Coerce to a finite number so nothing
+// but digits, '.', '-', 'M'/'L' and spaces can ever reach this string — it's interpolated
+// straight into an SVG `d` attribute that's fed to dangerouslySetInnerHTML and mail bodies.
+function num(n: unknown): number {
+  const v = Number(n)
+  return Number.isFinite(v) ? v : 0
+}
+
 export function sigToPath(sig: Sig): string {
   return sig.strokes
-    .map((s) => 'M' + s.map(([x, y]) => `${x} ${y}`).join(' L'))
+    .map((s) => 'M' + s.map(([x, y]) => `${num(x)} ${num(y)}`).join(' L'))
     .join(' ')
 }
 

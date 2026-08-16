@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { SIG_H, SIG_W, captureToSig, sigIsEmpty, sigSvg, sigToPath, simplify } from './signature'
+import type { Sig } from './signature'
 
 describe('simplify (RDP)', () => {
   it('collapses collinear points to the two endpoints', () => {
@@ -50,5 +51,25 @@ describe('rendering', () => {
     expect(svg).toContain(`viewBox="0 0 ${SIG_W} ${SIG_H}"`)
     expect(svg).toContain('width="160"')
     expect(svg).toContain('<path d="M0 0 L10 10 M20 20 L30 20"')
+  })
+})
+
+describe('sigToPath hardening against a tampered DB row', () => {
+  it('coerces non-numeric stroke coordinates instead of interpolating them raw', () => {
+    // A malicious/corrupted row could carry strings instead of numbers; sigToPath
+    // feeds straight into an SVG `d` attribute rendered via dangerouslySetInnerHTML
+    // and into mail bodies, so nothing but digits/./-/M/L/space may ever come out.
+    const evil = {
+      v: 1 as const,
+      strokes: [[
+        ['"/><script>alert(1)</script>', 5],
+        [10, '"onerror="alert(1)'],
+      ]],
+    } as unknown as Sig
+    const path = sigToPath(evil)
+    expect(path).toMatch(/^[ML0-9 .-]*$/)
+    expect(path).not.toContain('<')
+    expect(path).not.toContain('"')
+    expect(path).not.toContain('script')
   })
 })

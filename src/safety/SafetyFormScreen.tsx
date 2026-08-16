@@ -35,7 +35,7 @@ export function SafetyFormScreen() {
   const { id } = useParams()
   const editing = Boolean(id)
   const { projects, userMap } = useStore()
-  const { user } = useAuth()
+  const { user, isAdmin } = useAuth()
 
   const [loading, setLoading] = useState(editing)
   const [topics, setTopics] = useState<SafetyTopic[]>([])
@@ -70,6 +70,10 @@ export function SafetyFormScreen() {
         const f = await getSafetyForm(id)
         if (!alive) return
         if (!f) { nav('/'); return }
+        // RLS only lets the author or an admin save an update; anyone else who
+        // lands here (e.g. via a shared link) gets the read-only view instead
+        // of an editor that will fail silently-then-loudly on save.
+        if (f.created_by !== user?.id && !isAdmin) { nav(`/safety/${id}`); return }
         setProjectId(f.project_id)
         setTrainingDate(f.training_date)
         const checks: Record<string, boolean> = {}
