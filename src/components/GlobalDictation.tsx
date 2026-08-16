@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import { hasRecognizer, startRecognition } from './MicButton'
+import { spokenToDigits } from '../lib/hebrewDigits'
 
 type Editable = HTMLInputElement | HTMLTextAreaElement
 
@@ -35,7 +36,7 @@ function setNativeValue(el: Editable, value: string) {
 function insertText(el: Editable, raw: string) {
   let text = raw.trim()
   if (!text) return
-  if (digitsOnly(el)) text = text.replace(/\D+/g, '')
+  if (digitsOnly(el)) text = spokenToDigits(text)
   if (!text) return
   const cur = el.value
   // insert at the caret when the field supports one; append otherwise
@@ -115,7 +116,14 @@ export function GlobalDictation() {
     if (on) { recRef.current?.stop(); return }
     const el = targetRef.current
     if (!el) return
-    const rec = startRecognition('he-IL', (t) => { const cur = targetRef.current; if (cur) insertText(cur, t) }, () => setOn(false))
+    // digit fields listen until tapped off: nine ID digits spoken one by one
+    // must not be cut at the first pause
+    const rec = startRecognition(
+      'he-IL',
+      (t) => { const cur = targetRef.current; if (cur) insertText(cur, t) },
+      () => setOn(false),
+      { continuous: digitsOnly(el) },
+    )
     if (rec) { recRef.current = rec; setOn(true) }
   }
 

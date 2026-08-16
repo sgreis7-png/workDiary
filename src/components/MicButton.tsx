@@ -30,29 +30,39 @@ const ERR_HE: Record<string, string> = {
 export const hasRecognizer = Boolean(Recognizer)
 
 /** Start one dictation. Returns the recognizer (call .stop() to end early) or
- *  null when unsupported/failed to start. onText fires once with the final
- *  transcript; onEnd always fires when the session is over. */
+ *  null when unsupported/failed to start. onText fires once, when the session
+ *  ends, with everything said; onEnd always fires when the session is over.
+ *  continuous keeps listening across pauses (until .stop()) — right for
+ *  digit-by-digit dictation like an ID number. */
 export function startRecognition(
-  lang: string, onText: (t: string) => void, onEnd: () => void,
+  lang: string, onText: (t: string) => void, onEnd: () => void, opts?: { continuous?: boolean },
 ): SpeechRec | null {
   if (!Recognizer) return null
   let sent = false
   const rec = new Recognizer()
   rec.lang = lang
   rec.interimResults = true   // capture partials so short utterances aren't lost
-  rec.continuous = false
-  rec.onresult = (e) => {
+  rec.continuous = opts?.continuous ?? false
+  const flush = (e?: { results: ArrayLike<SpeechResult> }) => {
+    if (sent) return
     let finalText = ''
-    for (let i = 0; i < e.results.length; i++) {
-      if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '
+    if (e) {
+      for (let i = 0; i < e.results.length; i++) {
+        if (e.results[i].isFinal) finalText += e.results[i][0].transcript + ' '
+      }
     }
     finalText = finalText.trim()
-    if (finalText && !sent) { sent = true; onText(finalText) }
+    if (finalText) { sent = true; onText(finalText) }
   }
-  rec.onend = onEnd
+  let last: { results: ArrayLike<SpeechResult> } | undefined
+  rec.onresult = (e) => { last = e }
+  rec.onend = () => { flush(last); onEnd() }
   rec.onerror = (e) => {
+    // a no-speech timeout after some digits were already heard is not a failure
+    flush(last)
     onEnd()
     const code = e?.error || 'unknown'
+    if (sent && (code === 'no-speech' || code === 'aborted')) return
     const msg = code in ERR_HE ? ERR_HE[code] : `שגיאת זיהוי דיבור: ${code}`
     if (msg) window.alert(msg)   // 'aborted' maps to '' (user stopped) — no alert
   }
