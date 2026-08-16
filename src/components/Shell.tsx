@@ -249,7 +249,6 @@ export function Shell() {
               items: [
                 ...(can('logbook') ? [{ to: '/', icon: '▤', label: t('nav_log'), end: true }] : []),
                 ...(can('calendar') ? [{ to: '/calendar', icon: '▦', label: t('nav_calendar') }] : []),
-                ...(can('search') ? [{ to: '/search', icon: '⌕', label: t('nav_search') }] : []),
               ],
             },
             {

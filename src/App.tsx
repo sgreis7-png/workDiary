@@ -18,7 +18,6 @@ import Logbook from './screens/Logbook'
 const Calendar = lazy(() => import('./screens/Calendar'))
 const EntryForm = lazy(() => import('./screens/EntryForm'))
 const EntryDetail = lazy(() => import('./screens/EntryDetail'))
-const Search = lazy(() => import('./screens/Search'))
 const Account = lazy(() => import('./screens/Account'))
 const ReportView = lazy(() => import('./screens/ReportView'))
 const Dashboard = lazy(() => import('./screens/Dashboard'))
@@ -107,7 +106,8 @@ export default function App() {
         <Route path="new" element={<RequirePerm area="logbook" edit><EntryForm /></RequirePerm>} />
         <Route path="edit/:id" element={<RequirePerm area="logbook" edit><EntryForm /></RequirePerm>} />
         <Route path="entry/:id" element={<RequirePerm area="logbook"><EntryDetail /></RequirePerm>} />
-        <Route path="search" element={<RequirePerm area="search"><Search /></RequirePerm>} />
+        {/* search folded into the logbook tab; old links land there */}
+        <Route path="search" element={<Navigate to="/" replace />} />
         <Route path="account" element={<Account />} />
         <Route path="messages" element={<Messages />} />
         <Route path="alert-rules" element={<RequirePerm area="alert_rules"><AlertRules /></RequirePerm>} />
