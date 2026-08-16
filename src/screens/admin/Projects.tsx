@@ -13,10 +13,11 @@ import { FavChips, FavStar } from '../../components/FavProjects'
 const empty: ProjectInput = {
   name: '', active: true, location: '', budget: null, pmo: '',
   start_date: '', end_date: '', staff: '', notes: '', priority: 0,
+  work_days: [0, 1, 2, 3, 4],
 }
 
 export default function Projects() {
-  const { t } = useI18n()
+  const { t, lang } = useI18n()
   const { isAdmin } = useAuth()
   const { projects, myPriorities, setUserPriority, reloadProjects, assignments, reloadAssignments } = useStore()
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
@@ -153,6 +154,11 @@ export default function Projects() {
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState('')
     const set = (k: keyof ProjectInput, v: string | boolean | number | null) => setForm((f) => ({ ...f, [k]: v }))
+    const workDays = form.work_days ?? [0, 1, 2, 3, 4]
+    const toggleWorkDay = (d: number) => setForm((f) => {
+      const cur = f.work_days ?? [0, 1, 2, 3, 4]
+      return { ...f, work_days: (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]).sort() }
+    })
     const toggleStaff = (email: string) => setStaffEmails((s) => {
       const next = s.includes(email) ? s.filter((x) => x !== email) : [...s, email]
       // taking someone off the project takes their manager mark with them, or they would keep
@@ -202,6 +208,16 @@ export default function Projects() {
             </div>
             <Field label={t('proj_notes')}>
               <textarea className="input" value={form.notes ?? ''} onChange={(e) => set('notes', e.target.value)} />
+            </Field>
+            <Field label={t('proj_work_days')} hint={t('proj_work_days_hint')}>
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+                {(lang === 'he' ? ['א', 'ב', 'ג', 'ד', 'ה', 'ו', 'ש'] : ['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa']).map((d, i) => (
+                  <label key={i} className={`staff-chip ${workDays.includes(i) ? 'on' : ''}`}>
+                    <input type="checkbox" checked={workDays.includes(i)} onChange={() => toggleWorkDay(i)} style={{ display: 'none' }} />
+                    {d}
+                  </label>
+                ))}
+              </div>
             </Field>
             <Field label={`${t('assign_staff')} (${t('optional')})`}>
               <div className="staff-pick">

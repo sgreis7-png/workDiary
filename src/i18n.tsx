@@ -157,6 +157,8 @@ export const STRINGS = {
   proj_end:         { he: 'תאריך סיום', en: 'End date' },
   proj_staff:       { he: 'צוות', en: 'Staff' },
   proj_notes:       { he: 'הערות', en: 'Notes' },
+  proj_work_days:   { he: 'ימי עבודה', en: 'Work days' },
+  proj_work_days_hint: { he: 'התראות מתוזמנות נשלחות רק בימים אלו', en: 'Scheduled alerts are sent only on these days' },
   assign_staff:     { he: 'שיוך עובדים', en: 'Assign staff' },
   my_priority:      { he: 'העדפה שלי', en: 'My priority' },
   company_priority: { he: 'עדיפות חברה', en: 'Company priority' },

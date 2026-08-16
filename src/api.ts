@@ -9,7 +9,7 @@ import type { AppUser, Entry, FieldDef, Project, ProjectInput, SearchFilters } f
 
 // ---------- reference data ----------
 
-const PROJECT_COLS = 'id,name,active,location,budget,pmo,start_date,end_date,staff,notes,priority'
+const PROJECT_COLS = 'id,name,active,location,budget,pmo,start_date,end_date,staff,notes,priority,work_days'
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
     .from('projects').select(PROJECT_COLS).order('created_at')
