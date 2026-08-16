@@ -14,6 +14,7 @@ import { usePerms } from '../lib/usePerms'
 import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/messages'
 import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
+import { st } from '../safety/i18n'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
 function UserMenu({ avatarUrl, onAbout, compact }: { avatarUrl: string | null; onAbout: () => void; compact?: boolean }) {
@@ -169,7 +170,7 @@ function NavGroups({ groups }: { groups: NavGroup[] }) {
 
 export function Shell() {
   const { t } = useI18n()
-  const { dt } = useDT()
+  const { dt, lang } = useDT()
   const { user, isAdmin } = useAuth()
   const { online, pending } = useOfflineSync()
   const [open, setOpen] = useState(false)
@@ -249,6 +250,13 @@ export function Shell() {
                 ...(can('logbook') ? [{ to: '/', icon: '▤', label: t('nav_log'), end: true }] : []),
                 ...(can('calendar') ? [{ to: '/calendar', icon: '▦', label: t('nav_calendar') }] : []),
                 ...(can('search') ? [{ to: '/search', icon: '⌕', label: t('nav_search') }] : []),
+              ],
+            },
+            {
+              key: 'safety',
+              label: st(lang, 'nav_section_safety'),
+              items: [
+                ...(can('safety') ? [{ to: '/safety', icon: '⛑', label: st(lang, 'nav_safety') }] : []),
               ],
             },
             {

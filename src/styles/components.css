@@ -189,6 +189,7 @@ select.input { cursor: pointer; }
 .rtable__row { border-bottom: 1px solid var(--rule); }
 .rtable__row--progress { display: grid; grid-template-columns: 1.1fr 1.4fr 1.3fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--missing { display: grid; grid-template-columns: 0.9fr 1.5fr 0.7fr 1.5fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
+.rtable__row--workers { display: grid; grid-template-columns: 1.3fr 0.9fr 150px 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row .input { padding: 9px 12px; font-size: 15px; }
 .rtable__del { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--paper-2); color: var(--ink-3);
   font-size: 13px; line-height: 1; cursor: pointer; transition: all .15s var(--ease); justify-self: center; flex: none; }
@@ -220,6 +221,11 @@ select.input { cursor: pointer; }
   .rtable__row--missing > input:nth-of-type(3) { grid-area: amt; }
   .rtable__row--missing > select { grid-area: reason; }
   .rtable__row--missing > .rtable__del { grid-area: del; }
+  .rtable__row--workers { grid-template-columns: 1fr 34px; grid-template-areas: 'name del' 'id id' 'sign sign'; gap: 10px; padding: 14px; }
+  .rtable__row--workers > input:nth-of-type(1) { grid-area: name; }
+  .rtable__row--workers > input:nth-of-type(2) { grid-area: id; }
+  .rtable__row--workers > .btn, .rtable__row--workers > .sig-thumb { grid-area: sign; justify-self: start; }
+  .rtable__row--workers > .rtable__del { grid-area: del; }
   /* fat touch slider */
   .pct__range { height: 16px; }
   .pct__range::-webkit-slider-thumb { width: 28px; height: 28px; }
@@ -1136,4 +1142,10 @@ button.coop-group__head[aria-expanded='false'] { border-bottom: 0; }
 }
 .sigpad__bar { display: flex; gap: 10px; padding: 14px 18px; justify-content: flex-end; }
 /* signature thumbnails in tables/cards */
+.sig-thumb { border: 1px solid var(--line); background: #fff; padding: 4px 8px; cursor: pointer; border-radius: var(--r); line-height: 0; }
+.sig-thumb:hover { border-color: var(--green); }
 .sig-thumb svg { display: block; max-width: 140px; height: auto; }
+
+/* safety briefing form: topic checkboxes */
+.topic-list { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.topic-chip { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }

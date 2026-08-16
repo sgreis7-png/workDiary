@@ -41,6 +41,7 @@ const Feedback = lazy(() => import('./screens/admin/Feedback'))
 const AuditLog = lazy(() => import('./screens/admin/AuditLog'))
 const GanttScreen = lazy(() => import('./screens/Gantt'))
 const ControlCenter = lazy(() => import('./screens/ControlCenter'))
+const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m) => ({ default: m.SafetyFormScreen })))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -110,6 +111,8 @@ export default function App() {
         <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="control" element={<RequirePerm area="control_center"><ControlCenter /></RequirePerm>} />
+        <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
+        <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="gantt" element={<RequirePerm area="gantt"><GanttScreen /></RequirePerm>} />
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
