@@ -43,6 +43,7 @@ const GanttScreen = lazy(() => import('./screens/Gantt'))
 const ControlCenter = lazy(() => import('./screens/ControlCenter'))
 const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m) => ({ default: m.SafetyFormScreen })))
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
+const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -115,6 +116,7 @@ export default function App() {
         <Route path="safety" element={<RequirePerm area="safety"><SafetyList /></RequirePerm>} />
         <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
+        <Route path="safety/:id" element={<RequirePerm area="safety"><SafetyView /></RequirePerm>} />
         <Route path="gantt" element={<RequirePerm area="gantt"><GanttScreen /></RequirePerm>} />
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
