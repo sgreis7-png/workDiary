@@ -1121,3 +1121,19 @@ button.coop-group__head[aria-expanded='false'] { border-bottom: 0; }
   overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dash-sec__chev { color: var(--ink-3); font-size: 13px; flex: none; }
 .dash-sec__body { padding: 4px 20px 20px; border-top: 1px solid var(--line); padding-top: 16px; }
+
+/* ---- signature pad (fullscreen overlay) ---- */
+.sigpad {
+  position: fixed; inset: 0; z-index: 200;
+  display: flex; flex-direction: column;
+  background: var(--bg, #fff);
+}
+.sigpad__head { padding: 14px 18px; display: flex; gap: 12px; align-items: baseline; }
+.sigpad__hint { opacity: .65; font-size: .9em; }
+.sigpad__canvas {
+  flex: 1; margin: 0 14px; border: 2px dashed var(--line, #b9c2ca); border-radius: 12px;
+  touch-action: none; background: #fff;
+}
+.sigpad__bar { display: flex; gap: 10px; padding: 14px 18px; justify-content: flex-end; }
+/* signature thumbnails in tables/cards */
+.sig-thumb svg { display: block; max-width: 140px; height: auto; }
