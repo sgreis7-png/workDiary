@@ -6,6 +6,7 @@ export type PermLevel = 'none' | 'view' | 'edit'
 export type PermArea =
   | 'dashboard' | 'logbook' | 'calendar' | 'search' | 'projects' | 'export'
   | 'defects' | 'form_builder' | 'coops_manage' | 'alert_rules' | 'gantt' | 'control_center'
+  | 'safety'
 
 export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = [
   { key: 'logbook', label: 'יומן עבודה', label_en: 'Work diary' },
@@ -17,6 +18,7 @@ export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = 
   { key: 'control_center', label: 'מרכז בקרה', label_en: 'Control centre' },
   { key: 'gantt', label: 'לוח זמנים (גאנט)', label_en: 'Schedule (Gantt)' },
   { key: 'defects', label: 'ניהול ליקויים', label_en: 'Defect management' },
+  { key: 'safety', label: 'יומן בטיחות', label_en: 'Safety log' },
   { key: 'coops_manage', label: 'ניהול לולים — עריכה ומחיקה', label_en: 'Coop management — edit & delete' },
   { key: 'alert_rules', label: 'כללי התראות', label_en: 'Alert rules' },
   { key: 'form_builder', label: 'בוני טפסים', label_en: 'Form builders' },
@@ -36,6 +38,7 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   form_builder: 'none',
   coops_manage: 'none', // מחיקה/עריכת לולים — לאדמין, אלא אם הוענקה
   alert_rules: 'none',  // כללי התראות אישיים — לאדמין, אלא אם הוענקה
+  safety: 'edit', // טופסי הדרכת בטיחות — מנהלי עבודה בשטח יוצרים אותם
 }
 
 /** Manager defaults — the schedule, the control centre and the statistics are the point of the
@@ -55,6 +58,7 @@ const MANAGER_DEFAULTS: Record<PermArea, PermLevel> = {
   form_builder: 'none',
   coops_manage: 'none',
   alert_rules: 'view',
+  safety: 'edit', // טופסי הדרכת בטיחות — מנהלי עבודה בשטח יוצרים אותם
 }
 
 export const ROLE_DEFAULTS: Record<Exclude<Role, 'admin'>, Record<PermArea, PermLevel>> = {

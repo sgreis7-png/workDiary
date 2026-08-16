@@ -11,8 +11,9 @@ import { describe, expect, it } from 'vitest'
 import { PERM_AREAS, resolvePerm, type PermArea, type PermLevel } from './perms'
 
 const SQL = readFileSync('supabase/migrations/0045_enforce_perm_areas.sql', 'utf8')
+const SQL61 = readFileSync('supabase/migrations/0061_safety_forms.sql', 'utf8')
 
-/** The seeded rows, read straight out of the insert. */
+/** The seeded rows for an ordinary member: the 0045 block plus later role-keyed seeds. */
 function seededDefaults(): Record<string, PermLevel> {
   const block = SQL.slice(
     SQL.indexOf('insert into perm_defaults'),
@@ -20,6 +21,10 @@ function seededDefaults(): Record<string, PermLevel> {
   )
   const out: Record<string, PermLevel> = {}
   for (const [, area, level] of block.matchAll(/\('(\w+)',\s*'(none|view|edit)'\)/g)) {
+    out[area] = level as PermLevel
+  }
+  // migrations after 0050 seed with (role, area, level); take the member rows
+  for (const [, area, level] of SQL61.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
     out[area] = level as PermLevel
   }
   return out
@@ -50,6 +55,12 @@ describe('perm_defaults mirrors MEMBER_DEFAULTS', () => {
   it('keeps the areas field staff depend on open', () => {
     expect(seeded.logbook).toBe('edit')
     expect(seeded.defects).toBe('edit')
+  })
+
+  it('seeds a manager row for safety that matches MANAGER_DEFAULTS', () => {
+    const m = [...SQL61.matchAll(/\('manager',\s*'safety',\s*'(none|view|edit)'\)/g)]
+    expect(m.length).toBe(1)
+    expect(m[0][1]).toBe(resolvePerm('manager', {}, 'safety'))
   })
 })
 
