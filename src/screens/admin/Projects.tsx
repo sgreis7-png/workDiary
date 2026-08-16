@@ -13,7 +13,7 @@ import { FavChips, FavStar } from '../../components/FavProjects'
 const empty: ProjectInput = {
   name: '', active: true, location: '', budget: null, pmo: '',
   start_date: '', end_date: '', staff: '', notes: '', priority: 0,
-  work_days: [0, 1, 2, 3, 4],
+  work_days: [0, 1, 2, 3, 4, 5],
 }
 
 export default function Projects() {
@@ -154,9 +154,9 @@ export default function Projects() {
     const [busy, setBusy] = useState(false)
     const [err, setErr] = useState('')
     const set = (k: keyof ProjectInput, v: string | boolean | number | null) => setForm((f) => ({ ...f, [k]: v }))
-    const workDays = form.work_days ?? [0, 1, 2, 3, 4]
+    const workDays = form.work_days ?? [0, 1, 2, 3, 4, 5]
     const toggleWorkDay = (d: number) => setForm((f) => {
-      const cur = f.work_days ?? [0, 1, 2, 3, 4]
+      const cur = f.work_days ?? [0, 1, 2, 3, 4, 5]
       return { ...f, work_days: (cur.includes(d) ? cur.filter((x) => x !== d) : [...cur, d]).sort() }
     })
     const toggleStaff = (email: string) => setStaffEmails((s) => {
