@@ -43,9 +43,9 @@ const ENTRY_SELECT = 'id,project_id,created_by,work_date,created_at,last_sent_at
  *  `sign` is off for callers that only want the numbers: signing mints a URL for every photo of
  *  every row, and a chart, a digest or a CSV export never displays one. `photo_count` stays
  *  right either way, so a caller that just wants "how many" does not pay for the URLs. */
-async function hydrate(rows: EntryRow[], sign = true): Promise<Entry[]> {
+async function hydrate(rows: EntryRow[], sign = true, ttl?: number): Promise<Entry[]> {
   const signed = sign
-    ? await signPaths(rows.flatMap((r) => (r.entry_photos ?? []).map((p) => p.storage_path)))
+    ? await signPaths(rows.flatMap((r) => (r.entry_photos ?? []).map((p) => p.storage_path)), ttl)
     : {}
   return rows.map((r) => ({
     id: r.id, project_id: r.project_id, created_by: r.created_by,
@@ -83,11 +83,13 @@ export async function lastEntryForProject(projectId: string): Promise<Entry | nu
   return (await hydrate(rows))[0]
 }
 
-export async function getEntry(id: string): Promise<Entry | null> {
+/** `photoTtl` is for callers whose URLs outlive the screen — the report screen puts
+ *  them inside sent mail, so it asks for MAIL_PHOTO_TTL instead of the 1h default. */
+export async function getEntry(id: string, opts?: { photoTtl?: number }): Promise<Entry | null> {
   const { data, error } = await supabase.from('entries').select(ENTRY_SELECT).eq('id', id).maybeSingle()
   if (error) throw error
   if (!data) return null
-  return (await hydrate([data as unknown as EntryRow]))[0]
+  return (await hydrate([data as unknown as EntryRow], true, opts?.photoTtl))[0]
 }
 
 /** Save a new entry.

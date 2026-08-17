@@ -10,12 +10,13 @@ const state = newFakeState({ inserted: { entries: { id: 'entry-1' } } })
 vi.mock('./lib/supabase', () => ({ supabase: makeFakeSupabase(state) }))
 vi.mock('./lib/notifyNewRecord', () => ({ notifyNewEntry: () => {}, notifyNewDefect: () => {} }))
 
-const { createEntry, updateEntry, deleteEntry } = await import('./api')
+const { createEntry, updateEntry, deleteEntry, getEntry } = await import('./api')
+const { MAIL_PHOTO_TTL } = await import('./lib/storagePaths')
 
 const file = (name: string) => new File(['x'], name, { type: 'image/jpeg' })
 
 beforeEach(() => {
-  state.calls = []; state.uploads = []; state.removed = []
+  state.calls = []; state.uploads = []; state.removed = []; state.signTtls = []
   state.failUploadAt = -1; state.fail = {}
   state.inserted = { entries: { id: 'entry-1' } }
 })
@@ -94,6 +95,30 @@ describe('createEntry', () => {
       .rejects.toBeTruthy()
     expect(state.uploads).toHaveLength(3)
     expect(state.calls.filter((c) => c.table === 'entry_photos' && c.op === 'upsert')).toHaveLength(2)
+  })
+})
+
+describe('getEntry photo URLs', () => {
+  const row = {
+    id: 'entry-1', project_id: 'proj-1', created_by: 'user-1', work_date: '2026-08-01',
+    created_at: '', last_sent_at: null, values: {},
+    entry_photos: [{ storage_path: 'entry-1/0-a.jpg' }],
+  }
+
+  it('signs photos for one hour by default', async () => {
+    state.rows = { entries: [row] }
+    await getEntry('entry-1')
+    expect(state.signTtls).toEqual([3600])
+  })
+
+  it('signs photos for the mail TTL when the caller will email the report', async () => {
+    // The report screen's URLs end up inside sent mail. An hour-long URL means every
+    // photo in every report goes dark an hour after the screen loaded — the recipient
+    // opens the mail tomorrow and sees broken images.
+    state.rows = { entries: [row] }
+    const e = await getEntry('entry-1', { photoTtl: MAIL_PHOTO_TTL })
+    expect(state.signTtls).toEqual([MAIL_PHOTO_TTL])
+    expect(e!.photos[0]).toContain(`exp=${MAIL_PHOTO_TTL}`)
   })
 })
 

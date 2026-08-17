@@ -5,6 +5,7 @@ import { Loader } from '../components/Loader'
 import { Lightbox } from '../components/Lightbox'
 import { useI18n } from '../i18n'
 import { getEntry } from '../api'
+import { MAIL_PHOTO_TTL } from '../lib/storagePaths'
 import { buildReportHtml, buildReportText } from '../report'
 import { useStore } from '../store'
 import { supabase } from '../lib/supabase'
@@ -26,7 +27,9 @@ export default function ReportView() {
 
   useEffect(() => {
     let alive = true
-    getEntry(id ?? '').then((e) => { if (alive) setEntry(e) }).catch(() => { if (alive) setEntry(null) })
+    // Long-lived photo URLs: this screen's HTML is what gets copied and emailed, and
+    // the recipient opens the mail long after the default 1h signature has expired.
+    getEntry(id ?? '', { photoTtl: MAIL_PHOTO_TTL }).then((e) => { if (alive) setEntry(e) }).catch(() => { if (alive) setEntry(null) })
     return () => { alive = false }
   }, [id])
 

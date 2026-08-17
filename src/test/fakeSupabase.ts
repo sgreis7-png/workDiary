@@ -18,6 +18,8 @@ export interface FakeState {
   calls: Call[]
   uploads: string[]
   removed: string[]
+  /** TTLs passed to createSignedUrls, in call order */
+  signTtls: number[]
   /** index of the upload that should fail, -1 for none */
   failUploadAt: number
   userId: string
@@ -30,7 +32,7 @@ export interface FakeState {
 export function newFakeState(overrides: Partial<FakeState> = {}): FakeState {
   return {
     rows: {}, fail: {}, inserted: {},
-    calls: [], uploads: [], removed: [],
+    calls: [], uploads: [], removed: [], signTtls: [],
     failUploadAt: -1,
   rpcRows: {},
   rpcFail: {}, userId: 'user-1',
@@ -112,7 +114,10 @@ export function makeFakeSupabase(s: FakeState) {
           return Promise.resolve({ error: i === s.failUploadAt ? { message: 'upload failed' } : null })
         },
         remove: (paths: string[]) => { s.removed.push(...paths); return Promise.resolve({ error: null }) },
-        createSignedUrls: () => Promise.resolve({ data: [] }),
+        createSignedUrls: (paths: string[], ttl: number) => {
+          s.signTtls.push(ttl)
+          return Promise.resolve({ data: paths.map((p) => ({ path: p, signedUrl: `signed:${p}?exp=${ttl}` })) })
+        },
       }),
     },
   }

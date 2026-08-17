@@ -3,11 +3,18 @@
 // auth.tsx; keeping one copy stops them drifting.
 import { supabase } from './supabase'
 
-/** Signed URLs (1h) for private `photos` objects, keyed by storage path. */
-export async function signPaths(paths: (string | null | undefined)[]): Promise<Record<string, string>> {
+/** TTL for photo URLs that leave the app inside sent mail. The recipient opens the
+ *  message on their own schedule — an hour-long URL (the in-app default) turns every
+ *  photo into a broken image for anyone reading the report the next day. Two years. */
+export const MAIL_PHOTO_TTL = 2 * 365 * 24 * 3600
+
+/** Signed URLs for private `photos` objects, keyed by storage path. 1h by default. */
+export async function signPaths(
+  paths: (string | null | undefined)[], expiresIn = 3600,
+): Promise<Record<string, string>> {
   const uniq = [...new Set(paths)].filter(Boolean) as string[]
   if (!uniq.length) return {}
-  const { data } = await supabase.storage.from('photos').createSignedUrls(uniq, 3600)
+  const { data } = await supabase.storage.from('photos').createSignedUrls(uniq, expiresIn)
   const m: Record<string, string> = {}
   for (const s of data ?? []) if (s.signedUrl && s.path) m[s.path] = s.signedUrl
   return m
