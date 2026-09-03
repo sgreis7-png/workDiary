@@ -30,9 +30,10 @@ export async function fetchSettings(): Promise<Settings> {
   return data as Settings
 }
 export async function updateSettings(patch: Partial<Settings>): Promise<void> {
-  const { error } = await supabase.from('traffic_light_settings')
-    .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1)
+  const { data, error } = await supabase.from('traffic_light_settings')
+    .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה לעדכן ספים')
 }
 
 // ---------- WBS templates ----------
@@ -42,12 +43,14 @@ export async function fetchTemplates(): Promise<WbsTemplate[]> {
   return (data ?? []) as WbsTemplate[]
 }
 export async function upsertTemplate(t: Partial<WbsTemplate> & { project_type: string; name_he: string; name_en: string; sort_order: number }): Promise<void> {
-  const { error } = await supabase.from('wbs_templates').upsert(t, { onConflict: 'id' })
+  const { data, error } = await supabase.from('wbs_templates').upsert(t, { onConflict: 'id' }).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה לערוך תבניות WBS')
 }
 export async function deleteTemplate(id: string): Promise<void> {
-  const { error } = await supabase.from('wbs_templates').delete().eq('id', id)
+  const { data, error } = await supabase.from('wbs_templates').delete().eq('id', id).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה למחוק קטגוריה')
 }
 
 // ---------- contractors ----------
@@ -64,8 +67,9 @@ export async function upsertContractor(c: Partial<Contractor> & { project_id: st
   return data as Contractor
 }
 export async function deleteContractor(id: string): Promise<void> {
-  const { error } = await supabase.from('project_contractors').delete().eq('id', id)
+  const { data, error } = await supabase.from('project_contractors').delete().eq('id', id).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה למחוק קבלן')
 }
 
 // ---------- deliveries ----------
@@ -88,8 +92,9 @@ export async function upsertDelivery(d: Partial<Delivery> & { project_id: string
   return data as Delivery
 }
 export async function deleteDelivery(id: string): Promise<void> {
-  const { error } = await supabase.from('project_deliveries').delete().eq('id', id)
+  const { data, error } = await supabase.from('project_deliveries').delete().eq('id', id).select('id')
   if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה למחוק פריט אספקה')
 }
 
 // ---------- issues ----------
@@ -113,8 +118,11 @@ export async function updateIssue(id: string, patch: Partial<Issue>): Promise<vo
   if (error) throw error
   if (!data || data.length === 0) throw new Error('אין הרשאה לערוך פריט זה')
 }
-export async function createIssue(i: { project_id: string; description: string; owner_kind: OwnerKind; blocking: boolean; opened_on?: string }): Promise<Issue> {
-  const { data, error } = await supabase.from('issues').insert(i).select('*').single()
+export async function createIssue(
+  i: { project_id: string; description: string; owner_kind: OwnerKind; blocking: boolean; opened_on?: string },
+  createdBy: string, // auth user id (uuid), from useAuth().user.id
+): Promise<Issue> {
+  const { data, error } = await supabase.from('issues').insert({ ...i, created_by: createdBy }).select('*').single()
   if (error) throw error
   return data as Issue
 }
