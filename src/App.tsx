@@ -44,10 +44,11 @@ const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m)
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
 const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
 const SafetyTopicsAdmin = lazy(() => import('./safety/SafetyTopicsAdmin').then((m) => ({ default: m.SafetyTopicsAdmin })))
-// Traffic-light (רמזור) module. Only the board exists so far (task 10 of the SDD plan);
-// the project, deliveries, issues and admin screens land in later tasks and are routed
-// then — lazy-importing a file that doesn't exist yet would break the build today.
+// Traffic-light (רמזור) module. Board (task 10) and project drill-down (task 11) exist;
+// deliveries, issues and admin screens land in later tasks and are routed then —
+// lazy-importing a file that doesn't exist yet would break the build today.
 const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
+const TrafficProject = lazy(() => import('./screens/traffic/TrafficProject'))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -126,11 +127,12 @@ export default function App() {
         <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="control" element={<RequirePerm area="control_center"><ControlCenter /></RequirePerm>} />
-        {/* /traffic/:projectId, /traffic/:projectId/deliveries, /traffic/:projectId/issues,
-            /admin/wbs and /admin/traffic-settings land with the screens that back them
-            (later tasks in this SDD plan) — routing to a lazy import of a file that doesn't
-            exist yet would fail the build today. */}
+        {/* /traffic/:projectId/deliveries, /traffic/:projectId/issues, /admin/wbs and
+            /admin/traffic-settings land with the screens that back them (later tasks in
+            this SDD plan) — routing to a lazy import of a file that doesn't exist yet
+            would fail the build today. */}
         <Route path="traffic" element={<RequirePerm area="traffic_light"><TrafficBoard /></RequirePerm>} />
+        <Route path="traffic/:projectId" element={<RequirePerm area="traffic_light"><TrafficProject /></RequirePerm>} />
         <Route path="safety" element={<RequirePerm area="safety"><SafetyList /></RequirePerm>} />
         <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />

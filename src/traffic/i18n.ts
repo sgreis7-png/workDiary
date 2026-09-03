@@ -51,6 +51,7 @@ export const TL = {
   proj_phase2:        { he: 'ציר הלקוח מוגדר בשלב ב׳', en: 'Customer axis arrives in phase 2' },
   proj_unmatched:     { he: 'קטגוריות שלא נמצאו בגאנט', en: 'Categories not found in the schedule' },
   proj_no_chart:      { he: 'אין גאנט פעיל', en: 'No active schedule' },
+  proj_not_found:     { he: 'הפרויקט לא נמצא בדוח הרמזור', en: 'This project is not in the traffic-light report' },
 
   cat_col_name:       { he: 'קטגוריה', en: 'Category' },
   cat_col_planned:    { he: 'מתוכנן', en: 'Planned' },
