@@ -26,7 +26,15 @@ export default function WbsTemplates() {
     setErr('')
     return upsertTemplate(t).then(reloadTemplates).catch((e) => setErr(String((e as Error).message ?? e)))
   }
+  // Diary entries and delivery rows may already point at this category by id — deleting it
+  // out from under them is destructive in a way the active toggle isn't, so this confirms
+  // first, the same way Users.tsx / DistLists.tsx / admin/Feedback.tsx confirm before their
+  // own destructive deletes.
   const remove = (id: string) => {
+    const msg = lang === 'he'
+      ? 'למחוק את הקטגוריה? ייתכן שיומני עבודה ופריטי אספקה כבר משויכים אליה. אם רק רוצים להסתיר אותה מרשימות חדשות — בטלו את הסימון "פעיל" במקום למחוק.'
+      : 'Delete this category? Diary entries and delivery rows may already reference it. To just hide it from new lists without breaking those links, clear "active" instead of deleting.'
+    if (!window.confirm(msg)) return
     setErr('')
     deleteTemplate(id).then(reloadTemplates).catch((e) => setErr(String((e as Error).message ?? e)))
   }

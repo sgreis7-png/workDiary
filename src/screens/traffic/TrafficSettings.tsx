@@ -48,17 +48,25 @@ export default function TrafficSettings() {
   const { lang } = useI18n()
   const [s, setS] = useState<Settings | null>(null)
   const [fetchErr, setFetchErr] = useState('')
+  // True from the moment the load fails until either a reload succeeds or the admin edits
+  // a value themselves. While it's true the form is showing DEFAULT_SETTINGS, not what's
+  // actually stored — saving in that state would silently overwrite the real thresholds
+  // with defaults, so Save stays blocked (button disabled AND guarded inside save()) until
+  // one of those two things happens.
+  const [loadFailed, setLoadFailed] = useState(false)
   const [saveErrs, setSaveErrs] = useState<string[]>([])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
+  const load = () => {
+    setFetchErr('')
     fetchSettings()
-      .then(setS)
+      .then((r) => { setS(r); setLoadFailed(false) })
       // The runtime may not have the settings row yet (migration not applied) — show the
-      // error but still hand the admin an editable form instead of hanging on a loader.
-      .catch((e) => { setFetchErr(String((e as Error).message ?? e)); setS(DEFAULT_SETTINGS) })
-  }, [])
+      // error but still hand the admin a readable form instead of hanging on a loader.
+      .catch((e) => { setFetchErr(String((e as Error).message ?? e)); setS(DEFAULT_SETTINGS); setLoadFailed(true) })
+  }
+  useEffect(load, [])
 
   if (!s) return <Loader label={tl(lang, 'loading')} />
 
@@ -66,10 +74,20 @@ export default function TrafficSettings() {
     const n = Number(raw)
     setS({ ...s, [k]: Number.isFinite(n) ? n : NaN })
     setSaved(false)
+    // A deliberate edit means the admin is looking at these values on purpose — the risk
+    // this guards against (saving untouched, never-loaded defaults by accident) no longer
+    // applies once they've typed something themselves.
+    setLoadFailed(false)
   }
 
   const save = () => {
     setSaveErrs([]); setSaved(false)
+    if (loadFailed) {
+      setSaveErrs([lang === 'he'
+        ? 'הספים הנוכחיים לא נטענו — שמירה עכשיו הייתה מחליפה אותם בברירת המחדל. טענו מחדש או ערכו ערך כדי להמשיך.'
+        : 'The current thresholds failed to load — saving now would overwrite them with defaults. Reload or edit a value to continue.'])
+      return
+    }
     const errs = validate(s, lang)
     if (errs.length) { setSaveErrs(errs); return }
     setSaving(true)
@@ -87,7 +105,12 @@ export default function TrafficSettings() {
           <h1 className="page-title">🚦 {tl(lang, 'settings_title')}</h1>
         </div>
       </div>
-      {fetchErr && <div className="alert">⚠ {fetchErr}</div>}
+      {loadFailed && fetchErr && (
+        <div className="alert">
+          ⚠ {fetchErr} — {lang === 'he' ? 'מוצגת ברירת מחדל; לא ניתן לשמור עד שהטעינה תצליח.' : 'showing defaults; saving is blocked until the load succeeds.'}
+          <Button variant="ghost" type="button" onClick={load}>{lang === 'he' ? 'טען שוב' : 'Retry'}</Button>
+        </div>
+      )}
       {saveErrs.length > 0 && (
         <div className="alert">⚠ <ul className="tl-settings-errs">{saveErrs.map((e) => <li key={e}>{e}</li>)}</ul></div>
       )}
@@ -115,7 +138,7 @@ export default function TrafficSettings() {
         ))}
       </div>
 
-      <Button variant="primary" type="button" disabled={saving} style={{ marginTop: 14 }} onClick={save}>
+      <Button variant="primary" type="button" disabled={saving || loadFailed} style={{ marginTop: 14 }} onClick={save}>
         {tl(lang, 'save')}
       </Button>
     </div>
