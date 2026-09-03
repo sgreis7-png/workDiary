@@ -12,6 +12,7 @@ import { PERM_AREAS, resolvePerm, type PermArea, type PermLevel } from './perms'
 
 const SQL = readFileSync('supabase/migrations/0045_enforce_perm_areas.sql', 'utf8')
 const SQL61 = readFileSync('supabase/migrations/0061_safety_forms.sql', 'utf8')
+const SQL64 = readFileSync('supabase/migrations/0064_traffic_light_schema.sql', 'utf8')
 
 /** The seeded rows for an ordinary member: the 0045 block plus later role-keyed seeds. */
 function seededDefaults(): Record<string, PermLevel> {
@@ -25,6 +26,9 @@ function seededDefaults(): Record<string, PermLevel> {
   }
   // migrations after 0050 seed with (role, area, level); take the member rows
   for (const [, area, level] of SQL61.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
+    out[area] = level as PermLevel
+  }
+  for (const [, area, level] of SQL64.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
     out[area] = level as PermLevel
   }
   return out
@@ -61,6 +65,14 @@ describe('perm_defaults mirrors MEMBER_DEFAULTS', () => {
     const m = [...SQL61.matchAll(/\('manager',\s*'safety',\s*'(none|view|edit)'\)/g)]
     expect(m.length).toBe(1)
     expect(m[0][1]).toBe(resolvePerm('manager', {}, 'safety'))
+  })
+
+  it('seeds manager rows for the traffic-light areas that match MANAGER_DEFAULTS', () => {
+    for (const area of ['traffic_light', 'deliveries'] as PermArea[]) {
+      const m = [...SQL64.matchAll(new RegExp(`\\('manager',\\s*'${area}',\\s*'(none|view|edit)'\\)`, 'g'))]
+      expect(m.length, area).toBe(1)
+      expect(m[0][1], area).toBe(resolvePerm('manager', {}, area))
+    }
   })
 })
 
