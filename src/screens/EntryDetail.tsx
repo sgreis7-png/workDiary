@@ -13,6 +13,9 @@ import type { Entry, FieldDef } from '../data'
 import { COOPS_KEY, MISSING_KEY, bdActive, coopLabel, defaultCoop, filledMissing, parseCoops, parseMissing, reasonLabel, taskLabel } from '../lib/reportTables'
 import type { CoopReport } from '../lib/reportTables'
 import { CoopReports } from '../components/ReportTables'
+import { Section } from '../components/Section'
+import { CREW_KEY, filledCrew, parseCrew } from '../lib/crewRows'
+import { tl } from '../traffic/i18n'
 
 export default function EntryDetail() {
   const { id } = useParams()
@@ -165,6 +168,13 @@ export default function EntryDetail() {
               )}
             </motion.div>
           ))}
+
+          {filledCrew(parseCrew(entry.values[CREW_KEY])).length > 0 && (
+            <Section id="crew" icon="👷" title={tl(lang, 'form_crew_section')}>
+              <table className="table m-cards"><thead><tr><th>{tl(lang, 'form_crew_contractor')}</th><th>{tl(lang, 'form_crew_workers')}</th><th>{tl(lang, 'form_crew_hours')}</th></tr></thead>
+                <tbody>{filledCrew(parseCrew(entry.values[CREW_KEY])).map((r, i) => <tr key={i}><td>{r.contractor}</td><td>{r.workers}</td><td>{r.hours}</td></tr>)}</tbody></table>
+            </Section>
+          )}
 
           {missing.length > 0 && (
             <motion.div variants={riseIn}>

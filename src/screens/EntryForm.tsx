@@ -19,6 +19,10 @@ import { COOPS_KEY, MISSING_KEY, defaultCoop, parseCoops, parseMissing } from '.
 import type { CoopReport, MissingRow } from '../lib/reportTables'
 import { CoopReports, MissingTable } from '../components/ReportTables'
 import { notifyEntryEdited } from '../lib/notifyNewRecord'
+import { ARRIVED_KEY, CREW_KEY, ISSUE_BLOCKING_KEY, parseArrived, parseCrew, type CrewRow } from '../lib/crewRows'
+import { CrewTable } from '../components/CrewTable'
+import { fetchContractors, fetchDeliveries, type Delivery } from '../traffic/api'
+import { tl } from '../traffic/i18n'
 
 // new photo (file) or an existing one (storage path)
 interface Photo { url: string; file?: File; path?: string }
@@ -28,7 +32,7 @@ export default function EntryForm() {
   const nav = useNavigate()
   const { id } = useParams()           // present => edit mode
   const editing = Boolean(id)
-  const { fieldDefs, projects } = useStore()
+  const { fieldDefs, projects, templateFor } = useStore()
   const { user, isAdmin } = useAuth()
   const defs = fieldDefs.filter((f) => f.active).sort((a, b) => a.sort_order - b.sort_order)
   const [project, setProject] = useState('')
@@ -36,7 +40,7 @@ export default function EntryForm() {
     editing ? {} : {
       [MALFUNCTION_DEPT_KEY]: deptLabel('none', lang),
       // seed one coop with the standard task list so it is stored even if untouched
-      [COOPS_KEY]: JSON.stringify([defaultCoop(lang)]),
+      [COOPS_KEY]: JSON.stringify([defaultCoop(lang, 1, templateFor(projects.find((p) => p.id === project)?.project_type))]),
     },
   )
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -56,6 +60,16 @@ export default function EntryForm() {
   const [savePrefs, setSavePrefs] = useState(false)
   // safety incident: checkbox opens the description field; unchecking clears it
   const [incidentOpen, setIncidentOpen] = useState(false)
+
+  const [contractorNames, setContractorNames] = useState<string[]>([])
+  const [pendingDeliveries, setPendingDeliveries] = useState<Delivery[]>([])
+  useEffect(() => {
+    if (!project) return
+    let alive = true
+    fetchContractors(project).then((c) => alive && setContractorNames(c.filter((x) => x.active).map((x) => x.name))).catch(() => {})
+    fetchDeliveries(project).then((d) => alive && setPendingDeliveries(d.filter((x) => x.status !== 'on_site'))).catch(() => {})
+    return () => { alive = false }
+  }, [project])
 
   // sync the checkbox with loaded/restored/copied values (edit mode, drafts)
   useEffect(() => {
@@ -153,6 +167,11 @@ export default function EntryForm() {
   const missingRows = parseMissing(values[MISSING_KEY])
   const setCoops = (c: CoopReport[]) => set(COOPS_KEY, JSON.stringify(c))
   const setMissing = (rows: MissingRow[]) => set(MISSING_KEY, JSON.stringify(rows))
+  const crewRows = parseCrew(values[CREW_KEY])
+  const setCrew = (rows: CrewRow[]) => set(CREW_KEY, JSON.stringify(rows))
+  const arrived = parseArrived(values[ARRIVED_KEY])
+  const toggleArrived = (id: string) =>
+    set(ARRIVED_KEY, JSON.stringify(arrived.includes(id) ? arrived.filter((x) => x !== id) : [...arrived, id]))
 
   // compressed at ingestion so the draft, the offline queue and the upload all
   // carry the small file
@@ -180,6 +199,9 @@ export default function EntryForm() {
     // Malfunction description is required only when a real department is selected.
     if (deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && !(values[MALFUNCTION_TEXT_KEY] ?? '').trim()) {
       errs.push(MALFUNCTION_TEXT_KEY)
+    }
+    if (deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && !(values[ISSUE_BLOCKING_KEY] ?? '').trim()) {
+      errs.push(ISSUE_BLOCKING_KEY)
     }
     // Safety training answer is mandatory; incident description is required
     // once the incident checkbox is ticked.
@@ -345,6 +367,43 @@ export default function EntryForm() {
           })}
         </motion.div>
 
+        <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{tl(lang, 'form_crew_section')}</motion.div>
+        <motion.div variants={riseIn}>
+          <CrewTable rows={crewRows} onChange={setCrew} contractors={contractorNames} />
+        </motion.div>
+
+        {deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && (
+          <motion.div variants={riseIn} className="form-grid" style={{ marginTop: 14 }}>
+            <div>
+              <Field label={tl(lang, 'form_blocking_q')} hint={<span className="req">{t('required_field')}</span>}>
+                <select className="input" value={values[ISSUE_BLOCKING_KEY] ?? ''}
+                  style={errors.includes(ISSUE_BLOCKING_KEY) ? { borderColor: 'var(--clay)' } : undefined}
+                  onChange={(e) => set(ISSUE_BLOCKING_KEY, e.target.value)}>
+                  <option value="">—</option>
+                  <option value={tl(lang, 'form_yes')}>{tl(lang, 'form_yes')}</option>
+                  <option value={tl(lang, 'form_no')}>{tl(lang, 'form_no')}</option>
+                </select>
+              </Field>
+            </div>
+          </motion.div>
+        )}
+
+        {pendingDeliveries.length > 0 && (
+          <>
+            <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{tl(lang, 'form_arrived_section')}</motion.div>
+            <motion.div variants={riseIn} className="arrived">
+              <div className="hint">{tl(lang, 'form_arrived_hint')}</div>
+              {pendingDeliveries.map((d) => (
+                <label key={d.id} className="arrived__item">
+                  <input type="checkbox" checked={arrived.includes(d.id)} onChange={() => toggleArrived(d.id)} />
+                  <span>{d.item}</span>
+                  <span className="mono">{d.need_date}</span>
+                </label>
+              ))}
+            </motion.div>
+          </>
+        )}
+
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('safety_section')}</motion.div>
         <motion.div variants={riseIn} className="form-grid">
           <div>
@@ -389,7 +448,7 @@ export default function EntryForm() {
 
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('progress_report')}</motion.div>
         <motion.div variants={riseIn}>
-          <CoopReports coops={coops} onChange={setCoops} />
+          <CoopReports coops={coops} onChange={setCoops} template={templateFor(projects.find((p) => p.id === project)?.project_type)} />
         </motion.div>
 
         <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{t('missing_material')}</motion.div>
