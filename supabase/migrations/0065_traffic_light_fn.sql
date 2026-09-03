@@ -346,7 +346,10 @@ declare
   res jsonb := '[]'::jsonb;
   p projects%rowtype;
 begin
-  if not (current_user in ('postgres', 'supabase_admin')
+  -- session_user, not current_user: inside a SECURITY DEFINER function current_user is
+  -- the owner (postgres) for every caller, so it can never identify who is asking.
+  -- pg_cron runs as the postgres session; the service key sets auth.role() to service_role.
+  if not (session_user in ('postgres', 'supabase_admin')
           or coalesce(auth.role(), '') = 'service_role'
           or can_view('traffic_light')) then
     raise exception 'forbidden' using errcode = '42501';
@@ -389,7 +392,8 @@ declare
   axis_names text[] := array['time', 'supply', 'crew', 'issues'];
   a text; ax_json jsonb; t_title text;
 begin
-  if not (current_user in ('postgres', 'supabase_admin')
+  -- session_user, not current_user (see traffic_light()): security definer hides the caller.
+  if not (session_user in ('postgres', 'supabase_admin')
           or coalesce(auth.role(), '') = 'service_role') then return 0; end if;
   p_payload := traffic_light(null);
   insert into traffic_light_snapshots (payload) values (p_payload);
@@ -425,10 +429,10 @@ begin
          '/traffic'
     from allowed_emails ae
    where ae.active and ae.role in ('admin', 'manager')
-     and not exists (select 1 from notifications n
-                      where n.recipient_email = lower(ae.email)
-                        and n.link = '/traffic'
-                        and n.created_at > now() - interval '20 hours');
+     and not exists (select 1 from notifications nt
+                      where nt.recipient_email = lower(ae.email)
+                        and nt.link = '/traffic'
+                        and nt.created_at > now() - interval '20 hours');
   return n;
 end $$;
 revoke all on function traffic_light_weekly() from public;
