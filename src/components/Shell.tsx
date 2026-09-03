@@ -241,6 +241,10 @@ export function Shell() {
               label: t('nav_section_projects'),
               items: [
                 ...(can('traffic_light') ? [{ to: '/traffic', icon: '🚦', label: tl(lang, 'nav_traffic') }] : []),
+                // Purchasing holds only `deliveries`, never `traffic_light` — this is their
+                // way into the module; someone with the full board reaches the same table
+                // per-project from there instead, so the two links don't duplicate for them.
+                ...(can('deliveries') && !can('traffic_light') ? [{ to: '/traffic/pick/deliveries', icon: '📦', label: tl(lang, 'sup_title') }] : []),
                 ...(can('control_center') ? [{ to: '/control', icon: '◈', label: t('nav_control_center') }] : []),
                 ...(can('projects') ? [{ to: '/projects', icon: '◆', label: t('nav_projects') }] : []),
                 ...(can('gantt') ? [{ to: '/gantt', icon: '▬', label: t('nav_gantt') }] : []),

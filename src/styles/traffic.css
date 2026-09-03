@@ -105,6 +105,24 @@
 .tl-table tbody tr:last-child td { border-bottom: none; }
 .tl-table tr.is-critical td:first-child { font-weight: 800; }
 .tl-table .mono { font-family: var(--font-mono); font-size: 12px; direction: ltr; text-align: end; }
+.tl-table input.input, .tl-table select.input, .tl-table textarea.input { width: 100%; }
+
+/* The row that needs someone's attention today — an item needed soon that's still not
+   ordered, an issue that blocks work or repeats — gets a wash and an inline-start accent
+   in the same token every other "trouble" surface in this module already uses (`--clay`),
+   so it reads as this module's language rather than a new alarm colour. Quiet rows stay
+   exactly as plain as the table around them; nothing here shouts. */
+.tl-table tr.is-critical { background: color-mix(in srgb, var(--clay) 6%, transparent); }
+.tl-table tr.is-critical td:first-child { border-inline-start: 3px solid var(--clay); padding-inline-start: 9px; }
+@media (max-width: 820px) {
+  .tl-table.m-cards tr.is-critical { border-inline-start: 3px solid var(--clay); background: color-mix(in srgb, var(--clay) 6%, var(--paper)); }
+  .tl-table.m-cards tr.is-critical td:first-child { padding-inline-start: 0; border-inline-start: none; }
+}
+
+/* Row-level "close this issue" — a one-field note typed in place of a button, not a
+   blocking window.prompt(). Sits inside the last cell, same height as the buttons around it. */
+.tl-close-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+.tl-close-form .input { min-width: 140px; }
 
 /* the crew mini bar-chart: four weeks, one bar per reported day. A contractor with no
    reported days at all gets a flat dashed baseline instead of an empty box, so "nothing
