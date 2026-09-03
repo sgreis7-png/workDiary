@@ -13,6 +13,8 @@ import { GATES, GATE_ORDER } from './defects/model'
 import { buildCoopReportHtml } from './defects/report'
 import type { Coop, CoopBundle, CoopResponsibility, Defect } from './defects/api'
 import type { AppUser } from './data'
+import { TrafficDot } from './components/TrafficDot'
+import './styles/traffic.css'
 
 const coop: Coop = {
   id: 'c1', project_id: 'p1', name: 'לול 1', coop_type: 'broiler', farm_coop_count: 4,
@@ -78,6 +80,66 @@ function Preview() {
           ))}
           {section('s-dlog', 'DefectLogTab', (
             <DefectLogTab defects={defects} defs={GATES} users={users} photos={[]} onAdd={noop} onPatch={noop} onRemove={noop} />
+          ))}
+          {section('s-tl-board', 'TrafficBoard: row grid + header', (
+            <div className="tl-board">
+              <div className="tl-head" aria-hidden>
+                <span /><span>פרויקט</span><span>זמן · אספ · צוו · בלת&quot;מ</span>
+                <span>יעד</span><span>פעולה</span><span>עדכון</span>
+              </div>
+              {[
+                { color: 'red' as const, name: 'כפר יובל', manager: 'דני' },
+                { color: 'amber' as const, name: 'מעלה גמלא', manager: 'רונית' },
+                { color: 'gray' as const, name: 'שדה אליהו', manager: 'עומר' },
+              ].map((p) => (
+                <div key={p.name} className={`tl-row tl-row--${p.color}`}>
+                  <TrafficDot color={p.color} size="lg" />
+                  <div>
+                    <div className="tl-row__name">{p.name}</div>
+                    <div className="tl-row__manager">{p.manager}</div>
+                  </div>
+                  <div className="tl-axes">
+                    {(['time', 'supply', 'crew', 'issues'] as const).map((a) => (
+                      <span key={a}><TrafficDot color={p.color === 'gray' ? 'gray' : 'amber'} />{a}</span>
+                    ))}
+                  </div>
+                  <div className="tl-delta tl-delta--bad">+5</div>
+                  <div className="tl-action">יש לפנות לקבלן לגבי כוח אדם חסר</div>
+                  <div className="tl-last">02/09</div>
+                </div>
+              ))}
+            </div>
+          ))}
+          {section('s-tl-project', 'TrafficProject: drill-down block stack', (
+            <div className="tl-blocks">
+              {(['red', 'amber', 'green'] as const).map((c, i) => (
+                <section key={c} className={`tl-block tl-block--${c}`}>
+                  <div className="tl-block__head">
+                    <TrafficDot color={c} size="lg" />
+                    <div className="tl-block__title">{['זמן', 'אספקות', 'צוות'][i]}</div>
+                    <button className="btn btn--ghost">☑ צור משימה</button>
+                  </div>
+                  <div className="tl-block__reason">דוגמת סיבה קצרה להדגמת פריסת הבלוק ברוחב טלפון.</div>
+                  <table className="tl-table m-cards">
+                    <thead><tr><th>שם</th><th>ת. יעד</th><th>סטטוס</th><th /></tr></thead>
+                    <tbody>
+                      <tr className="is-critical">
+                        <td data-label="שם">מוט פלדה ★</td>
+                        <td className="mono" data-label="ת. יעד">10/09</td>
+                        <td data-label="סטטוס">לא הוזמן</td>
+                        <td data-label="צבע"><TrafficDot color="red" /></td>
+                      </tr>
+                      <tr>
+                        <td data-label="שם">בטון</td>
+                        <td className="mono" data-label="ת. יעד">15/09</td>
+                        <td data-label="סטטוס">הוזמן</td>
+                        <td data-label="צבע"><TrafficDot color="green" /></td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </section>
+              ))}
+            </div>
           ))}
           {section('s-report', 'Report preview', (
             <div className="report-frame">
