@@ -20,12 +20,25 @@ language sql immutable as $$
   select coalesce((select c from unnest(p_colors) c order by tl_rank(c) desc limit 1), 'na');
 $$;
 
+-- A values key the client stored as a JSON string; malformed content degrades to an
+-- empty array rather than aborting the whole report.
+create or replace function tl_json_array(p jsonb) returns jsonb
+language plpgsql immutable as $$
+begin
+  if p is null then return '[]'::jsonb; end if;
+  if jsonb_typeof(p) = 'array' then return p; end if;
+  if jsonb_typeof(p) = 'string' then return (p #>> '{}')::jsonb; end if;
+  return '[]'::jsonb;
+exception when others then
+  return '[]'::jsonb;
+end $$;
+
 -- ---------- gray: no diary in the last N work days, or stale / missing gantt ----------
 create or replace function tl_gray(p projects, s traffic_light_settings, today date) returns jsonb
 language plpgsql stable set search_path = public as $$
 declare
   d date := today - 1;
-  found int := 0;
+  n_workdays int := 0;
   guard int := 0;
   has_entry boolean := false;
   last_entry date;
@@ -33,10 +46,11 @@ declare
   age int;
 begin
   select max(e.work_date) into last_entry from entries e where e.project_id = p.id;
-  -- walk back over the project's work days (default Sun-Fri) until N are collected
-  while found < s.gray_missing_workdays and guard < 60 loop
+  -- walk back over the project's work days (default Sun-Fri) until N are collected;
+  -- today is checked separately below, so the window is today plus the N preceding work days
+  while n_workdays < s.gray_missing_workdays and guard < 60 loop
     if extract(dow from d)::int = any (coalesce(p.work_days, '{0,1,2,3,4,5}'::int[])) then
-      found := found + 1;
+      n_workdays := n_workdays + 1;
       if exists (select 1 from entries e where e.project_id = p.id and e.work_date = d) then has_entry := true; end if;
     end if;
     d := d - 1; guard := guard + 1;
@@ -116,9 +130,7 @@ begin
 
     -- diary pct: rows whose task maps to this template row (direct name or legacy map)
     select avg((r ->> 'pct')::numeric) into cat_pct
-      from jsonb_array_elements(case when jsonb_typeof(latest -> 'progress_coops') = 'string'
-                                     then (latest ->> 'progress_coops')::jsonb
-                                     else coalesce(latest -> 'progress_coops', '[]'::jsonb) end) c
+      from jsonb_array_elements(tl_json_array(latest -> 'progress_coops')) c
       cross join lateral jsonb_array_elements(coalesce(c -> 'rows', '[]'::jsonb)) r
      where tl_norm(r ->> 'task') in (tl_norm(t.name_he), tl_norm(t.name_en))
         or exists (select 1 from wbs_legacy_names ln
@@ -221,9 +233,7 @@ begin
       select e.work_date,
              coalesce(sum((r ->> 'workers')::numeric), 0) as workers
         from entries e
-        left join lateral jsonb_array_elements(
-          case when jsonb_typeof(e.values -> 'crew_rows') = 'string' then (e.values ->> 'crew_rows')::jsonb
-               else coalesce(e.values -> 'crew_rows', '[]'::jsonb) end) r
+        left join lateral jsonb_array_elements(tl_json_array(e.values -> 'crew_rows')) r
           on tl_norm(r ->> 'contractor') = tl_norm(c.name)
        where e.project_id = p.id and e.work_date > today - 28 and e.work_date <= today
        group by e.work_date
@@ -336,7 +346,9 @@ declare
   res jsonb := '[]'::jsonb;
   p projects%rowtype;
 begin
-  if coalesce(auth.role(), 'postgres') not in ('service_role', 'postgres') and not can_view('traffic_light') then
+  if not (current_user in ('postgres', 'supabase_admin')
+          or coalesce(auth.role(), '') = 'service_role'
+          or can_view('traffic_light')) then
     raise exception 'forbidden' using errcode = '42501';
   end if;
   select * into s from traffic_light_settings where id = 1;
@@ -352,6 +364,8 @@ grant execute on function traffic_light(uuid) to authenticated;
 revoke all on function tl_norm(text) from public;  grant execute on function tl_norm(text) to authenticated;
 revoke all on function tl_rank(text) from public;  grant execute on function tl_rank(text) to authenticated;
 revoke all on function tl_worst(text[]) from public; grant execute on function tl_worst(text[]) to authenticated;
+revoke all on function tl_json_array(jsonb) from public;
+revoke execute on function tl_json_array(jsonb) from anon, authenticated;
 revoke all on function tl_gray(projects, traffic_light_settings, date) from public;
 revoke execute on function tl_gray(projects, traffic_light_settings, date) from anon, authenticated;
 revoke all on function tl_time(projects, traffic_light_settings, date) from public;
@@ -375,7 +389,8 @@ declare
   axis_names text[] := array['time', 'supply', 'crew', 'issues'];
   a text; ax_json jsonb; t_title text;
 begin
-  if coalesce(auth.role(), 'postgres') not in ('service_role', 'postgres') then return 0; end if;
+  if not (current_user in ('postgres', 'supabase_admin')
+          or coalesce(auth.role(), '') = 'service_role') then return 0; end if;
   p_payload := traffic_light(null);
   insert into traffic_light_snapshots (payload) values (p_payload);
 
@@ -383,8 +398,8 @@ begin
     -- gray → one task on axis 'gray'
     if pr ->> 'color' = 'gray' then
       if not exists (select 1 from work_tasks w where w.project_id = (pr ->> 'project_id')::uuid and w.source = 'traffic_light' and w.axis = 'gray' and w.status = 'open') then
-        insert into work_tasks (title, project_id, source, axis, created_by)
-        values ('רמזור · אפור · ' || coalesce(pr ->> 'gray_reason', ''), (pr ->> 'project_id')::uuid, 'traffic_light', 'gray', 'system');
+        insert into work_tasks (title, project_id, source, axis, status, created_by)
+        values ('רמזור · אפור · ' || coalesce(pr ->> 'gray_reason', ''), (pr ->> 'project_id')::uuid, 'traffic_light', 'gray', 'open', 'system');
         n := n + 1;
       end if;
     end if;
@@ -395,8 +410,8 @@ begin
           when coalesce((ax_json ->> 'missing_data')::boolean, false) then 'להשלים נתונים: ' || case a when 'crew' then 'קבלנים והיקף מוסכם' when 'supply' then 'רשימת אספקות' else a end
           else 'רמזור · ' || case a when 'time' then 'זמן' when 'supply' then 'הספקות' when 'crew' then 'כוח אדם' else 'בלת"מ' end || ' · ' || left(coalesce(ax_json ->> 'reason', ''), 180) end;
         if not exists (select 1 from work_tasks w where w.project_id = (pr ->> 'project_id')::uuid and w.source = 'traffic_light' and w.axis = a and w.status = 'open') then
-          insert into work_tasks (title, project_id, source, axis, created_by)
-          values (t_title, (pr ->> 'project_id')::uuid, 'traffic_light', a, 'system');
+          insert into work_tasks (title, project_id, source, axis, status, created_by)
+          values (t_title, (pr ->> 'project_id')::uuid, 'traffic_light', a, 'open', 'system');
           n := n + 1;
         end if;
       end if;
@@ -409,7 +424,11 @@ begin
          (select count(*) from jsonb_array_elements(p_payload) x where x ->> 'color' = 'gray') || ' אפורים · ' || n || ' משימות חדשות',
          '/traffic'
     from allowed_emails ae
-   where ae.active and ae.role in ('admin', 'manager');
+   where ae.active and ae.role in ('admin', 'manager')
+     and not exists (select 1 from notifications n
+                      where n.recipient_email = lower(ae.email)
+                        and n.link = '/traffic'
+                        and n.created_at > now() - interval '20 hours');
   return n;
 end $$;
 revoke all on function traffic_light_weekly() from public;
