@@ -1,12 +1,12 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { TrafficDot } from '../../components/TrafficDot'
-import { useI18n } from '../../i18n'
+import { useI18n, type Lang } from '../../i18n'
 import { useStore } from '../../store'
 import { fetchTasks, type WorkTask } from '../../lib/tasks'
 import { fetchSnapshot, fetchTrafficLight } from '../../traffic/api'
-import type { AxisKey, ProjectLight } from '../../traffic/model'
+import type { AxisKey, Color, ProjectLight } from '../../traffic/model'
 import { axisLabel, deliveryStatusLabel, ownerLabel, tl } from '../../traffic/i18n'
 import { TaskDialog } from './TaskDialog'
 import '../../styles/traffic.css'
@@ -20,6 +20,35 @@ type Crew = { name: string; critical: boolean; agreed: number; actual: number; r
 type Iss = { id: string; seq: number; description: string; owner_kind: string; owner_email: string | null; due_date: string | null; days_open: number; blocking: boolean; systemic: boolean; color: ProjectLight['color'] }
 
 const d = (s: string | null | undefined) => (s ? new Date(s).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—')
+
+/** One axis (or the gray/reporting reason) as a colour-led card: dot + title + "make a task"
+ *  button, one sentence of why, then the evidence table the caller passes as children.
+ *  Hoisted to module scope — declaring this inside `TrafficProject`'s render body would hand
+ *  React a new component type on every render, unmounting and remounting every block (and
+ *  losing focus/state inside them) on each state change. */
+function AxisBlock({ axis, color, reason, lang, onTask, empty, children }: {
+  axis: AxisKey | 'gray'
+  color: Color
+  reason: string
+  lang: Lang
+  onTask: (axis: AxisKey | 'gray', title: string) => void
+  empty?: boolean
+  children?: ReactNode
+}) {
+  return (
+    <section className={`tl-block tl-block--${color}`}>
+      <div className="tl-block__head">
+        <TrafficDot color={color} size="lg" />
+        <div className="tl-block__title">{axisLabel(lang, axis)}</div>
+        <button className="btn btn--ghost" onClick={() => onTask(axis, reason)}>
+          ☑ {tl(lang, 'proj_task_btn')}
+        </button>
+      </div>
+      <div className="tl-block__reason">{reason}</div>
+      {empty ? <div className="tl-block__empty">{children}</div> : children}
+    </section>
+  )
+}
 
 /**
  * The 30-second view: what exactly is wrong with this one project, and who do I call.
@@ -47,7 +76,7 @@ export default function TrafficProject() {
     setP(null); setLoaded(false); setErr('')
     const load = snapId
       ? fetchSnapshot(snapId).then((s) => s.payload.find((x) => x.project_id === projectId) ?? null)
-      : fetchTrafficLight(projectId).then((r) => r.find((x) => x.project_id === projectId) ?? r[0] ?? null)
+      : fetchTrafficLight(projectId).then((r) => r.find((x) => x.project_id === projectId) ?? null)
     load
       .then((r) => { if (alive) { setP(r); setLoaded(true) } })
       // Migrations 0064/0065 may not be live yet, or the RPC may otherwise refuse — fail
@@ -70,22 +99,7 @@ export default function TrafficProject() {
   const crew = (p.axes.crew.evidence?.contractors ?? []) as Crew[]
   const iss = (p.axes.issues.evidence?.items ?? []) as Iss[]
 
-  const Block = ({ axis, empty, children }: { axis: AxisKey | 'gray'; empty?: boolean; children?: React.ReactNode }) => {
-    const a = axis === 'gray' ? { color: p.color, reason: p.gray_reason ?? '' } : p.axes[axis]
-    return (
-      <section className={`tl-block tl-block--${a.color}`}>
-        <div className="tl-block__head">
-          <TrafficDot color={a.color} size="lg" />
-          <div className="tl-block__title">{axisLabel(lang, axis)}</div>
-          <button className="btn btn--ghost" onClick={() => setDialog({ axis, title: a.reason })}>
-            ☑ {tl(lang, 'proj_task_btn')}
-          </button>
-        </div>
-        <div className="tl-block__reason">{a.reason}</div>
-        {empty ? <div className="tl-block__empty">{children}</div> : children}
-      </section>
-    )
-  }
+  const onTask = (axis: AxisKey | 'gray', title: string) => setDialog({ axis, title })
 
   return (
     <div className="page">
@@ -102,10 +116,12 @@ export default function TrafficProject() {
         </div>
       </div>
 
-      {p.color === 'gray' && p.gray_reason && <Block axis="gray" empty />}
+      {p.color === 'gray' && p.gray_reason && (
+        <AxisBlock axis="gray" color={p.color} reason={p.gray_reason} lang={lang} onTask={onTask} empty />
+      )}
 
       <div className="tl-blocks">
-        <Block axis="time" empty={cats.length === 0 && hasChart}>
+        <AxisBlock axis="time" color={p.axes.time.color} reason={p.axes.time.reason} lang={lang} onTask={onTask} empty={cats.length === 0 && hasChart}>
           {!hasChart && <div className="hint">{tl(lang, 'proj_no_chart')}</div>}
           {cats.length === 0 ? (
             hasChart && tl(lang, 'proj_tasks_empty')
@@ -132,9 +148,9 @@ export default function TrafficProject() {
             </table>
           )}
           {unmatched.length > 0 && <div className="alert">⚠ {tl(lang, 'proj_unmatched')}: {unmatched.join(', ')}</div>}
-        </Block>
+        </AxisBlock>
 
-        <Block axis="supply" empty={items.length === 0}>
+        <AxisBlock axis="supply" color={p.axes.supply.color} reason={p.axes.supply.reason} lang={lang} onTask={onTask} empty={items.length === 0}>
           {items.length === 0 ? tl(lang, 'proj_tasks_empty') : (
             <table className="tl-table m-cards">
               <thead>
@@ -155,11 +171,13 @@ export default function TrafficProject() {
             </table>
           )}
           <Link className="btn btn--ghost" to={`/traffic/${projectId}/deliveries`}>{tl(lang, 'proj_deliveries_link')} ›</Link>
-        </Block>
+        </AxisBlock>
 
-        <Block axis="client"><div className="hint">{tl(lang, 'proj_phase2')}</div></Block>
+        <AxisBlock axis="client" color={p.axes.client.color} reason={p.axes.client.reason} lang={lang} onTask={onTask}>
+          <div className="hint">{tl(lang, 'proj_phase2')}</div>
+        </AxisBlock>
 
-        <Block axis="crew" empty={crew.length === 0}>
+        <AxisBlock axis="crew" color={p.axes.crew.color} reason={p.axes.crew.reason} lang={lang} onTask={onTask} empty={crew.length === 0}>
           {crew.length === 0 ? tl(lang, 'proj_tasks_empty') : (
             <table className="tl-table m-cards">
               <thead>
@@ -198,9 +216,9 @@ export default function TrafficProject() {
               </tbody>
             </table>
           )}
-        </Block>
+        </AxisBlock>
 
-        <Block axis="issues" empty={iss.length === 0}>
+        <AxisBlock axis="issues" color={p.axes.issues.color} reason={p.axes.issues.reason} lang={lang} onTask={onTask} empty={iss.length === 0}>
           {iss.length === 0 ? tl(lang, 'proj_tasks_empty') : (
             <table className="tl-table m-cards">
               <thead>
@@ -221,7 +239,7 @@ export default function TrafficProject() {
             </table>
           )}
           <Link className="btn btn--ghost" to={`/traffic/${projectId}/issues`}>{tl(lang, 'proj_issues_link')} ›</Link>
-        </Block>
+        </AxisBlock>
 
         <section className="tl-block">
           <div className="tl-block__head"><div className="tl-block__title">☑ {tl(lang, 'proj_tasks_title')}</div></div>
