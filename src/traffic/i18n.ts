@@ -150,6 +150,13 @@ export const TL = {
   s_issue_block_resolve_days: { he: 'בלת"מ: פתרון לחסם בתוך (ימים)', en: 'Issues: blocker fix within (days)' },
   s_gray_missing_workdays: { he: 'אפור: ימי עבודה ללא יומן', en: 'Gray: work days without a diary' },
   s_gray_gantt_days:  { he: 'אפור: גאנט לא עודכן (ימים)', en: 'Gray: schedule not updated (days)' },
+  s_client_window_days: { he: 'לקוח: חלון התחייבויות (ימים)', en: 'Customer: commitments window (days)' },
+  settings_recipients:  { he: 'נמענים נוספים לדוח השבועי', en: 'Extra weekly-report recipients' },
+  settings_recipients_hint: { he: 'כתובות מופרדות בפסיק. אדמינים ומנהלים מקבלים אוטומטית.', en: 'Comma-separated. Admins and managers receive it automatically.' },
+  settings_last_mail:   { he: 'שליחה אחרונה', en: 'Last send' },
+  settings_mail_never:  { he: 'הדוח עדיין לא נשלח', en: 'The report has not been sent yet' },
+  settings_mail_failed: { he: 'השליחה האחרונה נכשלה', en: 'The last send failed' },
+  settings_mail_count:  { he: 'נמענים', en: 'recipients' },
 
   tasks_source_tl:    { he: 'רמזור', en: 'Traffic light' },
   tasks_close_pmo:    { he: 'סגירה על ידי PMO בלבד', en: 'Closed by the PMO only' },

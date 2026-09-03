@@ -36,6 +36,18 @@ export async function updateSettings(patch: Partial<Settings>): Promise<void> {
   if (!data || data.length === 0) throw new Error('אין הרשאה לעדכן ספים')
 }
 
+// ---------- weekly-report mail log ----------
+export interface MailLogRow {
+  requested_at: string; recipient_count: number | null; http_status: number | null; error: string | null
+}
+export async function fetchLastMailLog(): Promise<MailLogRow | null> {
+  const { data, error } = await supabase.from('report_mail_log')
+    .select('requested_at,recipient_count,http_status,error')
+    .order('requested_at', { ascending: false }).limit(1)
+  if (error) throw error
+  return (data?.[0] as MailLogRow) ?? null
+}
+
 // ---------- WBS templates ----------
 export async function fetchTemplates(): Promise<WbsTemplate[]> {
   const { data, error } = await supabase.from('wbs_templates').select('*').order('project_type').order('sort_order')

@@ -2,18 +2,31 @@ import { useEffect, useState } from 'react'
 import { Button, Field } from '../../components/ui'
 import { Loader } from '../../components/Loader'
 import { useI18n } from '../../i18n'
-import { fetchSettings, updateSettings } from '../../traffic/api'
+import { fetchLastMailLog, fetchSettings, updateSettings, type MailLogRow } from '../../traffic/api'
 import { DEFAULT_SETTINGS, type Settings } from '../../traffic/model'
 import { axisLabel, tl, type TLKey } from '../../traffic/i18n'
 
-/** One axis card's thresholds, in board order (time → supply → crew → issues → gray). */
-const GROUPS: { axis: 'time' | 'supply' | 'crew' | 'issues' | 'gray'; icon: string; keys: (keyof Settings)[] }[] = [
+/** `traffic_light_settings.extra_report_emails` (migration 0073) isn't part of the board's
+ *  `Settings` shape — nothing that colors a project reads it — so it's typed locally rather
+ *  than widening the shared model for one screen. */
+type SettingsForm = Settings & { extra_report_emails: string[] }
+
+/** One axis card's thresholds, in board order (time → supply → client → crew → issues → gray). */
+const GROUPS: { axis: 'time' | 'supply' | 'client' | 'crew' | 'issues' | 'gray'; icon: string; keys: (keyof Settings)[] }[] = [
   { axis: 'time', icon: '⏱', keys: ['time_amber_days', 'time_red_days', 'lookahead_days'] },
   { axis: 'supply', icon: '📦', keys: ['supply_red_window_days', 'supply_eta_margin_days'] },
+  { axis: 'client', icon: '🤝', keys: ['client_window_days'] },
   { axis: 'crew', icon: '👷', keys: ['crew_green_pct', 'crew_red_pct', 'crew_window_days'] },
   { axis: 'issues', icon: '⚠', keys: ['issue_open_days', 'issue_block_resolve_days'] },
   { axis: 'gray', icon: '📓', keys: ['gray_missing_workdays', 'gray_gantt_days'] },
 ]
+
+/** `text, text ,text,,` → `['text', 'text']`: trims, lowercases, drops anything without an
+ *  `@` (a half-typed address, a stray comma) rather than saving garbage into the recipients
+ *  column that the weekly-report function would otherwise try to mail. */
+function parseRecipients(raw: string): string[] {
+  return raw.split(',').map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@'))
+}
 
 /** Every value must be a whole, non-negative number; an inverted pair would make a color
  *  permanently unreachable, so those two relationships are checked before anything is sent. */
@@ -46,7 +59,7 @@ function validate(s: Settings, lang: 'he' | 'en'): string[] {
  */
 export default function TrafficSettings() {
   const { lang } = useI18n()
-  const [s, setS] = useState<Settings | null>(null)
+  const [s, setS] = useState<SettingsForm | null>(null)
   const [fetchErr, setFetchErr] = useState('')
   // True from the moment the load fails until either a reload succeeds or the admin edits
   // a value themselves. While it's true the form is showing DEFAULT_SETTINGS, not what's
@@ -57,14 +70,37 @@ export default function TrafficSettings() {
   const [saveErrs, setSaveErrs] = useState<string[]>([])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
+  // Free text as typed, kept separate from the parsed `extra_report_emails` array so a
+  // half-finished address (no `@` yet) or a trailing comma doesn't vanish out from under
+  // the admin's cursor on every keystroke — it's only normalized on load and after a save.
+  const [recipientsText, setRecipientsText] = useState('')
+
+  // Last-send status is read once, independently of the settings form: a failure here
+  // (log table missing, no permission) must not block the thresholds themselves from
+  // loading or saving, so it gets its own state rather than piggy-backing on `s`/`fetchErr`.
+  const [mailLog, setMailLog] = useState<MailLogRow | null | undefined>(undefined)
+  const [mailLogFailed, setMailLogFailed] = useState(false)
+  useEffect(() => {
+    fetchLastMailLog().then(setMailLog).catch(() => setMailLogFailed(true))
+  }, [])
 
   const load = () => {
     setFetchErr('')
     fetchSettings()
-      .then((r) => { setS(r); setLoadFailed(false) })
+      .then((r) => {
+        const withEmails = { ...r, extra_report_emails: (r as SettingsForm).extra_report_emails ?? [] }
+        setS(withEmails)
+        setRecipientsText(withEmails.extra_report_emails.join(', '))
+        setLoadFailed(false)
+      })
       // The runtime may not have the settings row yet (migration not applied) — show the
       // error but still hand the admin a readable form instead of hanging on a loader.
-      .catch((e) => { setFetchErr(String((e as Error).message ?? e)); setS(DEFAULT_SETTINGS); setLoadFailed(true) })
+      .catch((e) => {
+        setFetchErr(String((e as Error).message ?? e))
+        setS({ ...DEFAULT_SETTINGS, extra_report_emails: [] })
+        setRecipientsText('')
+        setLoadFailed(true)
+      })
   }
   useEffect(load, [])
 
@@ -90,12 +126,20 @@ export default function TrafficSettings() {
     }
     const errs = validate(s, lang)
     if (errs.length) { setSaveErrs(errs); return }
+    const patch: SettingsForm = { ...s, extra_report_emails: parseRecipients(recipientsText) }
     setSaving(true)
-    updateSettings(s)
-      .then(() => setSaved(true))
+    updateSettings(patch)
+      .then(() => { setSaved(true); setS(patch); setRecipientsText(patch.extra_report_emails.join(', ')) })
       .catch((e) => setSaveErrs([String((e as Error).message ?? e)]))
       .finally(() => setSaving(false))
   }
+
+  const mailDate = mailLog?.requested_at
+    ? new Date(mailLog.requested_at).toLocaleString(lang === 'he' ? 'he-IL' : 'en-GB', {
+        day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+      })
+    : ''
+  const mailOk = !!mailLog && mailLog.http_status != null && mailLog.http_status >= 200 && mailLog.http_status < 300
 
   return (
     <div className="page">
@@ -105,6 +149,21 @@ export default function TrafficSettings() {
           <h1 className="page-title">🚦 {tl(lang, 'settings_title')}</h1>
         </div>
       </div>
+
+      {!mailLogFailed && mailLog !== undefined && (
+        mailLog === null ? (
+          <div className="tl-hint--strong">✉ {tl(lang, 'settings_mail_never')}</div>
+        ) : mailOk ? (
+          <div className="alert alert--ok">
+            ✓ {tl(lang, 'settings_last_mail')}: <span dir="ltr">{mailDate}</span> · {mailLog.recipient_count ?? 0} {tl(lang, 'settings_mail_count')}
+          </div>
+        ) : (
+          <div className="alert">
+            ⚠ {tl(lang, 'settings_mail_failed')} ({mailLog.http_status ?? '—'}){mailLog.error ? `: ${mailLog.error}` : ''}
+          </div>
+        )
+      )}
+
       {loadFailed && fetchErr && (
         <div className="alert">
           ⚠ {fetchErr} — {lang === 'he' ? 'מוצגת ברירת מחדל; לא ניתן לשמור עד שהטעינה תצליח.' : 'showing defaults; saving is blocked until the load succeeds.'}
@@ -136,6 +195,17 @@ export default function TrafficSettings() {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="tl-block" style={{ marginTop: 14 }}>
+        <Field label={tl(lang, 'settings_recipients')}>
+          <input
+            className="input" type="text" dir="ltr"
+            value={recipientsText}
+            onChange={(e) => { setRecipientsText(e.target.value); setSaved(false); setLoadFailed(false) }}
+          />
+        </Field>
+        <div className="tl-hint">{tl(lang, 'settings_recipients_hint')}</div>
       </div>
 
       <Button variant="primary" type="button" disabled={saving || loadFailed} style={{ marginTop: 14 }} onClick={save}>
