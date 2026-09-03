@@ -15,6 +15,7 @@ import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/m
 import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
 import { st } from '../safety/i18n'
+import { tl } from '../traffic/i18n'
 import { GlobalDictation } from './GlobalDictation'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
@@ -239,6 +240,7 @@ export function Shell() {
               key: 'projects',
               label: t('nav_section_projects'),
               items: [
+                ...(can('traffic_light') ? [{ to: '/traffic', icon: '🚦', label: tl(lang, 'nav_traffic') }] : []),
                 ...(can('control_center') ? [{ to: '/control', icon: '◈', label: t('nav_control_center') }] : []),
                 ...(can('projects') ? [{ to: '/projects', icon: '◆', label: t('nav_projects') }] : []),
                 ...(can('gantt') ? [{ to: '/gantt', icon: '▬', label: t('nav_gantt') }] : []),

@@ -44,6 +44,10 @@ const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m)
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
 const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
 const SafetyTopicsAdmin = lazy(() => import('./safety/SafetyTopicsAdmin').then((m) => ({ default: m.SafetyTopicsAdmin })))
+// Traffic-light (רמזור) module. Only the board exists so far (task 10 of the SDD plan);
+// the project, deliveries, issues and admin screens land in later tasks and are routed
+// then — lazy-importing a file that doesn't exist yet would break the build today.
+const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -63,6 +67,14 @@ function RequirePerm({ area, edit, children }: { area: PermArea; edit?: boolean;
   const level = perm(area)
   const ok = edit ? level === 'edit' : level !== 'none'
   return ok ? children : <Navigate to="/" replace />
+}
+/** Either-area gate: purchasing users hold only `deliveries`, not `traffic_light`. Exported
+ *  so the deliveries/issues screens (a later task) can import it once they exist. */
+export function RequireAnyPerm({ areas, children }: { areas: PermArea[]; children: ReactElement }) {
+  const { perm, permsReady } = usePerms()
+  const { loading } = useAuth()
+  if (loading || !permsReady) return <Loader full label="טוען…" />
+  return areas.some((a) => perm(a) !== 'none') ? children : <Navigate to="/" replace />
 }
 /**
  * Index: the first thing this user is actually allowed to see.
@@ -114,6 +126,11 @@ export default function App() {
         <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="control" element={<RequirePerm area="control_center"><ControlCenter /></RequirePerm>} />
+        {/* /traffic/:projectId, /traffic/:projectId/deliveries, /traffic/:projectId/issues,
+            /admin/wbs and /admin/traffic-settings land with the screens that back them
+            (later tasks in this SDD plan) — routing to a lazy import of a file that doesn't
+            exist yet would fail the build today. */}
+        <Route path="traffic" element={<RequirePerm area="traffic_light"><TrafficBoard /></RequirePerm>} />
         <Route path="safety" element={<RequirePerm area="safety"><SafetyList /></RequirePerm>} />
         <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
