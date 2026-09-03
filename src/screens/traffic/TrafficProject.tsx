@@ -8,7 +8,7 @@ import { useStore } from '../../store'
 import { fetchTasks, type WorkTask } from '../../lib/tasks'
 import { fetchSnapshot, fetchTrafficLight } from '../../traffic/api'
 import type { AxisKey, Color, ProjectLight } from '../../traffic/model'
-import { axisLabel, deliveryStatusLabel, ownerLabel, tl } from '../../traffic/i18n'
+import { axisLabel, commitmentKindLabel, commitmentStatusLabel, deliveryStatusLabel, ownerLabel, tl } from '../../traffic/i18n'
 import { TaskDialog } from './TaskDialog'
 import '../../styles/traffic.css'
 
@@ -19,6 +19,7 @@ type Cat = { name_he: string; name_en: string; critical: boolean; matched: boole
 type Item = { id: string; item: string; need_date: string; status: string; eta: string | null; gap_days: number | null; critical: boolean; color: ProjectLight['color'] }
 type Crew = { name: string; critical: boolean; agreed: number; actual: number; ratio: number; days: number; absences: number; series: { date: string; workers: number }[]; color: ProjectLight['color'] }
 type Iss = { id: string; seq: number; description: string; owner_kind: string; owner_email: string | null; due_date: string | null; days_open: number; blocking: boolean; systemic: boolean; color: ProjectLight['color'] }
+type Cust = { id: string; item: string; kind: string; due_date: string; status: string; confirmation_ref: string | null; blocking: boolean; days_late: number | null; notice_sent_on: string | null; notice_ref: string | null; color: ProjectLight['color'] }
 
 const d = (s: string | null | undefined) => (s ? new Date(s).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—')
 
@@ -104,6 +105,7 @@ export default function TrafficProject() {
   const items = (p.axes.supply.evidence?.items ?? []) as Item[]
   const crew = (p.axes.crew.evidence?.contractors ?? []) as Crew[]
   const iss = (p.axes.issues.evidence?.items ?? []) as Iss[]
+  const cust = (p.axes.client.evidence?.items ?? []) as Cust[]
 
   const onTask = (axis: AxisKey | 'gray', title: string) => setDialog({ axis, title })
 
@@ -184,8 +186,32 @@ export default function TrafficProject() {
           <Link className="btn btn--ghost" to={`/traffic/${projectId}/deliveries`}>{tl(lang, 'proj_deliveries_link')} ›</Link>
         </AxisBlock>
 
-        <AxisBlock axis="client" color={p.axes.client.color} reason={p.axes.client.reason} lang={lang} onTask={onTask} canTask={canTask}>
-          <div className="hint">{tl(lang, 'proj_phase2')}</div>
+        <AxisBlock axis="client" color={p.axes.client.color} reason={p.axes.client.reason} lang={lang} onTask={onTask} canTask={canTask} empty={cust.length === 0}>
+          {cust.length === 0 ? tl(lang, 'proj_tasks_empty') : (
+            <table className="tl-table m-cards">
+              <thead>
+                <tr>
+                  <th>{tl(lang, 'cust_col_item')}</th><th>{tl(lang, 'cust_col_kind')}</th><th>{tl(lang, 'cust_col_due')}</th>
+                  <th>{tl(lang, 'cust_col_status')}</th><th>{tl(lang, 'cust_days_late')}</th><th>{tl(lang, 'cust_col_blocking')}</th>
+                  <th>{tl(lang, 'cust_col_notice')}</th><th /></tr>
+              </thead>
+              <tbody>
+                {cust.map((c) => (
+                  <tr key={c.id}>
+                    <td data-label={tl(lang, 'cust_col_item')}>{c.item}</td>
+                    <td data-label={tl(lang, 'cust_col_kind')}>{commitmentKindLabel(lang, c.kind)}</td>
+                    <td className="mono" data-label={tl(lang, 'cust_col_due')}>{d(c.due_date)}</td>
+                    <td data-label={tl(lang, 'cust_col_status')}>{commitmentStatusLabel(lang, c.status)}</td>
+                    <td className="mono" data-label={tl(lang, 'cust_days_late')}>{c.days_late ?? '—'}</td>
+                    <td data-label={tl(lang, 'cust_col_blocking')}>{c.blocking ? '✓' : ''}</td>
+                    <td className="mono" data-label={tl(lang, 'cust_col_notice')}>{d(c.notice_sent_on)}</td>
+                    <td data-label={tl(lang, 'cat_col_color')}><TrafficDot color={c.color} /></td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          )}
+          <Link className="btn btn--ghost" to={`/traffic/${projectId}/customer`}>{tl(lang, 'cust_title')} ›</Link>
         </AxisBlock>
 
         <AxisBlock axis="crew" color={p.axes.crew.color} reason={p.axes.crew.reason} lang={lang} onTask={onTask} canTask={canTask} empty={crew.length === 0}>

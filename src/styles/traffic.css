@@ -142,6 +142,11 @@
 .tl-bars--empty { border-bottom: 1px dashed var(--line-strong); align-items: flex-end; }
 .tl-bars--empty i { background: none; border-top: 1px dashed var(--line-strong); flex: 1; height: 1px !important; min-height: 0; }
 
+/* The one line this whole screen exists to make impossible to miss: an overdue, blocking
+   commitment with no timely written notice. Same trouble token as `.is-critical` (`--clay`),
+   just spoken instead of only implied by the row wash. */
+.tl-notice-warn { color: var(--clay); font-weight: 700; margin-top: 2px; }
+
 .tl-block__empty { font-size: 13px; color: var(--ink-faint); padding: 6px 2px; }
 /* `.hint` itself is a shared, unstyled classname (see EntryForm.tsx) — scoped here so this
    screen's use of it doesn't change how it reads anywhere else. */

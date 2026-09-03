@@ -51,6 +51,7 @@ const TrafficProject = lazy(() => import('./screens/traffic/TrafficProject'))
 const Deliveries = lazy(() => import('./screens/traffic/Deliveries'))
 const DeliveriesPick = lazy(() => import('./screens/traffic/Deliveries').then((m) => ({ default: m.DeliveriesPick })))
 const Issues = lazy(() => import('./screens/traffic/Issues'))
+const Customer = lazy(() => import('./screens/traffic/Customer'))
 const WbsTemplates = lazy(() => import('./screens/traffic/WbsTemplates'))
 const TrafficSettings = lazy(() => import('./screens/traffic/TrafficSettings'))
 
@@ -136,6 +137,7 @@ export default function App() {
         <Route path="traffic/:projectId" element={<RequirePerm area="traffic_light"><TrafficProject /></RequirePerm>} />
         <Route path="traffic/:projectId/deliveries" element={<RequireAnyPerm areas={['traffic_light', 'deliveries']}><Deliveries /></RequireAnyPerm>} />
         <Route path="traffic/:projectId/issues" element={<RequirePerm area="traffic_light"><Issues /></RequirePerm>} />
+        <Route path="traffic/:projectId/customer" element={<RequirePerm area="traffic_light"><Customer /></RequirePerm>} />
         <Route path="safety" element={<RequirePerm area="safety"><SafetyList /></RequirePerm>} />
         <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
