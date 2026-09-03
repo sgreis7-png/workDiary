@@ -41,8 +41,12 @@ searchable record that looks professional when it reaches a client.
 - **Bilingual** — Hebrew (RTL) and English (LTR), live toggle.
 - **Installable PWA** — home-screen install, service-worker precache, auto-update.
 - **Traffic-light report (רמזור)** — managers/admins: one row per project, color = worst of
-  time / supplies / crew / issues (thresholds admin-editable), gray when the site stops
-  reporting; project drill-down with the evidence; weekly snapshot that opens tasks.
+  time / supplies / crew / customer commitments / issues (thresholds admin-editable), gray
+  when the site stops reporting; project drill-down with the evidence. The customer axis
+  tracks commitments a client owes (permits, access, plan approvals, payment milestones),
+  turning red only once one is overdue, blocking, and lacks a written notice on file. A
+  Sunday-morning job snapshots the board, opens tasks for anything non-green, and emails
+  admins/managers (plus configured extras) the same report; failures are logged, not silent.
 
 ---
 
@@ -109,8 +113,11 @@ never downloads the full entries table.
 | `project_contractors` | contractors on a project with an agreed headcount, for the crew axis |
 | `project_deliveries` | ordered items with a need date and status, for the supply axis |
 | `issues` | issues register (מרשם בלת"מ) fed by diary malfunction fields |
+| `customer_commitments` | client-owed commitments (permits, access, plan approvals, payment
+  milestones) with due date, status, and a written-notice record, for the customer axis |
 | `traffic_light_settings` | admin-editable thresholds the `traffic_light()` function reads |
 | `traffic_light_snapshots` | weekly snapshot payloads shown in the board's history picker |
+| `report_mail_log` | one row per attempt to mail the weekly snapshot, with HTTP status/error |
 
 > **Pending migrations.** `0064_traffic_light_schema.sql` and `0065_traffic_light_fn.sql`
 > have not yet been applied to the Supabase project. Until they are, the traffic-light
