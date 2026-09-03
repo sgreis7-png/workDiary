@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { Loader } from '../../components/Loader'
 import { Button } from '../../components/ui'
@@ -45,12 +45,25 @@ export default function Customer() {
   // traffic-light editor, so a project manager's edit there would take on screen and then
   // vanish on reload. Don't offer that; show them read-only instead.
   const noticeEditable = canEdit('traffic_light')
-  const [rows, setRows] = useState<Commitment[] | null>(null)
-  const [err, setErr] = useState('')
+  // Rows and error are stored together with the project they belong to. Routing from one
+  // project to another reuses this component, so the previous project's rows have to stop
+  // being shown the moment the id changes — done by *reading* through the key here rather
+  // than resetting state inside the effect, which cascades an extra render (and is what
+  // react-hooks/set-state-in-effect flags).
+  const [loaded, setLoaded] = useState<{ pid: string; rows: Commitment[] | null; err: string }>({ pid: '', rows: null, err: '' })
+  const rows = loaded.pid === projectId ? loaded.rows : null
+  const err = loaded.pid === projectId ? loaded.err : ''
+  const setErr = useCallback((msg: string) => {
+    setLoaded((prev) => ({ pid: projectId, rows: prev.pid === projectId ? prev.rows : null, err: msg }))
+  }, [projectId])
   const today = new Date().toISOString().slice(0, 10)
 
-  const reload = () => fetchCommitments(projectId).then(setRows).catch((e) => setErr(String((e as Error).message ?? e)))
-  useEffect(() => { setRows(null); setErr(''); reload() }, [projectId])
+  // A failed reload keeps whatever rows are already on screen — the write that triggered it
+  // may well have landed — so only a first load leaves the screen with nothing to show.
+  const reload = useCallback(() => fetchCommitments(projectId)
+    .then((r) => setLoaded({ pid: projectId, rows: r, err: '' }))
+    .catch((e) => setErr(String((e as Error).message ?? e))), [projectId, setErr])
+  useEffect(() => { reload() }, [reload])
 
   // The database is the authority — a write RLS silently narrows still throws (upsert/delete
   // both select the row back and error when nothing came back), so any rejection surfaces as

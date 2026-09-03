@@ -48,7 +48,6 @@ export const TL = {
   proj_gantt_link:    { he: 'לוח הזמנים', en: 'Schedule' },
   proj_deliveries_link: { he: 'רשימת אספקות', en: 'Deliveries list' },
   proj_issues_link:   { he: 'מרשם בלת"מ', en: 'Issues register' },
-  proj_phase2:        { he: 'ציר הלקוח מוגדר בשלב ב׳', en: 'Customer axis arrives in phase 2' },
   proj_unmatched:     { he: 'קטגוריות שלא נמצאו בגאנט', en: 'Categories not found in the schedule' },
   proj_no_chart:      { he: 'אין גאנט פעיל', en: 'No active schedule' },
   proj_not_found:     { he: 'הפרויקט לא נמצא בדוח הרמזור', en: 'This project is not in the traffic-light report' },
@@ -165,7 +164,6 @@ export const TL = {
   tasks_close_pmo:    { he: 'סגירה על ידי PMO בלבד', en: 'Closed by the PMO only' },
   tasks_by_assignee:  { he: 'לפי אחראי', en: 'By assignee' },
 
-  nav_customer:        { he: 'התחייבויות לקוח', en: 'Customer commitments' },
   cust_title:          { he: 'התחייבויות לקוח', en: 'Customer commitments' },
   cust_add:            { he: '+ התחייבות', en: '+ Commitment' },
   cust_col_item:       { he: 'פריט', en: 'Item' },

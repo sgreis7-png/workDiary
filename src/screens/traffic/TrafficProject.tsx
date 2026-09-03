@@ -19,7 +19,7 @@ type Cat = { name_he: string; name_en: string; critical: boolean; matched: boole
 type Item = { id: string; item: string; need_date: string; status: string; eta: string | null; gap_days: number | null; critical: boolean; color: ProjectLight['color'] }
 type Crew = { name: string; critical: boolean; agreed: number; actual: number; ratio: number; days: number; absences: number; series: { date: string; workers: number }[]; color: ProjectLight['color'] }
 type Iss = { id: string; seq: number; description: string; owner_kind: string; owner_email: string | null; due_date: string | null; days_open: number; blocking: boolean; systemic: boolean; color: ProjectLight['color'] }
-type Cust = { id: string; item: string; kind: string; due_date: string; status: string; confirmation_ref: string | null; blocking: boolean; days_late: number | null; notice_sent_on: string | null; notice_ref: string | null; color: ProjectLight['color'] }
+type Cust = { id: string; item: string; kind: string; due_date: string; status: string; confirmation_ref: string | null; blocking: boolean; days_late: number; notice_sent_on: string | null; notice_ref: string | null; color: ProjectLight['color'] }
 
 const d = (s: string | null | undefined) => (s ? new Date(s).toLocaleDateString('he-IL', { day: '2-digit', month: '2-digit', year: '2-digit' }) : '—')
 
@@ -202,7 +202,7 @@ export default function TrafficProject() {
                     <td data-label={tl(lang, 'cust_col_kind')}>{commitmentKindLabel(lang, c.kind)}</td>
                     <td className="mono" data-label={tl(lang, 'cust_col_due')}>{d(c.due_date)}</td>
                     <td data-label={tl(lang, 'cust_col_status')}>{commitmentStatusLabel(lang, c.status)}</td>
-                    <td className="mono" data-label={tl(lang, 'cust_days_late')}>{c.days_late ?? '—'}</td>
+                    <td className="mono" data-label={tl(lang, 'cust_days_late')}>{c.days_late}</td>
                     <td data-label={tl(lang, 'cust_col_blocking')}>{c.blocking ? '✓' : ''}</td>
                     <td className="mono" data-label={tl(lang, 'cust_col_notice')}>{d(c.notice_sent_on)}</td>
                     <td data-label={tl(lang, 'cat_col_color')}><TrafficDot color={c.color} /></td>

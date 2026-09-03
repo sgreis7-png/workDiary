@@ -20,6 +20,8 @@ const SERVICE_ONLY: Record<string, string> = {
   traffic_light_weekly:
     'inserts notifications and work tasks; guards on session_user/service_role, not membership',
   report_mail_reconcile: 'cron-only; writes the mail audit log',
+  customer_commitments_guard:
+    'trigger-only; it decides who may write the customer-notice columns, so a direct call is a way around that',
 }
 
 function allSql(): string {

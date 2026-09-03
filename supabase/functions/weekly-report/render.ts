@@ -45,6 +45,9 @@ export interface TaskLike {
   due_date: string | null
   project_id: string | null
   axis: string | null
+  /** Joined in by index.ts. Null when the task's project was deleted (the FK is ON DELETE
+   *  SET NULL), which is the only case the row can carry no name. */
+  project_name?: string | null
 }
 
 export interface RenderWeeklyReportInput {
@@ -60,14 +63,21 @@ export interface RenderWeeklyReportResult {
 }
 
 /** In the spirit of src/lib/html.ts's escapeHtml, but this file must not import across
- * the browser/Deno boundary, so it keeps its own copy. Only `&`, `<`, `>` are escaped:
- * everything this renders quotes (project names, task titles, axis reasons) lands in
- * text nodes, never inside an HTML attribute, so `"` and `'` are inert here — and
- * Hebrew abbreviations like בלת"מ read correctly rather than as `&quot;`. */
+ * the browser/Deno boundary, so it keeps its own copy. For a *text node* only `&`, `<`, `>`
+ * matter, and leaving `"` alone is deliberate: Hebrew abbreviations like בלת"מ must read as
+ * themselves in the mail, not as `&quot;`. Anything that lands inside a quoted attribute
+ * needs `escAttr` instead — `title=` and `href=` below both interpolate. */
 function esc(s: string | null | undefined): string {
   return String(s ?? '').replace(/[&<>]/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]!
   ))
+}
+
+/** `esc` plus the quote characters, for a value interpolated inside an HTML attribute. A
+ * project name carrying a `"` would otherwise close the attribute early and let the rest of
+ * the name become markup — the same hole the `<script>` test guards in text. */
+function escAttr(s: string | null | undefined): string {
+  return esc(s).replace(/"/g, '&quot;').replace(/'/g, '&#39;')
 }
 
 const I = '#14181b'
@@ -83,7 +93,7 @@ function dot(color: Color): string {
   const style = color === 'na'
     ? `display:inline-block;width:12px;height:12px;border-radius:50%;border:2px solid ${hex};background:#fff;vertical-align:middle`
     : `display:inline-block;width:12px;height:12px;border-radius:50%;background:${hex};vertical-align:middle`
-  return `<span style="${style}" title="${esc(COLOR_LABEL[color])}"></span>`
+  return `<span style="${style}" title="${escAttr(COLOR_LABEL[color])}"></span>`
 }
 
 function chip(color: Color): string {
@@ -111,7 +121,7 @@ function boardRowHtml(p: ProjectLightLike, appUrl: string): string {
   return `<tr>
     <td style="padding:10px 12px;border-bottom:1px solid ${LINE};white-space:nowrap">${chip(p.color)}</td>
     <td style="padding:10px 12px;border-bottom:1px solid ${LINE};font-weight:700;color:${I}">
-      <a href="${esc(url)}" style="color:${I};text-decoration:none">${esc(p.name)}</a>
+      <a href="${escAttr(url)}" style="color:${I};text-decoration:none">${esc(p.name)}</a>
     </td>
     ${axesHtml}
     <td style="padding:10px 12px;border-bottom:1px solid ${LINE};color:${MUT};font-size:13px;white-space:nowrap">${fmtDelta(p.due?.delta_days ?? null)}</td>
@@ -141,7 +151,7 @@ function projectDetailHtml(p: ProjectLightLike, appUrl: string): string {
   }).join('')
   return `<div style="margin:22px 0 6px">
     <div style="font-size:16px;font-weight:800;color:${I}">
-      ${chip(p.color)} <a href="${esc(url)}" style="color:${I};text-decoration:none">${esc(p.name)}</a>
+      ${chip(p.color)} <a href="${escAttr(url)}" style="color:${I};text-decoration:none">${esc(p.name)}</a>
     </div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-top:8px;border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;overflow:hidden">
       ${axisRows}
@@ -166,7 +176,10 @@ function taskSectionHtml(tasks: TaskLike[]): string {
   })
   const groupsHtml = groupKeys.map((key) => {
     const label = key === '' ? 'ללא אחראי' : key
+    // The project name is the first column: a manager covering three sites otherwise reads
+    // three rows that differ only in their wording, with nothing saying which site each is for.
     const rows = groups.get(key)!.map((t) => `<tr>
+      <td style="padding:8px 12px;border-bottom:1px solid ${LINE};color:${I};font-size:14px;font-weight:700;white-space:nowrap">${esc(t.project_name ?? '—')}</td>
       <td style="padding:8px 12px;border-bottom:1px solid ${LINE};color:${I};font-size:14px">${esc(t.title)}</td>
       <td style="padding:8px 12px;border-bottom:1px solid ${LINE};color:${MUT};font-size:13px;white-space:nowrap">${t.due_date ? esc(t.due_date) : '—'}</td>
     </tr>`).join('')

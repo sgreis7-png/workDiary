@@ -61,13 +61,32 @@ Deno.serve(async (req) => {
       return json({ error: 'snapshot_not_found', snapshot_id: snapshotId }, 404)
     }
 
+    // A manager covering three sites gets three rows that differ only by their title, so the
+    // project name has to ride along — it is joined here rather than looked up per row.
+    // The list is also bounded: this is every open traffic-light task ever, and a mail that
+    // grows without limit eventually stops being read (and Resend rejects the payload). 200 is
+    // well past a readable weekly list — roughly a year of Sundays at the current 16 projects —
+    // and ordering by due date first means the cut falls on the least urgent tasks. Nulls last
+    // so an undated task never displaces a dated one.
+    const TASK_LIMIT = 200
     const { data: taskRows, error: taskErr } = await db
       .from('work_tasks')
-      .select('title,assignee_email,due_date,project_id,axis')
+      .select('title,assignee_email,due_date,project_id,axis,projects(name)')
       .eq('source', 'traffic_light')
       .eq('status', 'open')
+      .order('due_date', { ascending: true, nullsFirst: false })
+      .limit(TASK_LIMIT)
     if (taskErr) console.error('task lookup failed', taskErr.message)
-    const tasks: TaskLike[] = taskRows ?? []
+    // PostgREST returns an embedded one-to-one relation as an object (or null when the task
+    // has no project); flatten it so `render.ts` stays free of PostgREST's response shape.
+    const tasks: TaskLike[] = (taskRows ?? []).map((t: Record<string, unknown>) => ({
+      title: String(t.title ?? ''),
+      assignee_email: (t.assignee_email as string | null) ?? null,
+      due_date: (t.due_date as string | null) ?? null,
+      project_id: (t.project_id as string | null) ?? null,
+      axis: (t.axis as string | null) ?? null,
+      project_name: projectName(t.projects),
+    }))
 
     const recipients = await collectRecipients(db)
 
@@ -108,15 +127,15 @@ Deno.serve(async (req) => {
 
     // Record the outcome even on failure — a silently swallowed Resend error is exactly the
     // kind of thing that only surfaces when someone asks why the Sunday mail never arrived.
-    // The table itself arrives with Task 8's migration, so a failing insert must not turn a
+    // The table itself arrives with Task 8's migration, so a failing write must not turn a
     // sent mail into a 500: log it and keep the send's own status as the answer.
-    const { error: logErr } = await db.from('report_mail_log').insert({
-      snapshot_id: snapshotId,
-      recipient_count: recipients.length,
-      http_status: httpStatus,
-      error: errorText,
-    })
-    if (logErr) console.error('report_mail_log insert failed', logErr.message)
+    //
+    // `traffic_light_weekly()` already inserted a row for this snapshot when it fired the
+    // pg_net request, so inserting here would make two rows per send: the 20-hour mail guard
+    // counts rows, and the settings screen shows "the last one" — which of the two it picked
+    // decided whether the banner read "in flight" or "sent". Fill in the dispatch row instead,
+    // and only insert when there is none (a manual invocation with no pg_net request behind it).
+    await recordOutcome(db, snapshotId, recipients.length, httpStatus, errorText)
 
     return json({ ok: httpStatus >= 200 && httpStatus < 300, recipients: recipients.length }, httpStatus)
   } catch (e) {
@@ -124,6 +143,46 @@ Deno.serve(async (req) => {
     return json({ error: String((e as Error)?.message ?? e) }, 500)
   }
 })
+
+/** Completes the dispatch row `traffic_light_weekly()` wrote for this snapshot — the most
+ * recent one still awaiting an answer (`http_status is null`) — so one send is one row. A
+ * manual invocation has no dispatch row, and only then is a row inserted. Any failure here is
+ * logged and swallowed: losing the audit line must not turn a delivered mail into a 500. */
+async function recordOutcome(
+  db: ReturnType<typeof createClient>,
+  snapshotId: string,
+  recipientCount: number,
+  httpStatus: number,
+  errorText: string | null,
+): Promise<void> {
+  const patch = { recipient_count: recipientCount, http_status: httpStatus, error: errorText }
+  const { data: pending, error: findErr } = await db
+    .from('report_mail_log')
+    .select('id')
+    .eq('snapshot_id', snapshotId)
+    .is('http_status', null)
+    .order('requested_at', { ascending: false })
+    .limit(1)
+    .maybeSingle()
+  if (findErr) console.error('report_mail_log lookup failed', findErr.message)
+
+  if (pending) {
+    const { error } = await db.from('report_mail_log').update(patch).eq('id', (pending as { id: string }).id)
+    if (error) console.error('report_mail_log update failed', error.message)
+    return
+  }
+  const { error } = await db.from('report_mail_log').insert({ snapshot_id: snapshotId, ...patch })
+  if (error) console.error('report_mail_log insert failed', error.message)
+}
+
+/** PostgREST embeds a to-one relation as an object, but answers with an array when it cannot
+ * tell the cardinality from the schema. Accept both and fall back to no name rather than
+ * printing `[object Object]` into a VP's inbox. */
+function projectName(rel: unknown): string | null {
+  const row = Array.isArray(rel) ? rel[0] : rel
+  const name = (row as { name?: unknown } | null | undefined)?.name
+  return typeof name === 'string' && name ? name : null
+}
 
 /** Admins/managers plus whatever extra addresses the settings row carries. Lowercased and
  * de-duplicated because the same person can sit in both lists under different casing, and a

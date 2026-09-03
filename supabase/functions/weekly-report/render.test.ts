@@ -47,6 +47,31 @@ describe('renderWeeklyReport', () => {
     expect(html).toContain('a@x.co')
     expect(html).toContain('ללא אחראי')
   })
+  // A project manager covering three sites gets three task rows whose titles are nearly
+  // identical ("להשלים נתונים: קבלנים" on each). Without the site's name on the row the mail
+  // is unactionable — the reader cannot tell which site to go and fix.
+  it('names the project on every task row', () => {
+    const { html } = renderWeeklyReport({
+      payload: [red], appUrl: 'https://x.test', takenAt: '2026-09-06T04:00:00Z',
+      tasks: [
+        { title: 'להשלים נתונים: קבלנים', assignee_email: 'a@x.co', due_date: '2026-09-10', project_id: 'p1', axis: 'crew', project_name: 'כפר יובל' },
+        { title: 'להשלים נתונים: קבלנים', assignee_email: 'a@x.co', due_date: '2026-09-11', project_id: 'p9', axis: 'crew', project_name: 'נחם' },
+      ],
+    })
+    const taskStart = html.indexOf('משימות פתוחות')
+    expect(html.slice(taskStart)).toContain('כפר יובל')
+    expect(html.slice(taskStart)).toContain('נחם')
+  })
+  // A `"` inside an attribute would close it early and turn the rest of the value into
+  // markup; the same character inside a text node must survive untouched, because בלת"מ is
+  // how the word is spelled.
+  it('escapes a quote in an attribute but leaves one in text alone', () => {
+    const { html } = renderWeeklyReport({
+      payload: [red], tasks: [], takenAt: '2026-09-06T04:00:00Z', appUrl: 'https://x.test/a"b' })
+    expect(html).toContain('https://x.test/a&quot;b')
+    expect(html).not.toContain('href="https://x.test/a"b')
+    expect(html).toContain('בלת"מ #3 חוסם עבודה')
+  })
   it('counts the colours in the subject', () => {
     const { subject } = renderWeeklyReport({ payload: [red, green], tasks: [], takenAt: '2026-09-06T04:00:00Z', appUrl: 'https://x.test' })
     expect(subject).toContain('1 אדום')

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, type ReactNode } from 'react'
 import { Button, Field } from '../../components/ui'
 import { Loader } from '../../components/Loader'
 import { useI18n } from '../../i18n'
@@ -71,13 +71,17 @@ export default function TrafficSettings() {
   const { lang } = useI18n()
   const [s, setS] = useState<SettingsForm | null>(null)
   const [fetchErr, setFetchErr] = useState('')
-  // True from the moment the load fails until either a reload succeeds or the admin edits
-  // a value themselves. While it's true the form is showing DEFAULT_SETTINGS, not what's
-  // actually stored — saving in that state would silently overwrite the real thresholds
-  // with defaults, so Save stays blocked (button disabled AND guarded inside save()) until
-  // one of those two things happens.
+  // True from the moment the load fails until a reload succeeds. While it's true the form is
+  // showing DEFAULT_SETTINGS, not what's actually stored — saving in that state would
+  // silently overwrite the real thresholds with defaults, so Save stays blocked (button
+  // disabled AND guarded inside save()) until Retry actually reads the stored row back.
+  // Editing a field must NOT release it: the other twelve inputs are still defaults, and
+  // `extra_report_emails` still an empty array, so one typed number would have saved twelve
+  // wrong thresholds and dropped every extra recipient.
   const [loadFailed, setLoadFailed] = useState(false)
-  const [saveErrs, setSaveErrs] = useState<string[]>([])
+  // ReactNode, not string: a rejected recipient is a Latin token inside a Hebrew sentence and
+  // has to carry its own dir="ltr", which a concatenated string cannot.
+  const [saveErrs, setSaveErrs] = useState<ReactNode[]>([])
   const [saved, setSaved] = useState(false)
   const [saving, setSaving] = useState(false)
   // Free text as typed, kept separate from the parsed `extra_report_emails` array so a
@@ -120,23 +124,21 @@ export default function TrafficSettings() {
     const n = Number(raw)
     setS({ ...s, [k]: Number.isFinite(n) ? n : NaN })
     setSaved(false)
-    // A deliberate edit means the admin is looking at these values on purpose — the risk
-    // this guards against (saving untouched, never-loaded defaults by accident) no longer
-    // applies once they've typed something themselves.
-    setLoadFailed(false)
   }
 
   const save = () => {
     setSaveErrs([]); setSaved(false)
     if (loadFailed) {
       setSaveErrs([lang === 'he'
-        ? 'הספים הנוכחיים לא נטענו — שמירה עכשיו הייתה מחליפה אותם בברירת המחדל. טענו מחדש או ערכו ערך כדי להמשיך.'
-        : 'The current thresholds failed to load — saving now would overwrite them with defaults. Reload or edit a value to continue.'])
+        ? 'הספים הנוכחיים לא נטענו — שמירה עכשיו הייתה מחליפה אותם בברירת המחדל. לחצו "טען שוב" כדי להמשיך.'
+        : 'The current thresholds failed to load — saving now would overwrite them with defaults. Use Retry to continue.'])
       return
     }
-    const errs = validate(s, lang)
+    const errs: ReactNode[] = validate(s, lang)
     const { emails, dropped } = parseRecipients(recipientsText)
-    for (const d of dropped) errs.push(`${tl(lang, 'settings_recipients_invalid')}${d}`)
+    for (const d of dropped) {
+      errs.push(<>{tl(lang, 'settings_recipients_invalid')}<span dir="ltr">{d}</span></>)
+    }
     if (errs.length) { setSaveErrs(errs); return }
     const patch: SettingsForm = { ...s, extra_report_emails: emails }
     setSaving(true)
@@ -156,7 +158,9 @@ export default function TrafficSettings() {
   // reconcile job fills them in a few minutes later. That null/null window is a real,
   // expected state (a send in flight) — not a failure — so it needs its own branch, checked
   // before the "anything else is a failure" case below.
-  const mailPending = !!mailLog && mailLog.http_status == null && !mailLog.error
+  // `error == null`, not `!error`: the reconcile job writes an empty string for a response
+  // with no body, and truthiness would read that finished-but-empty row as still in flight.
+  const mailPending = !!mailLog && mailLog.http_status == null && mailLog.error == null
 
   return (
     <div className="page">
@@ -185,14 +189,19 @@ export default function TrafficSettings() {
         )
       )}
 
-      {loadFailed && fetchErr && (
+      {/* Retry is the only thing that releases the save guard, so this banner is the whole
+          explanation for the disabled Save button below — it must render whenever the load
+          failed, even when the error carried no message of its own. */}
+      {loadFailed && (
         <div className="alert">
-          ⚠ {fetchErr} — {lang === 'he' ? 'מוצגת ברירת מחדל; לא ניתן לשמור עד שהטעינה תצליח.' : 'showing defaults; saving is blocked until the load succeeds.'}
+          ⚠ {fetchErr && <>{fetchErr} — </>}{lang === 'he' ? 'מוצגת ברירת מחדל; לא ניתן לשמור עד שהטעינה תצליח.' : 'showing defaults; saving is blocked until the load succeeds.'}
           <Button variant="ghost" type="button" onClick={load}>{lang === 'he' ? 'טען שוב' : 'Retry'}</Button>
         </div>
       )}
       {saveErrs.length > 0 && (
-        <div className="alert">⚠ <ul className="tl-settings-errs">{saveErrs.map((e) => <li key={e}>{e}</li>)}</ul></div>
+        <div className="alert">⚠ <ul className="tl-settings-errs">{/* Keyed by index on purpose: two identical bad
+          tokens ("foo, foo") produce two identical messages, and keying by content would
+          collapse them into one row. */}{saveErrs.map((e, i) => <li key={i}>{e}</li>)}</ul></div>
       )}
       {saved && <div className="alert alert--ok">✓ {tl(lang, 'settings_saved')}</div>}
 
