@@ -98,7 +98,7 @@ export default function Issues() {
             <td data-label={tl(lang, 'iss_col_category')}>
               <select className="input" value={i.wbs_template_id ?? ''} disabled={!editable}
                 onChange={(e) => e.target.value !== (i.wbs_template_id ?? '') && patch(i.id, { wbs_template_id: e.target.value || null })}>
-                <option value="">—</option>{template.map((t) => <option key={t.id} value={t.id}>{lang === 'he' ? t.name_he : t.name_en}</option>)}
+                <option value="">—</option>{template.filter((t) => t.id).map((t) => <option key={t.id} value={t.id}>{lang === 'he' ? t.name_he : t.name_en}</option>)}
               </select>
             </td>
             <td data-label={tl(lang, 'iss_col_systemic')}>

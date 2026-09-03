@@ -23,7 +23,7 @@ export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = 
   { key: 'alert_rules', label: 'כללי התראות', label_en: 'Alert rules' },
   { key: 'form_builder', label: 'בוני טפסים', label_en: 'Form builders' },
   { key: 'traffic_light', label: 'דוח רמזור', label_en: 'Traffic-light report' },
-  { key: 'deliveries', label: 'רשימת אספקות — עדכון סטטוס', label_en: 'Deliveries — status updates' },
+  { key: 'deliveries', label: 'רשימת אספקות — הזנה ועדכון', label_en: 'Deliveries — entry & updates' },
 ]
 
 /** Role defaults — an explicit user_permissions row overrides these. */
