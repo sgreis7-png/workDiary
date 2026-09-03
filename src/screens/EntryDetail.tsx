@@ -72,6 +72,7 @@ export default function EntryDetail() {
     }))
     .filter((c) => c.rows.length > 0 || c.pct > 0 || c.bd.length > 0)
   const missing = filledMissing(parseMissing(entry.values[MISSING_KEY]))
+  const crew = filledCrew(parseCrew(entry.values[CREW_KEY]))
 
   return (
     <div className="page">
@@ -169,10 +170,16 @@ export default function EntryDetail() {
             </motion.div>
           ))}
 
-          {filledCrew(parseCrew(entry.values[CREW_KEY])).length > 0 && (
+          {crew.length > 0 && (
             <Section id="crew" icon="👷" title={tl(lang, 'form_crew_section')}>
               <table className="table m-cards"><thead><tr><th>{tl(lang, 'form_crew_contractor')}</th><th>{tl(lang, 'form_crew_workers')}</th><th>{tl(lang, 'form_crew_hours')}</th></tr></thead>
-                <tbody>{filledCrew(parseCrew(entry.values[CREW_KEY])).map((r, i) => <tr key={i}><td>{r.contractor}</td><td>{r.workers}</td><td>{r.hours}</td></tr>)}</tbody></table>
+                <tbody>{crew.map((r, i) => (
+                  <tr key={i}>
+                    <td data-label={tl(lang, 'form_crew_contractor')}>{r.contractor}</td>
+                    <td data-label={tl(lang, 'form_crew_workers')}>{r.workers}</td>
+                    <td data-label={tl(lang, 'form_crew_hours')}>{r.hours}</td>
+                  </tr>
+                ))}</tbody></table>
             </Section>
           )}
 
