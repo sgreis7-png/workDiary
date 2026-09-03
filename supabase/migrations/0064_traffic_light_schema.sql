@@ -194,6 +194,24 @@ drop policy if exists delete_work_tasks on work_tasks;
 create policy delete_work_tasks on work_tasks for delete
   using (is_member() and (source <> 'traffic_light' or is_admin() or can_edit('traffic_light')));
 
+-- `with check` sees only the new row, so a member could rewrite source to 'manual' and
+-- close a traffic-light task in the same statement. The provenance columns are therefore
+-- immutable to anyone but an admin or a traffic_light editor.
+create or replace function work_tasks_guard_source() returns trigger
+language plpgsql security definer set search_path = public as $$
+begin
+  if is_admin() or can_edit('traffic_light') then return new; end if;
+  new.source := old.source;
+  new.axis   := old.axis;
+  if old.source = 'traffic_light' and new.status = 'done' and old.status <> 'done' then
+    raise exception 'רק PMO רשאי לסגור משימת רמזור' using errcode = '42501';
+  end if;
+  return new;
+end $$;
+drop trigger if exists work_tasks_guard_source_trg on work_tasks;
+create trigger work_tasks_guard_source_trg before update on work_tasks
+  for each row execute function work_tasks_guard_source();
+
 -- ---------- 8. thresholds (single row) + snapshots ----------
 create table if not exists traffic_light_settings (
   id                        int primary key default 1 check (id = 1),
