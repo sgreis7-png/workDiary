@@ -88,6 +88,26 @@ export function issuesColor(items: IssueFacts[], s: Settings, today = todayIso()
   return worst(...out)
 }
 
+export interface CommitmentFacts {
+  due_date: string
+  status: 'open' | 'confirmed' | 'done'
+  blocking: boolean
+  notice_sent_on: string | null
+}
+
+/** Spec part A. Mirrors tl_client() in migration 0071. */
+export function clientColor(items: CommitmentFacts[], s: Settings, today = todayIso()): Color {
+  if (items.length === 0) return 'na'
+  const out: Color[] = ['green']
+  for (const c of items) {
+    if (c.status === 'done') continue
+    const overdue = dayDiff(today, c.due_date) > 0
+    if (overdue && c.blocking) out.push('red')
+    else if (c.status === 'open' && dayDiff(c.due_date, today) <= s.client_window_days) out.push('amber')
+  }
+  return worst(...out)
+}
+
 /** Spec 4.6. Returns the Hebrew reason, or null when the project is reporting. */
 export function grayReason(f: { entryInLastWorkdays: boolean; ganttAgeDays: number | null }, s: Settings): string | null {
   if (!f.entryInLastWorkdays) return `לא התקבל יומן עבודה ב-${s.gray_missing_workdays} ימי העבודה האחרונים`

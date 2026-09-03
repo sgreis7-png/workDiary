@@ -27,6 +27,7 @@ export interface Settings {
   issue_block_resolve_days: number
   gray_missing_workdays: number
   gray_gantt_days: number
+  client_window_days: number
 }
 
 export const DEFAULT_SETTINGS: Settings = {
@@ -35,6 +36,7 @@ export const DEFAULT_SETTINGS: Settings = {
   crew_green_pct: 90, crew_red_pct: 70, crew_window_days: 7,
   issue_open_days: 7, issue_block_resolve_days: 14,
   gray_missing_workdays: 2, gray_gantt_days: 14,
+  client_window_days: 14,
 }
 
 export interface AxisResult {

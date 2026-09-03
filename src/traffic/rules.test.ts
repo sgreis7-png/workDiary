@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULT_SETTINGS, rank, worst } from './model'
-import { categoryColor, crewColor, grayReason, issuesColor, supplyItemColor, timeColor } from './rules'
+import { categoryColor, clientColor, crewColor, grayReason, issuesColor, supplyItemColor, timeColor } from './rules'
 
 const S = DEFAULT_SETTINGS
 
@@ -97,6 +97,35 @@ describe('issuesColor (spec 4.5)', () => {
   it('blocking or systemic is red', () => {
     expect(issuesColor([{ opened_on: '2026-09-02', owner_email: 'x@y', due_date: '2026-09-05', blocking: true, systemic: false }], S, today)).toBe('red')
     expect(issuesColor([{ opened_on: '2026-09-02', owner_email: 'x@y', due_date: '2026-09-05', blocking: false, systemic: true }], S, today)).toBe('red')
+  })
+})
+
+describe('clientColor (spec part A)', () => {
+  const today = '2026-09-03'
+  const base = { due_date: '2026-09-20', status: 'open' as const, blocking: false, notice_sent_on: null }
+
+  it('is na when nothing was ever recorded', () => {
+    expect(clientColor([], S, today)).toBe('na')
+  })
+  it('is green when a due commitment was confirmed in writing, wherever it falls', () => {
+    expect(clientColor([{ ...base, status: 'confirmed' }], S, today)).toBe('green')
+    expect(clientColor([{ ...base, due_date: '2026-09-10', status: 'confirmed' }], S, today)).toBe('green')
+  })
+  it('is green for a done commitment no matter how overdue or blocking', () => {
+    expect(clientColor([{ ...base, status: 'done' }], S, today)).toBe('green')
+    expect(clientColor([{ ...base, due_date: '2026-09-01', status: 'done', blocking: true }], S, today)).toBe('green')
+  })
+  it('is amber for an open commitment inside the window, exactly on the edge included', () => {
+    expect(clientColor([{ ...base, due_date: '2026-09-17' }], S, today)).toBe('amber')
+    expect(clientColor([{ ...base, due_date: '2026-09-18' }], S, today)).toBe('green')
+  })
+  it('is amber for an overdue commitment that does not block our work', () => {
+    expect(clientColor([{ ...base, due_date: '2026-09-01', blocking: false }], S, today)).toBe('amber')
+  })
+  it('is red for any overdue, blocking commitment, open or confirmed, regardless of notice', () => {
+    expect(clientColor([{ ...base, due_date: '2026-09-01', blocking: true }], S, today)).toBe('red')
+    expect(clientColor([{ ...base, due_date: '2026-09-01', status: 'confirmed', blocking: true }], S, today)).toBe('red')
+    expect(clientColor([{ ...base, due_date: '2026-09-01', blocking: true, notice_sent_on: '2026-09-02' }], S, today)).toBe('red')
   })
 })
 
