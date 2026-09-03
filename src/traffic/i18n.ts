@@ -157,6 +157,9 @@ export const TL = {
   settings_mail_never:  { he: 'הדוח עדיין לא נשלח', en: 'The report has not been sent yet' },
   settings_mail_failed: { he: 'השליחה האחרונה נכשלה', en: 'The last send failed' },
   settings_mail_count:  { he: 'נמענים', en: 'recipients' },
+  settings_mail_pending: { he: 'השליחה האחרונה בדרך', en: 'The last send is in progress' },
+  settings_mail_unavailable: { he: 'סטטוס השליחה האחרונה לא זמין', en: 'Last-send status unavailable' },
+  settings_recipients_invalid: { he: 'כתובת לא תקינה, לא נשמרה: ', en: 'Invalid address, not saved: ' },
 
   tasks_source_tl:    { he: 'רמזור', en: 'Traffic light' },
   tasks_close_pmo:    { he: 'סגירה על ידי PMO בלבד', en: 'Closed by the PMO only' },

@@ -21,11 +21,21 @@ const GROUPS: { axis: 'time' | 'supply' | 'client' | 'crew' | 'issues' | 'gray';
   { axis: 'gray', icon: '📓', keys: ['gray_missing_workdays', 'gray_gantt_days'] },
 ]
 
-/** `text, text ,text,,` → `['text', 'text']`: trims, lowercases, drops anything without an
- *  `@` (a half-typed address, a stray comma) rather than saving garbage into the recipients
- *  column that the weekly-report function would otherwise try to mail. */
-function parseRecipients(raw: string): string[] {
-  return raw.split(',').map((e) => e.trim().toLowerCase()).filter((e) => e.includes('@'))
+/** `text, text ,text,,` → `{ emails: ['text', 'text'], dropped: [] }`: trims, lowercases,
+ *  and separates out anything without an `@` rather than saving garbage into the recipients
+ *  column that the weekly-report function would otherwise try to mail. An empty token from a
+ *  stray comma or trailing separator is dropped silently; a non-empty token that isn't a
+ *  plausible address is reported back so the admin sees why it didn't survive the save. */
+function parseRecipients(raw: string): { emails: string[]; dropped: string[] } {
+  const emails: string[] = []
+  const dropped: string[] = []
+  for (const part of raw.split(',')) {
+    const e = part.trim().toLowerCase()
+    if (!e) continue
+    if (e.includes('@')) emails.push(e)
+    else dropped.push(e)
+  }
+  return { emails, dropped }
 }
 
 /** Every value must be a whole, non-negative number; an inverted pair would make a color
@@ -52,7 +62,7 @@ function validate(s: Settings, lang: 'he' | 'en'): string[] {
 }
 
 /**
- * Admin screen for the twelve numeric thresholds that decide every color the traffic-light
+ * Admin screen for the thirteen numeric thresholds that decide every color the traffic-light
  * report shows company-wide. Rarely visited, high consequence: grouped by the axis each
  * number governs (rather than one flat list of identical inputs) so the reader can see
  * which colors a given change touches, with the unit and meaning spelled out in the label.
@@ -125,8 +135,10 @@ export default function TrafficSettings() {
       return
     }
     const errs = validate(s, lang)
+    const { emails, dropped } = parseRecipients(recipientsText)
+    for (const d of dropped) errs.push(`${tl(lang, 'settings_recipients_invalid')}${d}`)
     if (errs.length) { setSaveErrs(errs); return }
-    const patch: SettingsForm = { ...s, extra_report_emails: parseRecipients(recipientsText) }
+    const patch: SettingsForm = { ...s, extra_report_emails: emails }
     setSaving(true)
     updateSettings(patch)
       .then(() => { setSaved(true); setS(patch); setRecipientsText(patch.extra_report_emails.join(', ')) })
@@ -140,6 +152,11 @@ export default function TrafficSettings() {
       })
     : ''
   const mailOk = !!mailLog && mailLog.http_status != null && mailLog.http_status >= 200 && mailLog.http_status < 300
+  // The migration inserts the log row at request time with http_status/error both null; a
+  // reconcile job fills them in a few minutes later. That null/null window is a real,
+  // expected state (a send in flight) — not a failure — so it needs its own branch, checked
+  // before the "anything else is a failure" case below.
+  const mailPending = !!mailLog && mailLog.http_status == null && !mailLog.error
 
   return (
     <div className="page">
@@ -150,16 +167,20 @@ export default function TrafficSettings() {
         </div>
       </div>
 
-      {!mailLogFailed && mailLog !== undefined && (
+      {mailLogFailed ? (
+        <div className="tl-hint tl-hint--strong">✉ {tl(lang, 'settings_mail_unavailable')}</div>
+      ) : mailLog !== undefined && (
         mailLog === null ? (
-          <div className="tl-hint--strong">✉ {tl(lang, 'settings_mail_never')}</div>
+          <div className="tl-hint tl-hint--strong">✉ {tl(lang, 'settings_mail_never')}</div>
+        ) : mailPending ? (
+          <div className="tl-hint tl-hint--strong">✉ {tl(lang, 'settings_mail_pending')}</div>
         ) : mailOk ? (
           <div className="alert alert--ok">
-            ✓ {tl(lang, 'settings_last_mail')}: <span dir="ltr">{mailDate}</span> · {mailLog.recipient_count ?? 0} {tl(lang, 'settings_mail_count')}
+            ✓ {tl(lang, 'settings_last_mail')}: <span dir="ltr">{mailDate}</span> · <span dir="ltr">{mailLog.recipient_count ?? 0}</span> {tl(lang, 'settings_mail_count')}
           </div>
         ) : (
           <div className="alert">
-            ⚠ {tl(lang, 'settings_mail_failed')} ({mailLog.http_status ?? '—'}){mailLog.error ? `: ${mailLog.error}` : ''}
+            ⚠ {tl(lang, 'settings_mail_failed')} <span dir="ltr">({mailLog.http_status ?? '—'}){mailLog.error ? `: ${mailLog.error}` : ''}</span>
           </div>
         )
       )}
@@ -202,7 +223,7 @@ export default function TrafficSettings() {
           <input
             className="input" type="text" dir="ltr"
             value={recipientsText}
-            onChange={(e) => { setRecipientsText(e.target.value); setSaved(false); setLoadFailed(false) }}
+            onChange={(e) => { setRecipientsText(e.target.value); setSaved(false) }}
           />
         </Field>
         <div className="tl-hint">{tl(lang, 'settings_recipients_hint')}</div>

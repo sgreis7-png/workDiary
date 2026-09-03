@@ -29,7 +29,7 @@ export async function fetchSettings(): Promise<Settings> {
   if (error) throw error
   return data as Settings
 }
-export async function updateSettings(patch: Partial<Settings>): Promise<void> {
+export async function updateSettings(patch: Partial<Settings & { extra_report_emails: string[] }>): Promise<void> {
   const { data, error } = await supabase.from('traffic_light_settings')
     .update({ ...patch, updated_at: new Date().toISOString() }).eq('id', 1).select('id')
   if (error) throw error
