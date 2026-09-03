@@ -17,6 +17,8 @@ export interface Project {
   start_date?: string | null; end_date?: string | null; staff?: string | null; notes?: string | null
   priority?: number | null // company priority (admin)
   work_days?: number[] | null // dow 0=Sunday..6; scheduled alerts fire only on these days
+  contract_due_date?: string | null // תאריך מסירה חוזי (traffic light, time axis)
+  project_type?: string | null      // wbs_templates.project_type; default 'coop'
 
 }
 export type ProjectInput = Omit<Project, 'id'>
