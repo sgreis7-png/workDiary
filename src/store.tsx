@@ -88,9 +88,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const projectColor = (id: string) => colorForIndex(projects.findIndex((p) => p.id === id))
   const userName = (id: string) => userMap[id] ?? '—'
 
+  // Fallback rows carry no real id — a minted fake one (e.g. `seed-0`) would get written
+  // into a uuid column and surface as a raw Postgres cast error. An empty id lets callers
+  // (e.g. the deliveries category select) skip these options for anything that writes.
   const templateFor = useCallback((type: string | null | undefined) => {
     const rows = wbsTemplates.filter((t) => t.project_type === (type || 'coop') && t.active)
-    return rows.length ? rows : COOP_TEMPLATE.map((t, i) => ({ ...t, id: `seed-${i}`, active: true }))
+    return rows.length ? rows : COOP_TEMPLATE.map((t) => ({ ...t, id: '', active: true }))
   }, [wbsTemplates])
 
   if (loadError && !ready) {

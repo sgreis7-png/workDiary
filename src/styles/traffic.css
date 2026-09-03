@@ -76,6 +76,7 @@
       "delta action"
       "last  last";
     row-gap: 8px;
+    min-width: 0;
   }
   .tl-row > :nth-child(1) { grid-area: dot; align-self: start; }
   .tl-row > :nth-child(2) { grid-area: name; }

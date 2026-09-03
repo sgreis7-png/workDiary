@@ -136,7 +136,12 @@ export default function TrafficProject() {
               <tbody>
                 {cats.map((c) => (
                   <tr key={c.name_he} className={c.critical ? 'is-critical' : ''}>
-                    <td data-label={tl(lang, 'cat_col_name')}>{lang === 'he' ? c.name_he : c.name_en}{c.critical ? ' ★' : ''}</td>
+                    <td data-label={tl(lang, 'cat_col_name')}>
+                      {lang === 'he' ? c.name_he : c.name_en}{c.critical ? ' ★' : ''}
+                      {c.blocked_issue != null && (
+                        <div className="hint">⚠ {tl(lang, 'cat_blocked_by')} #{c.blocked_issue}</div>
+                      )}
+                    </td>
                     <td className="mono" data-label={tl(lang, 'cat_col_planned')}>{c.matched ? `${d(c.start)}–${d(c.finish)}` : '—'}</td>
                     <td className="mono" data-label={tl(lang, 'cat_col_baseline')}>{d(c.base_start)}</td>
                     <td className="mono" data-label={tl(lang, 'cat_col_gantt_pct')}>{c.gantt_pct ?? '—'}</td>

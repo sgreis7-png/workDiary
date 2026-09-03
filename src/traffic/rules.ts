@@ -1,3 +1,4 @@
+// Parity spec for the SQL in 0065 — no runtime code calls this module.
 // Threshold → color, one function per spec table (chapter 4). Pure, date-in / color-out.
 // These mirror the plpgsql in 0065; keep the two in step when a threshold moves.
 import { dayDiff, todayIso, worst, type Color, type Settings } from './model'

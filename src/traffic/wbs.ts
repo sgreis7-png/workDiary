@@ -64,6 +64,3 @@ export function templateSortFor(task: string, projectType: string, templates: Wb
   const legacy = LEGACY_TASK_MAP.find((m) => m.project_type === projectType && normName(m.legacy) === n)
   return legacy ? legacy.sort : null
 }
-
-export const templateLabel = (t: Pick<WbsTemplate, 'name_he' | 'name_en'>, lang: 'he' | 'en') =>
-  lang === 'he' ? t.name_he : t.name_en

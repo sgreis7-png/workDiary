@@ -2,7 +2,7 @@
 // inside the entry's `values` map, so they ride the existing draft persistence
 // (IndexedDB), offline queue and Supabase JSONB storage with no schema change.
 import type { Lang } from '../i18n'
-import { COOP_TEMPLATE, LEGACY_TASK_MAP, normName, type WbsTemplate } from '../traffic/wbs'
+import { COOP_TEMPLATE, type WbsTemplate } from '../traffic/wbs'
 
 export const PROGRESS_KEY = 'progress_table'      // legacy: single flat table
 export const HOUSE_PCT_KEY = 'progress_house_pct'  // legacy: single overall pct
@@ -61,17 +61,14 @@ export const coopName = (lang: Lang, n: number) => (lang === 'he' ? `לול ${n}
 
 // Stored rows keep the task name in whatever language the entry was created in.
 // For read-only display, map known standard names to the viewer's language;
-// custom (user-typed) tasks pass through untouched.
+// custom (user-typed) tasks — and any legacy name, which is history and must not be
+// relabeled under a current category — pass through untouched. (The traffic-light
+// computation does its own legacy→category mapping in SQL; this is display only.)
 export function taskLabel(task: string, lang: Lang): string {
   const s = String(task ?? '').trim()
   const hit = DEFAULT_TASKS.find((t) => t.he === s || t.en === s)
     ?? BD_TASKS.find((t) => t.he === s || t.en === s)
   if (hit) return hit[lang]
-  const legacy = LEGACY_TASK_MAP.find((m) => normName(m.legacy) === normName(s))
-  if (legacy) {
-    const row = COOP_TEMPLATE.find((t) => t.sort_order === legacy.sort)
-    if (row) return lang === 'he' ? row.name_he : row.name_en
-  }
   return task
 }
 

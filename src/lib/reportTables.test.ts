@@ -28,10 +28,10 @@ describe('parseProgress', () => {
 })
 
 describe('taskLabel with legacy names', () => {
-  it('shows an old fixed row under its new category label', () => {
-    expect(taskLabel('גמר קורות בטון', 'he')).toBe('קורות בטון')
-    expect(taskLabel('Ceiling covering', 'he')).toBe('כיסוי תקרה וחיפוי קירות')
-    expect(taskLabel('ציוד פנים', 'en')).toBe('Interior equipment')
+  it('passes a legacy name through verbatim — relabeling it would corrupt the historical record', () => {
+    expect(taskLabel('גמר קורות בטון', 'he')).toBe('גמר קורות בטון')
+    expect(taskLabel('Ceiling covering', 'he')).toBe('Ceiling covering')
+    expect(taskLabel('ציוד פנים', 'en')).toBe('Interior equipment') // current template name, not legacy — still maps
     expect(taskLabel('משהו מותאם', 'he')).toBe('משהו מותאם')
   })
   it('defaultCoop takes a DB template when given', () => {

@@ -38,7 +38,7 @@ export default function Deliveries() {
   const { projectId = '' } = useParams()
   const { lang } = useI18n()
   const { user } = useAuth()
-  const { canEdit } = usePerms()
+  const { canEdit, can } = usePerms()
   const { projectName, projects, templateFor } = useStore()
   const editable = canEdit('traffic_light') || canEdit('deliveries')
   const [rows, setRows] = useState<Delivery[] | null>(null)
@@ -77,7 +77,11 @@ export default function Deliveries() {
     <div className="page">
       <div className="page__head">
         <div>
-          <div className="kicker"><Link to={`/traffic/${projectId}`}>‹ {projectName(projectId)}</Link></div>
+          {/* a deliveries-only user (purchasing) has no traffic_light area — the breadcrumb
+              would bounce them straight back to the home screen, so it's plain text for them */}
+          <div className="kicker">{can('traffic_light')
+            ? <Link to={`/traffic/${projectId}`}>‹ {projectName(projectId)}</Link>
+            : `‹ ${projectName(projectId)}`}</div>
           <h1 className="page-title">📦 {tl(lang, 'sup_title')}</h1>
         </div>
         <label className="task-mine"><input type="checkbox" checked={windowOnly} onChange={(e) => setWindowOnly(e.target.checked)} /> {tl(lang, 'sup_window_only')}</label>
@@ -97,7 +101,10 @@ export default function Deliveries() {
             <td data-label={tl(lang, 'sup_col_cat')}>
               <select className="input" value={r.wbs_template_id ?? ''} disabled={!editable}
                 onChange={(e) => e.target.value !== (r.wbs_template_id ?? '') && save({ ...r, wbs_template_id: e.target.value || null })}>
-                <option value="">—</option>{template.map((t) => <option key={t.id} value={t.id}>{lang === 'he' ? t.name_he : t.name_en}</option>)}
+                <option value="">—</option>
+                {/* fallback (offline/unreachable templates) rows carry id: '' — writing one into
+                    this uuid column would surface as a raw Postgres cast error, so skip them */}
+                {template.filter((t) => t.id).map((t) => <option key={t.id} value={t.id}>{lang === 'he' ? t.name_he : t.name_en}</option>)}
               </select>
             </td>
             <td data-label={tl(lang, 'sup_col_need')}>

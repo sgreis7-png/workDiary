@@ -39,7 +39,7 @@ export default function Tasks() {
   const { user, isAdmin } = useAuth()
   const { lang } = useI18n()
   const t = (k: keyof typeof T) => T[k][lang]
-  const { canEdit } = usePerms()
+  const { canEdit, can } = usePerms()
   const { projects, projectName } = useStore()
   const [tasks, setTasks] = useState<WorkTask[] | null>(null)
   const [users, setUsers] = useState<DirectoryMember[]>([])
@@ -198,7 +198,7 @@ export default function Tasks() {
                     <b>{x.title}</b>
                     <small>
                       {x.project_id && (
-                        x.source === 'traffic_light'
+                        x.source === 'traffic_light' && can('traffic_light')
                           ? <Link to={`/traffic/${x.project_id}`} className="tag tag--muted">{projectName(x.project_id)}</Link>
                           : <span className="tag tag--muted">{projectName(x.project_id)}</span>
                       )}

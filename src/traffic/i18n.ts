@@ -60,6 +60,7 @@ export const TL = {
   cat_col_diary_pct:  { he: '% ביומן', en: 'Diary %' },
   cat_col_color:      { he: 'צבע', en: 'Color' },
   cat_critical:       { he: 'קריטית', en: 'Critical' },
+  cat_blocked_by:     { he: 'חסום ע״י בלת"מ', en: 'Blocked by issue' },
 
   sup_col_item:       { he: 'פריט', en: 'Item' },
   sup_col_cat:        { he: 'קטגוריה', en: 'Category' },
