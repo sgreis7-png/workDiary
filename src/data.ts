@@ -70,14 +70,21 @@ export const MALFUNCTION_TEXT_KEY = 'malfunction'
 
 export interface MalfunctionDept { id: string; he: string; en: string }
 export const MALFUNCTION_DEPTS: MalfunctionDept[] = [
-  { id: 'none',                he: 'אין',              en: 'None' },
-  { id: 'logistics_warehouse', he: 'לוגיסטיקה ומחסן', en: 'Logistics & warehouse' },
-  { id: 'contractors',         he: 'קבלנים',           en: 'Contractors' },
-  { id: 'customers',           he: 'לקוחות',           en: 'Customers' },
-  { id: 'engineering',         he: 'הנדסה',            en: 'Engineering' },
-  { id: 'purchasing',          he: 'רכש',              en: 'Purchasing' },
-  { id: 'finance',             he: 'כספים',            en: 'Finance' },
-  { id: 'other',               he: 'אחר',              en: 'Other' },
+  { id: 'none',        he: 'אין',          en: 'None' },
+  { id: 'engineering', he: 'הנדסה',        en: 'Engineering' },
+  { id: 'purchasing',  he: 'רכש-הספקות',   en: 'Purchasing & supply' },
+  { id: 'customer',    he: 'לקוח',         en: 'Customer' },
+  { id: 'contractor',  he: 'קבלן',         en: 'Contractor' },
+  { id: 'weather',     he: 'מזג אוויר',    en: 'Weather' },
+  { id: 'other',       he: 'אחר',          en: 'Other' },
+]
+
+/** Departments the form offered before 2026-09 (migration 0064 replaced the options). */
+const LEGACY_DEPTS: { match: string[]; id: string }[] = [
+  { match: ['logistics_warehouse', 'לוגיסטיקה ומחסן', 'logistics & warehouse', 'רכש', 'purchasing'], id: 'purchasing' },
+  { match: ['contractors', 'קבלנים'], id: 'contractor' },
+  { match: ['customers', 'לקוחות'], id: 'customer' },
+  { match: ['finance', 'כספים'], id: 'other' },
 ]
 
 /** Map a stored dept value (he OR en OR canonical id, any case; blank) to a canonical id.
@@ -88,7 +95,9 @@ export function deptIdOf(value: string | undefined | null): string {
   const hit = MALFUNCTION_DEPTS.find(
     (d) => d.id === v || d.he.toLowerCase() === v || d.en.toLowerCase() === v,
   )
-  return hit ? hit.id : 'none'
+  if (hit) return hit.id
+  const legacy = LEGACY_DEPTS.find((l) => l.match.some((m) => m.toLowerCase() === v))
+  return legacy ? legacy.id : 'none'
 }
 
 /** True when the entry records a real malfunction (dept id ≠ 'none'). */
