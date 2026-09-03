@@ -44,14 +44,15 @@ const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m)
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
 const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
 const SafetyTopicsAdmin = lazy(() => import('./safety/SafetyTopicsAdmin').then((m) => ({ default: m.SafetyTopicsAdmin })))
-// Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11) and the
-// deliveries/issues screens (task 12) exist; admin screens (WBS templates, thresholds)
-// land in a later task and are routed then.
+// Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
+// deliveries/issues screens (task 12) and the admin screens (task 13) exist.
 const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
 const TrafficProject = lazy(() => import('./screens/traffic/TrafficProject'))
 const Deliveries = lazy(() => import('./screens/traffic/Deliveries'))
 const DeliveriesPick = lazy(() => import('./screens/traffic/Deliveries').then((m) => ({ default: m.DeliveriesPick })))
 const Issues = lazy(() => import('./screens/traffic/Issues'))
+const WbsTemplates = lazy(() => import('./screens/traffic/WbsTemplates'))
+const TrafficSettings = lazy(() => import('./screens/traffic/TrafficSettings'))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -130,9 +131,6 @@ export default function App() {
         <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="control" element={<RequirePerm area="control_center"><ControlCenter /></RequirePerm>} />
-        {/* /admin/wbs and /admin/traffic-settings land with the screens that back them
-            (a later task in this SDD plan) — routing to a lazy import of a file that
-            doesn't exist yet would fail the build today. */}
         <Route path="traffic" element={<RequirePerm area="traffic_light"><TrafficBoard /></RequirePerm>} />
         <Route path="traffic/pick/deliveries" element={<RequireAnyPerm areas={['traffic_light', 'deliveries']}><DeliveriesPick /></RequireAnyPerm>} />
         <Route path="traffic/:projectId" element={<RequirePerm area="traffic_light"><TrafficProject /></RequirePerm>} />
@@ -150,6 +148,8 @@ export default function App() {
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
         <Route path="admin/safety-topics" element={<RequireAdmin><SafetyTopicsAdmin /></RequireAdmin>} />
+        <Route path="admin/wbs" element={<RequireAdmin><WbsTemplates /></RequireAdmin>} />
+        <Route path="admin/traffic-settings" element={<RequireAdmin><TrafficSettings /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

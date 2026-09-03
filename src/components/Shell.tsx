@@ -303,6 +303,8 @@ export function Shell() {
                 ...(isAdmin ? [{ to: '/admin/feedback', icon: '📢', label: t('nav_feedback_admin') }] : []),
                 ...(isAdmin ? [{ to: '/admin/audit', icon: '⧉', label: t('nav_audit') }] : []),
                 ...(isAdmin ? [{ to: '/admin/safety-topics', icon: '⛑', label: st(lang, 'nav_safety_topics') }] : []),
+                ...(isAdmin ? [{ to: '/admin/wbs', icon: '🧱', label: tl(lang, 'nav_wbs') }] : []),
+                ...(isAdmin ? [{ to: '/admin/traffic-settings', icon: '🚦', label: tl(lang, 'nav_tl_settings') }] : []),
               ],
             },
           ]}

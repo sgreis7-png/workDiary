@@ -57,6 +57,14 @@
 .tl-mode { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 
 .tl-hint { color: var(--ink-3); font-size: 12.5px; margin-bottom: 14px; }
+/* The WBS-name/Gantt-name constraint is load-bearing (a mismatch silently breaks the
+   rollup), so it gets a permanent, slightly heavier banner rather than the quiet .tl-hint
+   line other screens use for merely-helpful context. */
+.tl-hint--strong {
+  background: var(--paper-2); border: 1px solid var(--line-strong); border-radius: var(--r);
+  padding: 9px 13px; font-weight: 600; color: var(--ink-2); margin-bottom: 14px;
+}
+.tl-settings-errs { margin: 0; padding-inline-start: 18px; display: grid; gap: 3px; }
 
 @media (max-width: 820px) {
   .tl-head { display: none; }
