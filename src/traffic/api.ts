@@ -127,6 +127,42 @@ export async function createIssue(
   return data as Issue
 }
 
+// ---------- customer commitments ----------
+export type CommitmentKind = 'infrastructure' | 'permit' | 'access' | 'plan_approval' | 'payment_milestone' | 'other'
+export const COMMITMENT_KINDS: CommitmentKind[] = ['infrastructure', 'permit', 'access', 'plan_approval', 'payment_milestone', 'other']
+export type CommitmentStatus = 'open' | 'confirmed' | 'done'
+export const COMMITMENT_STATUSES: CommitmentStatus[] = ['open', 'confirmed', 'done']
+
+export interface Commitment {
+  id: string; project_id: string; item: string; kind: CommitmentKind
+  due_date: string; status: CommitmentStatus; confirmation_ref: string | null
+  blocking: boolean; notice_sent_on: string | null; notice_ref: string | null
+  notes: string | null; updated_at: string; updated_by: string | null
+}
+
+export async function fetchCommitments(projectId: string): Promise<Commitment[]> {
+  const { data, error } = await supabase.from('customer_commitments').select('*')
+    .eq('project_id', projectId).order('due_date')
+  if (error) throw error
+  return (data ?? []) as Commitment[]
+}
+
+export async function upsertCommitment(
+  c: Partial<Commitment> & { project_id: string; item: string; due_date: string }, by: string,
+): Promise<Commitment> {
+  const { data, error } = await supabase.from('customer_commitments')
+    .upsert({ ...c, updated_by: by.toLowerCase(), updated_at: new Date().toISOString() }, { onConflict: 'id' })
+    .select('*').single()
+  if (error) throw error
+  return data as Commitment
+}
+
+export async function deleteCommitment(id: string): Promise<void> {
+  const { data, error } = await supabase.from('customer_commitments').delete().eq('id', id).select('id')
+  if (error) throw error
+  if (!data || data.length === 0) throw new Error('אין הרשאה למחוק התחייבות')
+}
+
 // ---------- tasks born from the board ----------
 export async function createTrafficTask(
   projectId: string, axis: AxisKey | 'gray', title: string, createdBy: string,

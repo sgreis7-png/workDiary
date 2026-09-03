@@ -155,6 +155,30 @@ export const TL = {
   tasks_close_pmo:    { he: 'סגירה על ידי PMO בלבד', en: 'Closed by the PMO only' },
   tasks_by_assignee:  { he: 'לפי אחראי', en: 'By assignee' },
 
+  nav_customer:        { he: 'התחייבויות לקוח', en: 'Customer commitments' },
+  cust_title:          { he: 'התחייבויות לקוח', en: 'Customer commitments' },
+  cust_add:            { he: '+ התחייבות', en: '+ Commitment' },
+  cust_col_item:       { he: 'פריט', en: 'Item' },
+  cust_col_kind:       { he: 'סוג', en: 'Kind' },
+  cust_col_due:        { he: 'תאריך מוסכם', en: 'Agreed date' },
+  cust_col_status:     { he: 'סטטוס', en: 'Status' },
+  cust_col_ref:        { he: 'אסמכתא לאישור', en: 'Confirmation ref.' },
+  cust_col_blocking:   { he: 'חוסם עבודה', en: 'Blocks work' },
+  cust_col_notice:     { he: 'הודעה נשלחה', en: 'Notice sent' },
+  cust_col_notice_ref: { he: 'אסמכתא להודעה', en: 'Notice ref.' },
+  cust_days_late:      { he: 'ימי איחור', en: 'Days late' },
+  cust_notice_missing: { he: 'נדרשת הודעה כתובה ללקוח', en: 'A written notice to the customer is required' },
+  cust_empty:          { he: 'לא הוזנו התחייבויות לקוח', en: 'No customer commitments recorded' },
+  kind_infrastructure: { he: 'תשתיות', en: 'Infrastructure' },
+  kind_permit:         { he: 'היתר', en: 'Permit' },
+  kind_access:         { he: 'גישה לאתר', en: 'Site access' },
+  kind_plan_approval:  { he: 'אישור תוכניות', en: 'Drawing approval' },
+  kind_payment_milestone: { he: 'אבן דרך לתשלום', en: 'Payment milestone' },
+  kind_other:          { he: 'אחר', en: 'Other' },
+  cstatus_open:        { he: 'פתוח', en: 'Open' },
+  cstatus_confirmed:   { he: 'אושר בכתב', en: 'Confirmed in writing' },
+  cstatus_done:        { he: 'בוצע', en: 'Done' },
+
   save:               { he: 'שמירה', en: 'Save' },
   cancel:             { he: 'ביטול', en: 'Cancel' },
   delete:             { he: 'מחיקה', en: 'Delete' },
@@ -167,3 +191,5 @@ export const tl = (lang: Lang, k: TLKey): string => TL[k]?.[lang] ?? String(k)
 export const axisLabel = (lang: Lang, a: 'time' | 'supply' | 'client' | 'crew' | 'issues' | 'gray') => tl(lang, `axis_${a}` as TLKey)
 export const ownerLabel = (lang: Lang, k: string) => tl(lang, `owner_${k}` as TLKey)
 export const deliveryStatusLabel = (lang: Lang, s: string) => tl(lang, `sup_status_${s}` as TLKey)
+export const commitmentKindLabel = (lang: Lang, k: string) => tl(lang, `kind_${k}` as TLKey)
+export const commitmentStatusLabel = (lang: Lang, s: string) => tl(lang, `cstatus_${s}` as TLKey)
