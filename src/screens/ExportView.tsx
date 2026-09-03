@@ -24,7 +24,13 @@ export default function ExportView() {
   const [printMsg, setPrintMsg] = useState('')
   const [busy, setBusy] = useState(false)
 
-  const defs = fieldDefs.filter((f) => f.active)
+  const activeDefs = fieldDefs.filter((f) => f.active)
+  // An inactive definition (e.g. the retired free-text contractor field) still gets a
+  // column/section when at least one entry in the current selection has a value for it —
+  // an export of only new entries must not carry a permanently empty column.
+  const defs = entries
+    ? [...activeDefs, ...fieldDefs.filter((f) => !f.active && entries.some((e) => (e.values[f.key] ?? '').trim()))]
+    : activeDefs
   const users = Object.entries(userMap).sort((a, b) => a[1].localeCompare(b[1]))
 
   const generate = async () => {

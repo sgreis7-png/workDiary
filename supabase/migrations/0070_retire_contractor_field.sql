@@ -1,0 +1,11 @@
+-- The free-text "שם הקבלן ומספר העובדים" field is superseded by the structured
+-- crew_rows table (contractor / workers / hours) already on the diary form, so the
+-- form was asking for the same thing twice. Deactivate the definition so it no
+-- longer renders on new entries or is required to submit one.
+--
+-- We deactivate rather than delete: existing entries still carry a value under
+-- values->>'contractor', and that value must stay readable in EntryDetail, the
+-- printed/emailed report, and the bulk export (see src/screens/EntryDetail.tsx,
+-- ReportView.tsx, ExportView.tsx, which were updated to keep showing an inactive
+-- field when the entry being displayed actually has a value for it).
+update field_definitions set active = false where key = 'contractor';

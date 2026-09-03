@@ -46,7 +46,9 @@ export default function EntryDetail() {
   if (entry === undefined) return <Loader full />
   if (!entry) return <div className="empty"><div className="big">404</div></div>
   const label = (f: FieldDef) => (lang === 'he' ? f.label_he : f.label_en)
-  const defs = fieldDefs.filter((f) => f.active && f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
+  // An inactive definition (e.g. the retired free-text contractor field) still shows
+  // here if this entry actually carries a value for it — history must stay readable.
+  const defs = fieldDefs.filter((f) => f.type !== 'photo' && (entry.values[f.key] ?? '').trim())
   const canManage = entry.created_by === user?.id || isAdmin
   const startProgEdit = () => {
     const cur = parseCoops(entry.values, lang)

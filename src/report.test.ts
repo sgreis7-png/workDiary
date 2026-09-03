@@ -184,6 +184,34 @@ describe('crew rows + blocking flag rendering', () => {
   })
 })
 
+describe('retired contractor field stays visible on entries that have it', () => {
+  // field_definitions.contractor is deactivated (migration 0070) once crew_rows
+  // replaced it, but months of old entries still carry values.contractor. The
+  // screens pass an inactive def through to the report builder whenever the
+  // entry being rendered actually has a value for it — this locks that contract in.
+  const contractorDef: FieldDef = {
+    id: '9', key: 'contractor', label_he: 'שם הקבלן ומספר העובדים', label_en: 'Contractor', type: 'text',
+    required: false, options: [], sort_order: 70, active: false,
+  }
+  const withDef = [...defs, contractorDef]
+
+  it('renders the old value when the inactive def is passed and the entry has it', () => {
+    const e: Entry = { ...entry, values: { ...entry.values, contractor: 'חברת בנייה בע"מ · 5 עובדים' } }
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs: withDef }, 'https://logo.png')
+    expect(html).toContain('שם הקבלן ומספר העובדים')
+    expect(html).toContain('חברת בנייה בע&quot;מ')
+    const text = buildReportText({ projectName: 'p', authorName: 'a', entry: e, defs: withDef })
+    expect(text).toContain('שם הקבלן ומספר העובדים: חברת בנייה בע"מ · 5 עובדים')
+  })
+
+  it('omits the row entirely for a new entry with no value for it', () => {
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs: withDef }, 'https://logo.png')
+    expect(html).not.toContain('שם הקבלן ומספר העובדים')
+    const text = buildReportText({ projectName: 'p', authorName: 'a', entry, defs: withDef })
+    expect(text).not.toContain('שם הקבלן ומספר העובדים')
+  })
+})
+
 describe('safety rendering', () => {
   it('omits the safety block entirely when nothing was filled', () => {
     const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs }, 'https://logo.png')

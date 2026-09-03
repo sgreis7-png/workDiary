@@ -36,7 +36,10 @@ export default function ReportView() {
   if (entry === undefined) return <Loader full />
   if (!entry) return <div className="empty"><div className="big">404</div></div>
 
-  const defs = fieldDefs.filter((f) => f.active)
+  // An inactive definition (e.g. the retired free-text contractor field) still renders
+  // when this entry has a value for it — buildReportHtml/Text drop it if the value is
+  // empty, so this only keeps old entries' data visible without reviving the row for new ones.
+  const defs = fieldDefs.filter((f) => f.active || (entry.values[f.key] ?? '').trim())
   const html = buildReportHtml({ projectName: projectName(entry.project_id), authorName: userName(entry.created_by), entry, defs })
 
   // Photos in the report HTML are <a><img>; intercept clicks to open the

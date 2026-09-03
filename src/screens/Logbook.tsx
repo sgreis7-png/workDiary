@@ -9,6 +9,14 @@ import { useStore } from '../store'
 import type { Entry } from '../data'
 import { MALFUNCTION_DEPTS, MALFUNCTION_DEPT_KEY, deptIdOf, deptLabel, hasMalfunction } from '../data'
 import { usePerms } from '../lib/usePerms'
+import { CREW_KEY, filledCrew, parseCrew } from '../lib/crewRows'
+
+// The retired free-text contractor field is empty on new entries; fall back to the
+// structured crew table so the row's tag doesn't just vanish for the entries that
+// replaced it.
+const contractorTag = (e: Entry): string =>
+  (e.values.contractor ?? '').trim() ||
+  filledCrew(parseCrew(e.values[CREW_KEY])).map((r) => r.contractor).filter(Boolean).join(', ')
 
 const PAGE = 20
 
@@ -174,7 +182,7 @@ export default function Logbook() {
                 <p className="entry-card__excerpt">{e.values.daily_content}</p>
                 <div className="entry-card__meta">
                   <WeatherChip value={e.values.weather} />
-                  <Tag tone="muted">{e.values.contractor}</Tag>
+                  {contractorTag(e) && <Tag tone="muted">{contractorTag(e)}</Tag>}
                   {e.last_sent_at ? <Tag tone="green">✓ {t('sent')}</Tag> : <Tag tone="clay">{t('not_sent')}</Tag>}
                 </div>
               </div>
