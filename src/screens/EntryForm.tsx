@@ -367,11 +367,6 @@ export default function EntryForm() {
           })}
         </motion.div>
 
-        <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{tl(lang, 'form_crew_section')}</motion.div>
-        <motion.div variants={riseIn}>
-          <CrewTable rows={crewRows} onChange={setCrew} contractors={contractorNames} />
-        </motion.div>
-
         {deptIdOf(values[MALFUNCTION_DEPT_KEY]) !== 'none' && (
           <motion.div variants={riseIn} className="form-grid" style={{ marginTop: 14 }}>
             <div>
@@ -388,18 +383,29 @@ export default function EntryForm() {
           </motion.div>
         )}
 
-        {pendingDeliveries.length > 0 && (
+        <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{tl(lang, 'form_crew_section')}</motion.div>
+        <motion.div variants={riseIn}>
+          <CrewTable rows={crewRows} onChange={setCrew} contractors={contractorNames} />
+        </motion.div>
+
+        {project && (
           <>
             <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{tl(lang, 'form_arrived_section')}</motion.div>
             <motion.div variants={riseIn} className="arrived">
-              <div className="hint">{tl(lang, 'form_arrived_hint')}</div>
-              {pendingDeliveries.map((d) => (
-                <label key={d.id} className="arrived__item">
-                  <input type="checkbox" checked={arrived.includes(d.id)} onChange={() => toggleArrived(d.id)} />
-                  <span>{d.item}</span>
-                  <span className="mono">{d.need_date}</span>
-                </label>
-              ))}
+              {pendingDeliveries.length > 0 ? (
+                <>
+                  <div className="hint">{tl(lang, 'form_arrived_hint')}</div>
+                  {pendingDeliveries.map((d) => (
+                    <label key={d.id} className="arrived__item">
+                      <input type="checkbox" checked={arrived.includes(d.id)} onChange={() => toggleArrived(d.id)} />
+                      <span>{d.item}</span>
+                      <span className="mono">{d.need_date}</span>
+                    </label>
+                  ))}
+                </>
+              ) : (
+                <div className="hint">{tl(lang, 'form_arrived_none')}</div>
+              )}
             </motion.div>
           </>
         )}
