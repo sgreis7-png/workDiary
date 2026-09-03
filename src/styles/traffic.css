@@ -128,6 +128,14 @@
   .tl-table.m-cards tr.is-critical td:first-child { padding-inline-start: 0; border-inline-start: none; }
 }
 
+/* The one line the customer-commitments screen exists to make impossible to miss: an
+   overdue, blocking commitment with no timely written notice. Same trouble token as
+   `.is-critical` above (`--clay`), just spoken instead of only implied by the row wash.
+   Sits inside a wrapper with the field it annotates so the phone card's flex cell
+   (`.tl-table.m-cards td { display:flex }`) still sees one child, not three fighting
+   for width. */
+.tl-notice-warn { color: var(--clay); font-weight: 700; font-size: 12.5px; margin-top: 3px; }
+
 /* Row-level "close this issue" — a one-field note typed in place of a button, not a
    blocking window.prompt(). Sits inside the last cell, same height as the buttons around it. */
 .tl-close-form { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
@@ -141,11 +149,6 @@
 .tl-bars i.zero { background: var(--clay); min-height: 4px; }
 .tl-bars--empty { border-bottom: 1px dashed var(--line-strong); align-items: flex-end; }
 .tl-bars--empty i { background: none; border-top: 1px dashed var(--line-strong); flex: 1; height: 1px !important; min-height: 0; }
-
-/* The one line this whole screen exists to make impossible to miss: an overdue, blocking
-   commitment with no timely written notice. Same trouble token as `.is-critical` (`--clay`),
-   just spoken instead of only implied by the row wash. */
-.tl-notice-warn { color: var(--clay); font-weight: 700; margin-top: 2px; }
 
 .tl-block__empty { font-size: 13px; color: var(--ink-faint); padding: 6px 2px; }
 /* `.hint` itself is a shared, unstyled classname (see EntryForm.tsx) — scoped here so this
@@ -168,4 +171,8 @@
   .tl-table.m-cards td[data-label]::before {
     content: attr(data-label); color: var(--ink-faint); font-size: 11px; font-weight: 600; flex: none;
   }
+  /* A cell that wraps a field with something below it (a warning, a note) needs to be the
+     only other flex child of the card row alongside the ::before label — otherwise each of
+     its own children fights the label for width and gets crushed. */
+  .tl-table.m-cards td > .tl-cell-wrap { flex: 1; min-width: 0; }
 }

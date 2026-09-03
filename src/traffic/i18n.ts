@@ -168,6 +168,7 @@ export const TL = {
   cust_col_notice_ref: { he: 'אסמכתא להודעה', en: 'Notice ref.' },
   cust_days_late:      { he: 'ימי איחור', en: 'Days late' },
   cust_notice_missing: { he: 'נדרשת הודעה כתובה ללקוח', en: 'A written notice to the customer is required' },
+  cust_notice_pmo_only: { he: 'רישום ההודעה ללקוח נשמר על ידי ה-PMO בלבד', en: 'Only the PMO can record the customer notice fields' },
   cust_empty:          { he: 'לא הוזנו התחייבויות לקוח', en: 'No customer commitments recorded' },
   kind_infrastructure: { he: 'תשתיות', en: 'Infrastructure' },
   kind_permit:         { he: 'היתר', en: 'Permit' },

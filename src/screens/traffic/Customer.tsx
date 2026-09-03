@@ -21,7 +21,7 @@ const NOTICE_STALE_DAYS = 7
  *  agreed date, blocking our own work, and without a written notice recent enough to count
  *  as the customer having been put on notice. */
 function isCritical(c: Commitment, today: string): boolean {
-  if (c.status === 'done' || !c.blocking || c.due_date > today) return false
+  if (c.status === 'done' || !c.blocking || c.due_date >= today) return false
   if (!c.notice_sent_on) return true
   const ageDays = Math.round((Date.parse(today) - Date.parse(c.notice_sent_on)) / 86_400_000)
   return ageDays > NOTICE_STALE_DAYS
@@ -35,9 +35,12 @@ export default function Customer() {
   const { projectName, assignments } = useStore()
   // The RLS policy (0064/0066) is the real gate: traffic-light editors, or is_project_manager()
   // for this project — which the client can't evaluate directly, so it's approximated here
-  // from the assignments map. A manager who isn't actually assigned still has their write
-  // rejected by the database; this only avoids offering an edit that would silently no-op.
-  const editable = canEdit('traffic_light') || Boolean(user && assignments[projectId]?.includes(user.id))
+  // from the assignments map. `assignments` holds emails, not user ids (see fetchAssignments
+  // in src/api.ts and how Projects.tsx reads the same array) — the `user_id[]` comment on the
+  // store type is wrong. It also holds everyone assigned to the project, not only its manager,
+  // so this over-grants slightly on purpose; the database policy is what actually decides
+  // whether a write lands, and a rejected one still surfaces through `save`'s catch below.
+  const editable = canEdit('traffic_light') || Boolean(user && assignments[projectId]?.includes(user.email.toLowerCase()))
   // The notice columns are the PMO's alone — a trigger pins them for anyone who isn't a
   // traffic-light editor, so a project manager's edit there would take on screen and then
   // vanish on reload. Don't offer that; show them read-only instead.
@@ -76,6 +79,9 @@ export default function Customer() {
         </div>
       </div>
       {err && <div className="alert">⚠ {err}</div>}
+      {/* A project manager sees two greyed date/text boxes below with no code comment to
+          explain them — say it here instead. */}
+      {editable && !noticeEditable && <div className="tl-hint">{tl(lang, 'cust_notice_pmo_only')}</div>}
 
       <table className="tl-table m-cards">
         <thead><tr>
@@ -88,9 +94,14 @@ export default function Customer() {
           return (
             <tr key={c.id} className={critical ? 'is-critical' : ''}>
               <td data-label={tl(lang, 'cust_col_item')}>
-                <input className="input" defaultValue={c.item} disabled={!editable}
-                  onBlur={(e) => e.target.value !== c.item && save({ ...c, item: e.target.value })} />
-                {critical && <div className="hint tl-notice-warn">⚠ {tl(lang, 'cust_notice_missing')}</div>}
+                {/* One wrapper so the phone card's flex cell sees a single child — the input
+                    and the warning fighting for width as separate flex children is what
+                    crushed this sentence on a narrow screen. */}
+                <div className="tl-cell-wrap">
+                  <input className="input" defaultValue={c.item} disabled={!editable}
+                    onBlur={(e) => e.target.value !== c.item && save({ ...c, item: e.target.value })} />
+                  {critical && <div className="tl-notice-warn">⚠ {tl(lang, 'cust_notice_missing')}</div>}
+                </div>
               </td>
               <td data-label={tl(lang, 'cust_col_kind')}>
                 <select className="input" value={c.kind} disabled={!editable}
@@ -99,8 +110,10 @@ export default function Customer() {
                 </select>
               </td>
               <td data-label={tl(lang, 'cust_col_due')}>
+                {/* due_date is NOT NULL — clearing the picker yields '', which onChange must
+                    not forward to save (Postgres would reject the empty-string date cast). */}
                 <input className="input" type="date" value={c.due_date} disabled={!editable}
-                  onChange={(e) => e.target.value !== c.due_date && save({ ...c, due_date: e.target.value })} />
+                  onChange={(e) => e.target.value && e.target.value !== c.due_date && save({ ...c, due_date: e.target.value })} />
               </td>
               <td data-label={tl(lang, 'cust_col_status')}>
                 <select className="input" value={c.status} disabled={!editable}
@@ -127,7 +140,10 @@ export default function Customer() {
                 <input className="input" defaultValue={c.notice_ref ?? ''} disabled={!noticeEditable}
                   onBlur={(e) => e.target.value !== (c.notice_ref ?? '') && save({ ...c, notice_ref: e.target.value || null })} />
               </td>
-              <td>{canEdit('traffic_light') && <button className="rtable__del" onClick={() => remove(c.id)} aria-label={tl(lang, 'delete')}>✕</button>}</td>
+              {/* Unlike Deliveries.tsx's bare `<td>`, this gets a data-label — a lone ✕ with
+                  no caption reads fine in a dense desktop row but is easy to miss as the last
+                  line of a phone card stacked under eight labelled fields. */}
+              <td data-label={tl(lang, 'delete')}>{canEdit('traffic_light') && <button className="rtable__del" onClick={() => remove(c.id)} aria-label={tl(lang, 'delete')}>✕</button>}</td>
             </tr>
           )
         })}</tbody>
