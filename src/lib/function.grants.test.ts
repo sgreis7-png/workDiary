@@ -19,6 +19,7 @@ const SERVICE_ONLY: Record<string, string> = {
   gate_approval_notify: 'inserts notifications and checks no membership of its own',
   traffic_light_weekly:
     'inserts notifications and work tasks; guards on session_user/service_role, not membership',
+  report_mail_reconcile: 'cron-only; writes the mail audit log',
 }
 
 function allSql(): string {
