@@ -40,6 +40,9 @@ searchable record that looks professional when it reaches a client.
   on reconnect; last-seen data is viewable offline.
 - **Bilingual** — Hebrew (RTL) and English (LTR), live toggle.
 - **Installable PWA** — home-screen install, service-worker precache, auto-update.
+- **Traffic-light report (רמזור)** — managers/admins: one row per project, color = worst of
+  time / supplies / crew / issues (thresholds admin-editable), gray when the site stops
+  reporting; project drill-down with the evidence; weekly snapshot that opens tasks.
 
 ---
 
@@ -102,6 +105,17 @@ never downloads the full entries table.
 | `distribution_lists` / `list_recipients` | email recipient lists (owner-scoped) |
 | `notifications` | in-app notifications (assignment, etc.) |
 | allowlist + rate-limit tables | authorized signup emails; action rate limiting |
+| `wbs_templates` | per-project-type WBS category rows (name, order, critical) for the time axis |
+| `project_contractors` | contractors on a project with an agreed headcount, for the crew axis |
+| `project_deliveries` | ordered items with a need date and status, for the supply axis |
+| `issues` | issues register (מרשם בלת"מ) fed by diary malfunction fields |
+| `traffic_light_settings` | admin-editable thresholds the `traffic_light()` function reads |
+| `traffic_light_snapshots` | weekly snapshot payloads shown in the board's history picker |
+
+> **Pending migrations.** `0064_traffic_light_schema.sql` and `0065_traffic_light_fn.sql`
+> have not yet been applied to the Supabase project. Until they are, the traffic-light
+> screens will show an error. Apply them from the Supabase **SQL Editor** (paste each
+> file) or via `supabase db push`, in order.
 
 ---
 

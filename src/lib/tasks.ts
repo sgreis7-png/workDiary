@@ -12,13 +12,17 @@ export interface WorkTask {
   created_by: string
   created_at: string
   done_at: string | null
+  source: 'manual' | 'traffic_light'
+  axis: 'time' | 'supply' | 'client' | 'crew' | 'issues' | 'gray' | null
+  closed_by: string | null
 }
 
 export async function fetchTasks(): Promise<WorkTask[]> {
   const { data, error } = await supabase.from('work_tasks')
     .select('*').order('status').order('due_date', { ascending: true, nullsFirst: false })
   if (error) throw error
-  return data as WorkTask[]
+  // migrations 0064/0065 may not be applied yet on some databases — treat a missing source as 'manual'
+  return (data as WorkTask[]).map((t) => ({ ...t, source: t.source ?? 'manual' }))
 }
 
 export async function createTask(t: Partial<WorkTask> & { title: string; created_by: string }): Promise<WorkTask> {

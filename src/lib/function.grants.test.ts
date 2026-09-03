@@ -17,6 +17,8 @@ const SERVICE_ONLY: Record<string, string> = {
   log_report_send: 'an audit log its subject could write is not an audit log',
   gantt_overrun_notify: 'inserts notifications and checks no membership of its own',
   gate_approval_notify: 'inserts notifications and checks no membership of its own',
+  traffic_light_weekly:
+    'inserts notifications and work tasks; guards on session_user/service_role, not membership',
 }
 
 function allSql(): string {

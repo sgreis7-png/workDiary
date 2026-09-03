@@ -9,7 +9,7 @@ import type { AppUser, Entry, FieldDef, Project, ProjectInput, SearchFilters } f
 
 // ---------- reference data ----------
 
-const PROJECT_COLS = 'id,name,active,location,budget,pmo,start_date,end_date,staff,notes,priority,work_days'
+const PROJECT_COLS = 'id,name,active,location,budget,pmo,start_date,end_date,staff,notes,priority,work_days,contract_due_date,project_type'
 export async function fetchProjects(): Promise<Project[]> {
   const { data, error } = await supabase
     .from('projects').select(PROJECT_COLS).order('created_at')
@@ -276,6 +276,8 @@ function cleanProject(p: ProjectInput) {
     budget: p.budget === undefined || p.budget === null || (p.budget as unknown) === '' ? null : Number(p.budget),
     start_date: p.start_date || null, end_date: p.end_date || null,
     priority: Number(p.priority) || 0,
+    contract_due_date: p.contract_due_date || null,
+    project_type: p.project_type || 'coop',
   }
 }
 

@@ -15,6 +15,7 @@ import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/m
 import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
 import { st } from '../safety/i18n'
+import { tl } from '../traffic/i18n'
 import { GlobalDictation } from './GlobalDictation'
 
 /** Top user menu: avatar button → account, theme, about, sign-out. */
@@ -239,6 +240,11 @@ export function Shell() {
               key: 'projects',
               label: t('nav_section_projects'),
               items: [
+                ...(can('traffic_light') ? [{ to: '/traffic', icon: '🚦', label: tl(lang, 'nav_traffic') }] : []),
+                // Purchasing holds only `deliveries`, never `traffic_light` — this is their
+                // way into the module; someone with the full board reaches the same table
+                // per-project from there instead, so the two links don't duplicate for them.
+                ...(can('deliveries') && !can('traffic_light') ? [{ to: '/traffic/pick/deliveries', icon: '📦', label: tl(lang, 'sup_title') }] : []),
                 ...(can('control_center') ? [{ to: '/control', icon: '◈', label: t('nav_control_center') }] : []),
                 ...(can('projects') ? [{ to: '/projects', icon: '◆', label: t('nav_projects') }] : []),
                 ...(can('gantt') ? [{ to: '/gantt', icon: '▬', label: t('nav_gantt') }] : []),
@@ -297,6 +303,8 @@ export function Shell() {
                 ...(isAdmin ? [{ to: '/admin/feedback', icon: '📢', label: t('nav_feedback_admin') }] : []),
                 ...(isAdmin ? [{ to: '/admin/audit', icon: '⧉', label: t('nav_audit') }] : []),
                 ...(isAdmin ? [{ to: '/admin/safety-topics', icon: '⛑', label: st(lang, 'nav_safety_topics') }] : []),
+                ...(isAdmin ? [{ to: '/admin/wbs', icon: '🧱', label: tl(lang, 'nav_wbs') }] : []),
+                ...(isAdmin ? [{ to: '/admin/traffic-settings', icon: '🚦', label: tl(lang, 'nav_tl_settings') }] : []),
               ],
             },
           ]}

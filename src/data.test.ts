@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { colorForIndex, entryMatchesText, groupByDate, PROJECT_COLORS, deptIdOf, hasMalfunction, deptLabel, MALFUNCTION_DEPT_KEY } from './data'
+import { colorForIndex, entryMatchesText, groupByDate, PROJECT_COLORS, deptIdOf, hasMalfunction, deptLabel, MALFUNCTION_DEPT_KEY, MALFUNCTION_DEPTS } from './data'
 
 describe('colorForIndex', () => {
   it('maps each index to its palette color', () => {
@@ -63,7 +63,26 @@ describe('malfunction helpers', () => {
     expect(hasMalfunction({ [MALFUNCTION_DEPT_KEY]: 'קבלנים' })).toBe(true)
   })
   it('deptLabel returns localized label', () => {
-    expect(deptLabel('finance', 'he')).toBe('כספים')
-    expect(deptLabel('finance', 'en')).toBe('Finance')
+    expect(deptLabel('other', 'he')).toBe('אחר')
+    expect(deptLabel('other', 'en')).toBe('Other')
+  })
+})
+
+describe('malfunction departments (spec owner list)', () => {
+  it('exposes the closed owner list with none first', () => {
+    expect(MALFUNCTION_DEPTS.map((d) => d.id)).toEqual(['none', 'engineering', 'purchasing', 'customer', 'contractor', 'weather', 'other'])
+    expect(deptLabel('purchasing', 'he')).toBe('רכש-הספקות')
+  })
+  it('maps legacy ids and labels onto the new list', () => {
+    expect(deptIdOf('logistics_warehouse')).toBe('purchasing')
+    expect(deptIdOf('לוגיסטיקה ומחסן')).toBe('purchasing')
+    expect(deptIdOf('רכש')).toBe('purchasing')
+    expect(deptIdOf('קבלנים')).toBe('contractor')
+    expect(deptIdOf('Customers')).toBe('customer')
+    expect(deptIdOf('כספים')).toBe('other')
+    expect(deptIdOf('finance')).toBe('other')
+    expect(deptIdOf('הנדסה')).toBe('engineering')
+    expect(deptIdOf('')).toBe('none')
+    expect(deptIdOf('אין')).toBe('none')
   })
 })

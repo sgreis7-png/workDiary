@@ -9,17 +9,20 @@ import { useAuth } from '../../auth'
 import type { AppUser, Project, ProjectInput } from '../../data'
 import { readFavs, toggleFav } from '../../lib/favorites'
 import { FavChips, FavStar } from '../../components/FavProjects'
+import { fetchContractors, upsertContractor, deleteContractor, type Contractor } from '../../traffic/api'
+import { tl } from '../../traffic/i18n'
 
 const empty: ProjectInput = {
   name: '', active: true, location: '', budget: null, pmo: '',
   start_date: '', end_date: '', staff: '', notes: '', priority: 0,
   work_days: [0, 1, 2, 3, 4, 5],
+  contract_due_date: null, project_type: 'coop',
 }
 
 export default function Projects() {
   const { t, lang } = useI18n()
   const { isAdmin } = useAuth()
-  const { projects, myPriorities, setUserPriority, reloadProjects, assignments, reloadAssignments } = useStore()
+  const { projects, myPriorities, setUserPriority, reloadProjects, assignments, reloadAssignments, wbsTemplates } = useStore()
   const [editing, setEditing] = useState<Project | 'new' | null>(null)
   const [allStaff, setAllStaff] = useState<AppUser[]>([])
   // who runs each project. Kept here rather than in the store: this is the only screen that
@@ -200,6 +203,14 @@ export default function Projects() {
               <Field label={t('proj_budget')}><input className="input" type="number" inputMode="numeric" value={form.budget ?? ''} onChange={(e) => set('budget', e.target.value === '' ? null : Number(e.target.value))} /></Field>
               <Field label={t('proj_start')}><input className="input" type="date" value={form.start_date ?? ''} onChange={(e) => set('start_date', e.target.value)} /></Field>
               <Field label={t('proj_end')}><input className="input" type="date" value={form.end_date ?? ''} onChange={(e) => set('end_date', e.target.value)} /></Field>
+              <Field label={t('proj_contract_due')}><input className="input" type="date" value={form.contract_due_date ?? ''} onChange={(e) => set('contract_due_date', e.target.value)} /></Field>
+              <Field label={t('proj_type')}>
+                <select className="input" value={form.project_type ?? 'coop'} onChange={(e) => set('project_type', e.target.value)}>
+                  {[...new Set(['coop', ...wbsTemplates.map((x) => x.project_type)])].map((ty) => (
+                    <option key={ty} value={ty}>{ty === 'coop' ? t('proj_type_coop') : ty}</option>
+                  ))}
+                </select>
+              </Field>
               <Field label={t('company_priority')}>
                 <select className="input" value={form.priority ?? 0} onChange={(e) => set('priority', Number(e.target.value))}>
                   {LEVELS.map((v) => <option key={v} value={v}>{t(levelKey(v))}</option>)}
@@ -219,6 +230,11 @@ export default function Projects() {
                 ))}
               </div>
             </Field>
+            {!isNew && (
+              <Field label={tl(lang, 'proj_contractors')}>
+                <ContractorsEditor projectId={(initial as Project).id} />
+              </Field>
+            )}
             <Field label={`${t('assign_staff')} (${t('optional')})`}>
               <div className="staff-pick">
                 {allStaff.length === 0 && <span className="count mono">—</span>}
@@ -258,4 +274,50 @@ export default function Projects() {
       </motion.div>
     )
   }
+}
+
+function ContractorsEditor({ projectId }: { projectId: string }) {
+  const { lang } = useI18n()
+  const [rows, setRows] = useState<Contractor[]>([])
+  const [draft, setDraft] = useState({ name: '', agreed_workers: 0, critical: false })
+  const [err, setErr] = useState('')
+  const reload = () => fetchContractors(projectId).then(setRows).catch(() => setRows([]))
+  useEffect(() => { reload() }, [projectId]) // eslint-disable-line react-hooks/exhaustive-deps
+  const save = async (c: Partial<Contractor> & { project_id: string; name: string }) => {
+    try { setErr(''); await upsertContractor(c); reload(); return true }
+    catch (e) { setErr(String((e as Error).message ?? e)); return false }
+  }
+  const remove = async (id: string) => {
+    try { setErr(''); await deleteContractor(id); reload() }
+    catch (e) { setErr(String((e as Error).message ?? e)) }
+  }
+  return (
+    <div>
+      <div className="rtable">
+        <div className="rtable__head rtable__row--contractors">
+          <span>{tl(lang, 'proj_contractor_name')}</span><span>{tl(lang, 'proj_agreed')}</span><span>{tl(lang, 'proj_critical')}</span><span />
+        </div>
+        {rows.map((c) => (
+          <div key={c.id} className="rtable__row rtable__row--contractors">
+            <input className="input" defaultValue={c.name} onBlur={(e) => e.target.value !== c.name && save({ ...c, name: e.target.value })} />
+            <input className="input" type="number" min={0} defaultValue={c.agreed_workers}
+              onBlur={(e) => Number(e.target.value) !== c.agreed_workers && save({ ...c, agreed_workers: Number(e.target.value) || 0 })} />
+            <input type="checkbox" checked={c.critical} onChange={(e) => save({ ...c, critical: e.target.checked })} />
+            <button type="button" className="rtable__del" onClick={() => remove(c.id)}>✕</button>
+          </div>
+        ))}
+        <div className="rtable__row rtable__row--contractors">
+          <input className="input" placeholder={tl(lang, 'proj_contractor_name')} value={draft.name} onChange={(e) => setDraft({ ...draft, name: e.target.value })} />
+          <input className="input" type="number" min={0} value={draft.agreed_workers} onChange={(e) => setDraft({ ...draft, agreed_workers: Number(e.target.value) || 0 })} />
+          <input type="checkbox" checked={draft.critical} onChange={(e) => setDraft({ ...draft, critical: e.target.checked })} />
+          <button type="button" className="btn btn--ghost" disabled={!draft.name.trim()}
+            onClick={() => save({ project_id: projectId, ...draft, name: draft.name.trim() })
+              .then((ok) => { if (ok) setDraft({ name: '', agreed_workers: 0, critical: false }) })}>
+            {tl(lang, 'proj_add_contractor')}
+          </button>
+        </div>
+      </div>
+      {err && <p className="alert">⚠ {err}</p>}
+    </div>
+  )
 }

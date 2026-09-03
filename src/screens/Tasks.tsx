@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { Loader } from '../components/Loader'
 import { useAuth } from '../auth'
 import { useStore } from '../store'
 import { useI18n } from '../i18n'
+import { usePerms } from '../lib/usePerms'
 import { fetchMemberDirectory, type DirectoryMember } from '../api'
 import { fetchTasks, createTask, updateTask, deleteTask, type WorkTask } from '../lib/tasks'
+import { axisLabel } from '../traffic/i18n'
 import { notifyUser } from '../defects/api'
 import { sendPush } from '../lib/push'
 
@@ -27,12 +30,16 @@ export const T = {
   assigned_notif: { he: 'הוקצתה לך משימה', en: 'A task was assigned to you' },
   loading: { he: 'טוען משימות…', en: 'Loading tasks…' },
   mine_only: { he: 'רק שלי', en: 'Mine only' },
+  only_tl: { he: 'רק רמזור', en: 'Traffic light only' },
+  by_assignee: { he: 'לפי אחראי', en: 'By assignee' },
+  pmo_only: { he: 'סגירה על ידי PMO בלבד', en: 'PMO closes this' },
 } as const
 
 export default function Tasks() {
   const { user, isAdmin } = useAuth()
   const { lang } = useI18n()
   const t = (k: keyof typeof T) => T[k][lang]
+  const { canEdit, can } = usePerms()
   const { projects, projectName } = useStore()
   const [tasks, setTasks] = useState<WorkTask[] | null>(null)
   const [users, setUsers] = useState<DirectoryMember[]>([])
@@ -41,6 +48,7 @@ export default function Tasks() {
   const [assignee, setAssignee] = useState('')
   const [due, setDue] = useState('')
   const [mineOnly, setMineOnly] = useState(false)
+  const [tlOnly, setTlOnly] = useState(false)
   const [err, setErr] = useState('')
   // inline edit: id of the task being edited + its draft values
   const [editId, setEditId] = useState<string | null>(null)
@@ -57,11 +65,18 @@ export default function Tasks() {
   const shown = useMemo(() => {
     let list = tasks ?? []
     if (mineOnly) list = list.filter((x) => x.assignee_email?.toLowerCase() === me || x.created_by.toLowerCase() === me)
+    if (tlOnly) {
+      list = list.filter((x) => x.source === 'traffic_light')
+      list = [...list].sort((a, b) => (a.assignee_email ?? '~').localeCompare(b.assignee_email ?? '~') || (a.due_date ?? '9').localeCompare(b.due_date ?? '9'))
+    }
     return list
-  }, [tasks, mineOnly, me])
+  }, [tasks, mineOnly, tlOnly, me])
 
   const nameOf = (email: string | null) =>
     email ? (users.find((u) => u.email.toLowerCase() === email.toLowerCase())?.name ?? email) : '—'
+
+  // the DB trigger enforces the same rule server-side; this is the courteous UI half of it
+  const canClose = (x: WorkTask) => x.source !== 'traffic_light' || canEdit('traffic_light')
 
   async function onAdd() {
     if (!user || !title.trim()) return
@@ -80,8 +95,9 @@ export default function Tasks() {
   }
 
   async function toggle(x: WorkTask) {
+    if (!canClose(x)) return
     const status = x.status === 'open' ? 'done' : 'open'
-    await updateTask(x.id, { status, done_at: status === 'done' ? new Date().toISOString() : null })
+    await updateTask(x.id, { status, done_at: status === 'done' ? new Date().toISOString() : null, closed_by: status === 'done' ? (me ?? null) : null })
     reload()
   }
 
@@ -126,6 +142,7 @@ export default function Tasks() {
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <label className="task-mine"><input type="checkbox" checked={mineOnly} onChange={(e) => setMineOnly(e.target.checked)} /> {t('mine_only')}</label>
+          <label className="task-mine"><input type="checkbox" checked={tlOnly} onChange={(e) => setTlOnly(e.target.checked)} /> {t('only_tl')}{tlOnly ? ` · ${t('by_assignee')}` : ''}</label>
           <span className="count mono">{openCount} {t('open_n')}</span>
         </div>
       </div>
@@ -153,7 +170,9 @@ export default function Tasks() {
             const overdue = x.status === 'open' && x.due_date && x.due_date < today
             return (
               <div key={x.id} className={`task ${x.status === 'done' ? 'task--done' : ''} ${overdue ? 'task--overdue' : ''}`}>
-                <input type="checkbox" className="task__check" checked={x.status === 'done'} onChange={() => toggle(x)} />
+                <input type="checkbox" className="task__check" checked={x.status === 'done'}
+                  disabled={!canClose(x)} title={!canClose(x) ? t('pmo_only') : undefined}
+                  onChange={() => toggle(x)} />
                 {editId === x.id ? (
                   <div className="task__body" style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
                     <input className="input" style={{ flex: '2 1 180px' }} value={draft.title}
@@ -178,7 +197,12 @@ export default function Tasks() {
                   <div className="task__body">
                     <b>{x.title}</b>
                     <small>
-                      {x.project_id && <span className="tag tag--muted">{projectName(x.project_id)}</span>}
+                      {x.project_id && (
+                        x.source === 'traffic_light' && can('traffic_light')
+                          ? <Link to={`/traffic/${x.project_id}`} className="tag tag--muted">{projectName(x.project_id)}</Link>
+                          : <span className="tag tag--muted">{projectName(x.project_id)}</span>
+                      )}
+                      {x.source === 'traffic_light' && <span className="tag tag--amber">🚦 {axisLabel(lang, x.axis ?? 'gray')}</span>}
                       {x.assignee_email && <span className="tag tag--green">👤 {nameOf(x.assignee_email)}</span>}
                       {x.due_date && (
                         <span className={`tag ${overdue ? 'tag--clay' : 'tag--ink'}`}>

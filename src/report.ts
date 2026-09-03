@@ -4,6 +4,7 @@
 import type { Entry, FieldDef } from './data'
 import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from './data'
 import { MISSING_KEY, bdActive, coopLabel, filledMissing, parseCoops, parseMissing, reasonLabel, taskLabel } from './lib/reportTables'
+import { CREW_KEY, ISSUE_BLOCKING_KEY, filledCrew, parseCrew } from './lib/crewRows'
 import { escapeHtml } from './lib/html'
 
 // Official brand artwork served from the app's own domain — the copy that used
@@ -22,11 +23,12 @@ export function buildReportHtml(o: {
   const v = o.entry.values
   const skipMalf = (key: string) =>
     deptIdOf(v[MALFUNCTION_DEPT_KEY]) === 'none' && (key === MALFUNCTION_DEPT_KEY || key === MALFUNCTION_TEXT_KEY)
+  const blockingFlag = deptIdOf(v[MALFUNCTION_DEPT_KEY]) !== 'none' && /^(כן|yes|true)$/i.test((v[ISSUE_BLOCKING_KEY] ?? '').trim())
   const rows = o.defs
     .filter((f) => f.type !== 'photo' && String(v[f.key] ?? '').trim() && !skipMalf(f.key))
     .map((f, i) => `<tr style="background:${i % 2 ? '#f6f8f4' : '#ffffff'}">
       <td style="padding:14px 18px;color:${MUT};font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">${esc(f.label_he)}</td>
-      <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(v[f.key]).replace(/\n/g, '<br>')}</td></tr>`).join('')
+      <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(v[f.key]).replace(/\n/g, '<br>')}${f.key === MALFUNCTION_TEXT_KEY && blockingFlag ? ` · <b>חוסם עבודה</b>` : ''}</td></tr>`).join('')
 
   // The email report is Hebrew — normalize standard task/coop names that were
   // stored in English (entry created with the EN UI).
@@ -69,6 +71,13 @@ export function buildReportHtml(o: {
         <td style="padding:14px 18px;color:#c14a15;font-weight:700;font-size:16px;vertical-align:top;width:32%;border-bottom:1px solid ${LINE}">⚠ תקרית בטיחות</td>
         <td style="padding:14px 18px;color:${I};font-size:16px;line-height:1.5;vertical-align:top;border-bottom:1px solid ${LINE}">${esc(incident).replace(/\n/g, '<br>')}</td></tr>` : ''}
     </table>` : ''
+  const crew = filledCrew(parseCrew(v[CREW_KEY]))
+  const crewHtml = crew.length ? `
+    <div style="font-size:18px;font-weight:800;color:${I};margin:26px 0 6px">כוח אדם באתר</div>
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;overflow:hidden">
+      <tr>${th('קבלן')}${th('עובדים', 'width:20%')}${th('שעות', 'width:20%')}</tr>
+      ${crew.map((r, i) => `<tr style="background:${i % 2 ? '#f6f8f4' : '#ffffff'}">${td(esc(r.contractor))}${td(String(r.workers))}${td(String(r.hours))}</tr>`).join('')}
+    </table>` : ''
   const missing = filledMissing(parseMissing(v[MISSING_KEY]))
   const missingHtml = missing.length ? `
     <div style="font-size:18px;font-weight:800;color:${I};margin:26px 0 6px">חומר חסר</div>
@@ -92,7 +101,7 @@ export function buildReportHtml(o: {
         <div style="font-size:16px;color:${MUT};margin-top:6px">מנהל עבודה: ${esc(o.authorName)}</div></td></tr>
       <tr><td style="padding:14px 32px 8px">
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;overflow:hidden">${rows}</table>
-        ${safetyHtml}${progressHtml}${missingHtml}${photos}</td></tr>
+        ${safetyHtml}${progressHtml}${crewHtml}${missingHtml}${photos}</td></tr>
       <tr><td style="padding:22px 32px 28px"><div style="border-top:1px solid ${LINE};padding-top:16px;font-size:13px;color:#94a094">דוח יומן עבודה · <span style="color:${GREEN};font-weight:700">Agrotop Work Diary</span></div></td></tr>
     </table>
   </div>`
@@ -103,12 +112,13 @@ export function buildReportText(o: { projectName: string; authorName: string; en
   const v = o.entry.values
   const skipMalf = (key: string) =>
     deptIdOf(v[MALFUNCTION_DEPT_KEY]) === 'none' && (key === MALFUNCTION_DEPT_KEY || key === MALFUNCTION_TEXT_KEY)
+  const blockingFlag = deptIdOf(v[MALFUNCTION_DEPT_KEY]) !== 'none' && /^(כן|yes|true)$/i.test((v[ISSUE_BLOCKING_KEY] ?? '').trim())
   const lines = [`יומן עבודה — ${o.projectName} — ${o.entry.work_date}`, `מנהל עבודה: ${o.authorName}`, '']
   for (const f of o.defs) {
     if (f.type === 'photo') continue
     if (skipMalf(f.key)) continue
     const val = String(v[f.key] ?? '').trim()
-    if (val) lines.push(`${f.label_he}: ${val}`)
+    if (val) lines.push(`${f.label_he}: ${val}${f.key === MALFUNCTION_TEXT_KEY && blockingFlag ? ' · חוסם עבודה' : ''}`)
   }
   const heRows = (rows: { task: string; pct: number; remarks: string }[]) =>
     rows.filter((r) => r.task.trim()).map((r) => ({ ...r, task: taskLabel(r.task, 'he') }))
@@ -127,6 +137,10 @@ export function buildReportText(o: { projectName: string; authorName: string; en
       lines.push(`  ציוד BD:`)
       for (const r of c.bd) lines.push(`    ${r.task}: ${r.pct}%${r.remarks ? ` — ${r.remarks}` : ''}`)
     }
+  }
+  const crew = filledCrew(parseCrew(v[CREW_KEY]))
+  if (crew.length) {
+    lines.push('', `כוח אדם באתר:\n${crew.map((r) => `- ${r.contractor}: ${r.workers} עובדים, ${r.hours} שעות`).join('\n')}`)
   }
   const training = String(v[SAFETY_TRAINING_KEY] ?? '').trim()
   const incident = String(v[SAFETY_INCIDENT_KEY] ?? '').trim()

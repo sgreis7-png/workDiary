@@ -44,6 +44,15 @@ const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m)
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
 const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
 const SafetyTopicsAdmin = lazy(() => import('./safety/SafetyTopicsAdmin').then((m) => ({ default: m.SafetyTopicsAdmin })))
+// Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
+// deliveries/issues screens (task 12) and the admin screens (task 13) exist.
+const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
+const TrafficProject = lazy(() => import('./screens/traffic/TrafficProject'))
+const Deliveries = lazy(() => import('./screens/traffic/Deliveries'))
+const DeliveriesPick = lazy(() => import('./screens/traffic/Deliveries').then((m) => ({ default: m.DeliveriesPick })))
+const Issues = lazy(() => import('./screens/traffic/Issues'))
+const WbsTemplates = lazy(() => import('./screens/traffic/WbsTemplates'))
+const TrafficSettings = lazy(() => import('./screens/traffic/TrafficSettings'))
 
 function RequireAuth({ children }: { children: ReactElement }) {
   const { user, loading } = useAuth()
@@ -63,6 +72,14 @@ function RequirePerm({ area, edit, children }: { area: PermArea; edit?: boolean;
   const level = perm(area)
   const ok = edit ? level === 'edit' : level !== 'none'
   return ok ? children : <Navigate to="/" replace />
+}
+/** Either-area gate: purchasing users hold only `deliveries`, not `traffic_light`. Exported
+ *  so the deliveries/issues screens (a later task) can import it once they exist. */
+export function RequireAnyPerm({ areas, children }: { areas: PermArea[]; children: ReactElement }) {
+  const { perm, permsReady } = usePerms()
+  const { loading } = useAuth()
+  if (loading || !permsReady) return <Loader full label="טוען…" />
+  return areas.some((a) => perm(a) !== 'none') ? children : <Navigate to="/" replace />
 }
 /**
  * Index: the first thing this user is actually allowed to see.
@@ -114,6 +131,11 @@ export default function App() {
         <Route path="lists" element={<DistLists />} />
         <Route path="projects" element={<RequirePerm area="projects"><Projects /></RequirePerm>} />
         <Route path="control" element={<RequirePerm area="control_center"><ControlCenter /></RequirePerm>} />
+        <Route path="traffic" element={<RequirePerm area="traffic_light"><TrafficBoard /></RequirePerm>} />
+        <Route path="traffic/pick/deliveries" element={<RequireAnyPerm areas={['traffic_light', 'deliveries']}><DeliveriesPick /></RequireAnyPerm>} />
+        <Route path="traffic/:projectId" element={<RequirePerm area="traffic_light"><TrafficProject /></RequirePerm>} />
+        <Route path="traffic/:projectId/deliveries" element={<RequireAnyPerm areas={['traffic_light', 'deliveries']}><Deliveries /></RequireAnyPerm>} />
+        <Route path="traffic/:projectId/issues" element={<RequirePerm area="traffic_light"><Issues /></RequirePerm>} />
         <Route path="safety" element={<RequirePerm area="safety"><SafetyList /></RequirePerm>} />
         <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
@@ -126,6 +148,8 @@ export default function App() {
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
         <Route path="admin/safety-topics" element={<RequireAdmin><SafetyTopicsAdmin /></RequireAdmin>} />
+        <Route path="admin/wbs" element={<RequireAdmin><WbsTemplates /></RequireAdmin>} />
+        <Route path="admin/traffic-settings" element={<RequireAdmin><TrafficSettings /></RequireAdmin>} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>

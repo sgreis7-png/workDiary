@@ -2,6 +2,7 @@
 // inside the entry's `values` map, so they ride the existing draft persistence
 // (IndexedDB), offline queue and Supabase JSONB storage with no schema change.
 import type { Lang } from '../i18n'
+import { COOP_TEMPLATE, type WbsTemplate } from '../traffic/wbs'
 
 export const PROGRESS_KEY = 'progress_table'      // legacy: single flat table
 export const HOUSE_PCT_KEY = 'progress_house_pct'  // legacy: single overall pct
@@ -13,18 +14,9 @@ export interface ProgressRow { task: string; pct: number; remarks: string }
 export interface CoopReport { name: string; pct: number; rows: ProgressRow[]; bd: ProgressRow[] }
 export interface MissingRow { code: string; desc: string; amount: string; reason: string }
 
-// Standard coop construction phases — pre-seeded on every new report.
-export const DEFAULT_TASKS: { he: string; en: string }[] = [
-  { he: 'הקמת קונס׳ (שלד)', en: 'Structure erection (frame)' },
-  { he: 'גמר קורות בטון', en: 'Concrete beams finish' },
-  { he: 'כיסוי תקרה', en: 'Ceiling covering' },
-  { he: 'חיפוי קירות', en: 'Wall cladding' },
-  { he: 'כיסוי גג', en: 'Roof covering' },
-  { he: 'ציוד פנים (אוכל, מים)', en: 'Interior equipment (feed, water)' },
-  { he: 'ציוד אקלים', en: 'Climate equipment' },
-  { he: 'חשמל ובקרה', en: 'Electrical & controls' },
-  { he: 'גמרים ומסירה', en: 'Finishes & handover' },
-]
+// Standard coop categories (spec 5.1) — the DB template wbs_templates is the live list;
+// this is the seed and the offline fallback.
+export const DEFAULT_TASKS: { he: string; en: string }[] = COOP_TEMPLATE.map((t) => ({ he: t.name_he, en: t.name_en }))
 
 // Big Dutchman installation tasks — the "ציוד BD" sub-form inside each coop report.
 export const BD_TASKS: { he: string; en: string }[] = [
@@ -46,8 +38,12 @@ export const MISSING_REASONS: { id: string; he: string; en: string }[] = [
   { id: '4', he: 'לא סופק מספיק', en: 'Not enough delivered' },
 ]
 
-export const defaultProgressRows = (lang: Lang): ProgressRow[] =>
-  DEFAULT_TASKS.map((t) => ({ task: t[lang], pct: 0, remarks: '' }))
+const templateRows = (template?: WbsTemplate[]) =>
+  template && template.length ? template.filter((t) => t.active !== false).sort((a, b) => a.sort_order - b.sort_order)
+    .map((t) => ({ he: t.name_he, en: t.name_en })) : DEFAULT_TASKS
+
+export const defaultProgressRows = (lang: Lang, template?: WbsTemplate[]): ProgressRow[] =>
+  templateRows(template).map((t) => ({ task: t[lang], pct: 0, remarks: '' }))
 
 const clampPct = (n: unknown) => Math.min(100, Math.max(0, Math.round(Number(n) || 0)))
 
@@ -65,12 +61,15 @@ export const coopName = (lang: Lang, n: number) => (lang === 'he' ? `לול ${n}
 
 // Stored rows keep the task name in whatever language the entry was created in.
 // For read-only display, map known standard names to the viewer's language;
-// custom (user-typed) tasks pass through untouched.
+// custom (user-typed) tasks — and any legacy name, which is history and must not be
+// relabeled under a current category — pass through untouched. (The traffic-light
+// computation does its own legacy→category mapping in SQL; this is display only.)
 export function taskLabel(task: string, lang: Lang): string {
   const s = String(task ?? '').trim()
   const hit = DEFAULT_TASKS.find((t) => t.he === s || t.en === s)
     ?? BD_TASKS.find((t) => t.he === s || t.en === s)
-  return hit ? hit[lang] : task
+  if (hit) return hit[lang]
+  return task
 }
 
 /** "לול 3" ↔ "Coop 3" for display; custom coop names pass through. */
@@ -82,8 +81,8 @@ export function coopLabel(name: string, lang: Lang): string {
 export const defaultBdRows = (lang: Lang): ProgressRow[] =>
   BD_TASKS.map((t) => ({ task: t[lang], pct: 0, remarks: '' }))
 
-export const defaultCoop = (lang: Lang, n = 1): CoopReport =>
-  ({ name: coopName(lang, n), pct: 0, rows: defaultProgressRows(lang), bd: defaultBdRows(lang) })
+export const defaultCoop = (lang: Lang, n = 1, template?: WbsTemplate[]): CoopReport =>
+  ({ name: coopName(lang, n), pct: 0, rows: defaultProgressRows(lang, template), bd: defaultBdRows(lang) })
 
 /** BD sub-form is worth showing in reports only once something was filled in. */
 export const bdActive = (bd: ProgressRow[]): boolean =>

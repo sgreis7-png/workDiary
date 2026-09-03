@@ -1,15 +1,17 @@
 import { describe, it, expect } from 'vitest'
 import {
   COOPS_KEY, DEFAULT_TASKS, HOUSE_PCT_KEY, PROGRESS_KEY,
-  bdActive, computedPct, defaultCoop, defaultProgressRows, filledMissing, parseCoops, parseMissing, parseProgress, reasonLabel,
+  bdActive, computedPct, defaultCoop, defaultProgressRows, filledMissing, parseCoops, parseMissing, parseProgress, reasonLabel, taskLabel,
 } from './reportTables'
+import { COOP_TEMPLATE } from '../traffic/wbs'
 
 describe('parseProgress', () => {
-  it('seeds the default task list when the key is absent', () => {
+  it('seeds the coop template when the key is absent', () => {
     const rows = parseProgress(undefined, 'he')
-    expect(rows).toHaveLength(DEFAULT_TASKS.length)
-    expect(rows[0]).toEqual({ task: DEFAULT_TASKS[0].he, pct: 0, remarks: '' })
-    expect(parseProgress(undefined, 'en')[1].task).toBe('Concrete beams finish')
+    expect(rows).toHaveLength(10)
+    expect(rows[0]).toEqual({ task: 'עבודות עפר ובטון', pct: 0, remarks: '' })
+    expect(parseProgress(undefined, 'en')[2].task).toBe('Concrete beams')
+    expect(DEFAULT_TASKS.map((t) => t.he)).toEqual(COOP_TEMPLATE.map((t) => t.name_he))
   })
   it('keeps an explicitly emptied table empty', () => {
     expect(parseProgress('[]', 'he')).toEqual([])
@@ -22,6 +24,19 @@ describe('parseProgress', () => {
     expect(parseProgress(JSON.stringify([{ task: 'x', pct: 250 }]), 'en')[0].pct).toBe(100)
     expect(parseProgress(JSON.stringify([{ task: 'x', pct: -5 }]), 'en')[0].pct).toBe(0)
     expect(parseProgress('not json', 'en')).toHaveLength(DEFAULT_TASKS.length) // falls back to defaults
+  })
+})
+
+describe('taskLabel with legacy names', () => {
+  it('passes a legacy name through verbatim — relabeling it would corrupt the historical record', () => {
+    expect(taskLabel('גמר קורות בטון', 'he')).toBe('גמר קורות בטון')
+    expect(taskLabel('Ceiling covering', 'he')).toBe('Ceiling covering')
+    expect(taskLabel('ציוד פנים', 'en')).toBe('Interior equipment') // current template name, not legacy — still maps
+    expect(taskLabel('משהו מותאם', 'he')).toBe('משהו מותאם')
+  })
+  it('defaultCoop takes a DB template when given', () => {
+    const tpl = [{ id: 'x', project_type: 'hatchery', sort_order: 1, name_he: 'מדגרה א', name_en: 'Hatchery A', critical: false, active: true }]
+    expect(defaultCoop('he', 1, tpl).rows.map((r) => r.task)).toEqual(['מדגרה א'])
   })
 })
 

@@ -7,6 +7,7 @@ import { T as TASKS_T } from './screens/Tasks'
 import { T as QCD_T } from './screens/defects/QCDashboard'
 import { T as AUDIT_T, AUDIT_LABELS } from './screens/admin/AuditLog'
 import { G as GANTT_G } from './gantt/i18n'
+import { TL as TRAFFIC_TL } from './traffic/i18n'
 
 // Every he/en dictionary in the app, including the per-screen ones — those sat
 // outside this invariant, which is the only thing that catches a key shipped
@@ -19,6 +20,7 @@ const dicts: [string, Record<string, { he: string; en: string }>][] = [
   ['screens/admin/AuditLog.tsx', AUDIT_T as Record<string, { he: string; en: string }>],
   ['screens/admin/AuditLog.tsx AUDIT_LABELS', AUDIT_LABELS],
   ['gantt/i18n.ts', GANTT_G as Record<string, { he: string; en: string }>],
+  ['traffic/i18n.ts', TRAFFIC_TL as Record<string, { he: string; en: string }>],
 ]
 
 describe.each(dicts)('%s dictionary', (_name, dict) => {

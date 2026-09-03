@@ -6,6 +6,8 @@ import { fetchAssignments, fetchFieldDefs, fetchMyPriorities, fetchProjects, fet
 import { colorForIndex, FieldDef, Project } from './data'
 import { useAuth } from './auth'
 import { useI18n } from './i18n'
+import { fetchTemplates } from './traffic/api'
+import { COOP_TEMPLATE, type WbsTemplate } from './traffic/wbs'
 
 interface Store {
   projects: Project[] // sorted by effective priority (user's own, else company)
@@ -13,15 +15,18 @@ interface Store {
   userMap: Record<string, string>
   myPriorities: Record<string, number>
   assignments: Record<string, string[]> // project_id -> user_id[]
+  wbsTemplates: WbsTemplate[]
   ready: boolean
   projectName: (id: string) => string
   projectColor: (id: string) => string
   userName: (id: string) => string
   effectivePriority: (p: Project) => number
+  templateFor: (type: string | null | undefined) => WbsTemplate[]
   setUserPriority: (projectId: string, priority: number) => Promise<void>
   reloadProjects: () => Promise<void>
   reloadFields: () => Promise<void>
   reloadAssignments: () => Promise<void>
+  reloadTemplates: () => Promise<void>
 }
 
 const Ctx = createContext<Store>(null as unknown as Store)
@@ -35,6 +40,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const [userMap, setUserMap] = useState<Record<string, string>>({})
   const [myPriorities, setMyPriorities] = useState<Record<string, number>>({})
   const [assignments, setAssignments] = useState<Record<string, string[]>>({})
+  const [wbsTemplates, setWbsTemplates] = useState<WbsTemplate[]>([])
   const [ready, setReady] = useState(false)
   const [loadError, setLoadError] = useState('')
   const [reloadKey, setReloadKey] = useState(0)
@@ -42,15 +48,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const reloadProjects = useCallback(async () => setRawProjects(await fetchProjects()), [])
   const reloadFields = useCallback(async () => setFieldDefs(await fetchFieldDefs()), [])
   const reloadAssignments = useCallback(async () => setAssignments(await fetchAssignments()), [])
+  const reloadTemplates = useCallback(async () => setWbsTemplates(await fetchTemplates().catch(() => [])), [])
 
   useEffect(() => {
     if (!user) { setReady(false); return }
     let alive = true
     setLoadError('')
     ;(async () => {
-      const [p, f, u, pri, asg] = await Promise.all([fetchProjects(), fetchFieldDefs(), fetchUserMap(), fetchMyPriorities(), fetchAssignments()])
+      const [p, f, u, pri, asg, tpl] = await Promise.all([
+        fetchProjects(), fetchFieldDefs(), fetchUserMap(), fetchMyPriorities(), fetchAssignments(),
+        fetchTemplates().catch(() => [] as WbsTemplate[]),
+      ])
       if (!alive) return
-      setRawProjects(p); setFieldDefs(f); setUserMap(u); setMyPriorities(pri); setAssignments(asg); setReady(true)
+      setRawProjects(p); setFieldDefs(f); setUserMap(u); setMyPriorities(pri); setAssignments(asg); setWbsTemplates(tpl); setReady(true)
     })().catch((e) => {
       // previously only console.error — the app then sat on a loader forever
       if (alive) setLoadError(String((e as Error)?.message ?? e))
@@ -78,6 +88,14 @@ export function DataProvider({ children }: { children: ReactNode }) {
   const projectColor = (id: string) => colorForIndex(projects.findIndex((p) => p.id === id))
   const userName = (id: string) => userMap[id] ?? '—'
 
+  // Fallback rows carry no real id — a minted fake one (e.g. `seed-0`) would get written
+  // into a uuid column and surface as a raw Postgres cast error. An empty id lets callers
+  // (e.g. the deliveries category select) skip these options for anything that writes.
+  const templateFor = useCallback((type: string | null | undefined) => {
+    const rows = wbsTemplates.filter((t) => t.project_type === (type || 'coop') && t.active)
+    return rows.length ? rows : COOP_TEMPLATE.map((t) => ({ ...t, id: '', active: true }))
+  }, [wbsTemplates])
+
   if (loadError && !ready) {
     return (
       <div className="page" dir="rtl" style={{ maxWidth: 460, margin: '18vh auto', textAlign: 'center' }}>
@@ -92,8 +110,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   return (
     <Ctx.Provider value={{
-      projects, fieldDefs, userMap, myPriorities, assignments, ready,
-      projectName, projectColor, userName, effectivePriority, setUserPriority, reloadProjects, reloadFields, reloadAssignments,
+      projects, fieldDefs, userMap, myPriorities, assignments, wbsTemplates, ready,
+      projectName, projectColor, userName, effectivePriority, templateFor,
+      setUserPriority, reloadProjects, reloadFields, reloadAssignments, reloadTemplates,
     }}>
       {children}
     </Ctx.Provider>

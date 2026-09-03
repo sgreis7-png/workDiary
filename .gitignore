@@ -17,3 +17,4 @@ __pycache__/
 
 # screenshot / dev scratch output
 .shots-tmp/
+.claude/.typecheck-pending

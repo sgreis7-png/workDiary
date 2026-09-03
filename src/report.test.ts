@@ -159,6 +159,31 @@ describe('malfunction rendering', () => {
   })
 })
 
+describe('crew rows + blocking flag rendering', () => {
+  const mfDefs: FieldDef[] = [
+    ...defs,
+    { id: '4', key: 'malfunction_dept', label_he: 'מחלקת בלת"מ', label_en: 'Malfunction dept.', type: 'select', required: true, options: [], sort_order: 86, active: true },
+    { id: '5', key: 'malfunction', label_he: 'בלת"מ', label_en: 'Malfunction', type: 'long_text', required: false, options: [], sort_order: 87, active: true },
+  ]
+  it('renders crew rows and the blocking flag, skips them when empty', () => {
+    const e: Entry = {
+      ...entry,
+      values: {
+        ...entry.values,
+        crew_rows: JSON.stringify([{ contractor: 'שמחה', workers: 12, hours: 9 }]),
+        malfunction_dept: 'הנדסה', malfunction: 'x', issue_blocking: 'כן',
+      },
+    }
+    const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry: e, defs: mfDefs }, 'https://logo.png')
+    expect(html).toContain('כוח אדם באתר')
+    expect(html).toContain('שמחה')
+    expect(html).toContain('חוסם עבודה')
+
+    const emptyHtml = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs: mfDefs }, 'https://logo.png')
+    expect(emptyHtml).not.toContain('כוח אדם באתר')
+  })
+})
+
 describe('safety rendering', () => {
   it('omits the safety block entirely when nothing was filled', () => {
     const html = buildReportHtml({ projectName: 'p', authorName: 'a', entry, defs }, 'https://logo.png')

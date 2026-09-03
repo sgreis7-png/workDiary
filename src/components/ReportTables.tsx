@@ -3,6 +3,7 @@ import { Button } from './ui'
 import { useI18n } from '../i18n'
 import { CoopReport, MISSING_REASONS, MissingRow, ProgressRow, computedPct, defaultBdRows, defaultCoop } from '../lib/reportTables'
 import { useDialog } from '../lib/useDialog'
+import type { WbsTemplate } from '../traffic/wbs'
 
 /** 0–100 slider rendered as a filled bar; big thumb on touch, slim bar on desktop. */
 export function PctSlider({ value, onChange }: { value: number; onChange: (v: number) => void }) {
@@ -58,7 +59,7 @@ export function ProgressTable({ rows, onChange, injectAfter, injected }: {
 
 /** Per-coop progress reports: named blocks, each with an overall slider + task
     table + the ציוד BD sub-form. The foreman adds one block per coop (לול). */
-export function CoopReports({ coops, onChange }: { coops: CoopReport[]; onChange: (c: CoopReport[]) => void }) {
+export function CoopReports({ coops, onChange, template }: { coops: CoopReport[]; onChange: (c: CoopReport[]) => void; template?: WbsTemplate[] }) {
   const { t, lang } = useI18n()
   const [bdOpen, setBdOpen] = useState<number | null>(null)
   // This panel is rendered inline by the table rather than as its own component, so the hook
@@ -121,7 +122,7 @@ export function CoopReports({ coops, onChange }: { coops: CoopReport[]; onChange
         </div>
       ))}
       <Button variant="ghost" type="button"
-        onClick={() => onChange([...coops, defaultCoop(lang, coops.length + 1)])}>
+        onClick={() => onChange([...coops, defaultCoop(lang, coops.length + 1, template)])}>
         ＋ {t('add_coop')}
       </Button>
 
