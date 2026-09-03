@@ -56,4 +56,21 @@ describe('renderWeeklyReport', () => {
       payload: [{ ...green, name: '<script>x</script>' }], tasks: [], takenAt: '2026-09-06T04:00:00Z', appUrl: 'https://x.test' })
     expect(html).not.toContain('<script>')
   })
+  // A snapshot written before a schema change can lack `axes`/`due` entirely (not just a
+  // missing axis key) — the field this renders from is the database's, not this file's
+  // type. Losing the whole weekly mail to one stale row would be worse than a blank row.
+  it('renders a project whose axes and due are entirely absent, without throwing', () => {
+    const bare: Record<string, unknown> = { ...red, project_id: 'p3', name: 'שדה בר' }
+    delete bare.axes
+    delete bare.due
+    expect(() => renderWeeklyReport({
+      payload: [bare as unknown as typeof red],
+      tasks: [], takenAt: '2026-09-06T04:00:00Z', appUrl: 'https://x.test',
+    })).not.toThrow()
+    const { html } = renderWeeklyReport({
+      payload: [bare as unknown as typeof red],
+      tasks: [], takenAt: '2026-09-06T04:00:00Z', appUrl: 'https://x.test',
+    })
+    expect(html).toContain('שדה בר')
+  })
 })

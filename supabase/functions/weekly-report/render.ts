@@ -32,8 +32,11 @@ export interface ProjectLightLike {
   color: Color
   gray_reason: string | null
   action_line: string
-  due: { contract: string | null; forecast: string | null; delta_days: number | null }
-  axes: Partial<Record<AxisKey, AxisResultLike>>
+  // Optional/nullable despite mirroring ProjectLight's required fields: this renders
+  // stored snapshots, and a snapshot written before a schema change can carry a shape
+  // older than the current type — the renderer must not throw on that row.
+  due?: { contract: string | null; forecast: string | null; delta_days: number | null } | null
+  axes?: Partial<Record<AxisKey, AxisResultLike>> | null
 }
 
 export interface TaskLike {
@@ -99,7 +102,7 @@ function sortForBoard(a: ProjectLightLike, b: ProjectLightLike): number {
 }
 
 function axisResult(p: ProjectLightLike, axis: AxisKey): AxisResultLike {
-  return p.axes[axis] ?? { color: 'na', reason: '' }
+  return p.axes?.[axis] ?? { color: 'na', reason: '' }
 }
 
 function boardRowHtml(p: ProjectLightLike, appUrl: string): string {
@@ -111,7 +114,7 @@ function boardRowHtml(p: ProjectLightLike, appUrl: string): string {
       <a href="${esc(url)}" style="color:${I};text-decoration:none">${esc(p.name)}</a>
     </td>
     ${axesHtml}
-    <td style="padding:10px 12px;border-bottom:1px solid ${LINE};color:${MUT};font-size:13px;white-space:nowrap">${fmtDelta(p.due.delta_days)}</td>
+    <td style="padding:10px 12px;border-bottom:1px solid ${LINE};color:${MUT};font-size:13px;white-space:nowrap">${fmtDelta(p.due?.delta_days ?? null)}</td>
     <td style="padding:10px 12px;border-bottom:1px solid ${LINE};color:${I};font-size:14px">${esc(p.action_line)}</td>
   </tr>`
 }
