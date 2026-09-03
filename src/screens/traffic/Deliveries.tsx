@@ -127,7 +127,9 @@ export default function Deliveries() {
                 <option value="">—</option>{users.map((u) => <option key={u.email} value={u.email.toLowerCase()}>{u.name}</option>)}
               </select>
             </td>
-            <td>{editable && <button className="rtable__del" onClick={() => remove(r.id)} aria-label={tl(lang, 'delete')}>✕</button>}</td>
+            {/* delete needs traffic_light per the 0066 policy split — a deliveries-only user
+                (purchasing) keeps add/edit but can no longer remove supply rows outright */}
+            <td>{canEdit('traffic_light') && <button className="rtable__del" onClick={() => remove(r.id)} aria-label={tl(lang, 'delete')}>✕</button>}</td>
           </tr>))}</tbody>
       </table>
       {shown.length === 0 && <div className="tl-block__empty">{tl(lang, 'proj_tasks_empty')}</div>}
