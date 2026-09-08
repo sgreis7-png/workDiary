@@ -8,9 +8,9 @@ import { COOP_TEMPLATE } from '../traffic/wbs'
 describe('parseProgress', () => {
   it('seeds the coop template when the key is absent', () => {
     const rows = parseProgress(undefined, 'he')
-    expect(rows).toHaveLength(10)
-    expect(rows[0]).toEqual({ task: 'עבודות עפר ובטון', pct: 0, remarks: '' })
-    expect(parseProgress(undefined, 'en')[2].task).toBe('Concrete beams')
+    expect(rows).toHaveLength(9)
+    expect(rows[0]).toEqual({ task: 'עבודות בטון', pct: 0, remarks: '' })
+    expect(parseProgress(undefined, 'en')[2].task).toBe('Structure works')
     expect(DEFAULT_TASKS.map((t) => t.he)).toEqual(COOP_TEMPLATE.map((t) => t.name_he))
   })
   it('keeps an explicitly emptied table empty', () => {
@@ -31,7 +31,8 @@ describe('taskLabel with legacy names', () => {
   it('passes a legacy name through verbatim — relabeling it would corrupt the historical record', () => {
     expect(taskLabel('גמר קורות בטון', 'he')).toBe('גמר קורות בטון')
     expect(taskLabel('Ceiling covering', 'he')).toBe('Ceiling covering')
-    expect(taskLabel('ציוד פנים', 'en')).toBe('Interior equipment') // current template name, not legacy — still maps
+    expect(taskLabel('ציוד BD', 'en')).toBe('BD equipment') // current template name, not legacy — still maps
+    expect(taskLabel('ציוד פנים', 'en')).toBe('ציוד פנים')  // renamed away in 0076: history, left as filed
     expect(taskLabel('משהו מותאם', 'he')).toBe('משהו מותאם')
   })
   it('defaultCoop takes a DB template when given', () => {
