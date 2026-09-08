@@ -179,7 +179,7 @@ export default function EntryDetail() {
                   <tr key={i}>
                     <td data-label={tl(lang, 'form_crew_contractor')}>{r.contractor}</td>
                     <td data-label={tl(lang, 'form_crew_workers')}>{r.workers}</td>
-                    <td data-label={tl(lang, 'form_crew_hours')}>{r.hours}</td>
+                    <td data-label={tl(lang, 'form_crew_hours')}>{r.from && r.to ? `${r.from}–${r.to} (${r.hours})` : r.hours}</td>
                   </tr>
                 ))}</tbody></table>
             </Section>

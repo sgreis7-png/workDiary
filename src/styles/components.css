@@ -195,7 +195,7 @@ select.input { cursor: pointer; }
 .rtable__row--progress { display: grid; grid-template-columns: 1.1fr 1.4fr 1.3fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--missing { display: grid; grid-template-columns: 0.9fr 1.5fr 0.7fr 1.5fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--workers { display: grid; grid-template-columns: 1.3fr 0.9fr 150px 34px; gap: 12px; align-items: center; padding: 10px 14px; }
-.rtable__row--crew { display: grid; grid-template-columns: 2fr 1fr 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; }
+.rtable__row--crew { display: grid; grid-template-columns: 2fr 0.9fr 1fr 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--contractors { display: grid; grid-template-columns: 2fr 1fr auto auto; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--wbs { display: grid; grid-template-columns: 90px 2fr 2fr auto auto auto; gap: 12px; align-items: center; padding: 10px 14px; }
 /* Reordering reads as safe, reversible taps: a stacked ▲▼ pair, not a drag gesture that
@@ -218,6 +218,10 @@ select.input { cursor: pointer; }
   .rtable__row--wbs > .rtable__del { grid-area: del; }
 }
 .rtable__row .input { padding: 9px 12px; font-size: 15px; }
+.rtable__cell { display: block; min-width: 0; }
+.rtable__cell .input { width: 100%; }
+.rtable__minilabel { display: none; }
+.rtable__hint { display: block; font-size: 11.5px; color: var(--ink-3); margin-top: 4px; }
 .rtable__del { width: 28px; height: 28px; border-radius: 50%; border: none; background: var(--paper-2); color: var(--ink-3);
   font-size: 13px; line-height: 1; cursor: pointer; transition: all .15s var(--ease); justify-self: center; flex: none; }
 .rtable__del:hover { background: var(--clay); color: #fff; }
@@ -253,10 +257,13 @@ select.input { cursor: pointer; }
   .rtable__row--workers > input:nth-of-type(2) { grid-area: id; }
   .rtable__row--workers > .btn, .rtable__row--workers > .sig-thumb { grid-area: sign; justify-self: start; }
   .rtable__row--workers > .rtable__del { grid-area: del; }
-  .rtable__row--crew { grid-template-columns: 1fr 1fr 34px; grid-template-areas: 'name name del' 'workers hours hours'; gap: 10px; padding: 14px; }
+  .rtable__row--crew { grid-template-columns: 1fr 1fr 34px; grid-template-areas: 'name name del' 'workers workers workers' 'from to to'; gap: 10px; padding: 14px; }
   .rtable__row--crew > select, .rtable__row--crew > input:nth-of-type(1) { grid-area: name; }
-  .rtable__row--crew > input:nth-of-type(2) { grid-area: workers; }
-  .rtable__row--crew > input:nth-of-type(3) { grid-area: hours; }
+  .rtable__row--crew > .rtable__cell--workers { grid-area: workers; }
+  .rtable__row--crew > .rtable__cell--from { grid-area: from; }
+  .rtable__row--crew > .rtable__cell--to { grid-area: to; }
+  .rtable__minilabel { display: block; font-family: var(--font-mono); font-size: 11px; font-weight: 700;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-3); margin-bottom: 4px; }
   .rtable__row--crew > .rtable__del { grid-area: del; }
   .rtable__row--contractors { grid-template-columns: 1fr 1fr 34px; grid-template-areas: 'name name del' 'agreed critical critical'; gap: 10px; padding: 14px; }
   .rtable__row--contractors > input:nth-of-type(1) { grid-area: name; }

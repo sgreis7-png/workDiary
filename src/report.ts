@@ -4,8 +4,11 @@
 import type { Entry, FieldDef } from './data'
 import { deptIdOf, MALFUNCTION_DEPT_KEY, MALFUNCTION_TEXT_KEY, SAFETY_INCIDENT_KEY, SAFETY_TRAINING_KEY } from './data'
 import { MISSING_KEY, bdActive, coopLabel, filledMissing, parseCoops, parseMissing, reasonLabel, taskLabel } from './lib/reportTables'
-import { CREW_KEY, ISSUE_BLOCKING_KEY, filledCrew, parseCrew } from './lib/crewRows'
+import { CREW_KEY, ISSUE_BLOCKING_KEY, filledCrew, parseCrew, type CrewRow } from './lib/crewRows'
 import { escapeHtml } from './lib/html'
+
+// Older rows carry only a total; newer ones report the window they worked.
+const crewHours = (r: CrewRow) => (r.from && r.to ? `${r.from}–${r.to} (${r.hours} שעות)` : `${r.hours} שעות`)
 
 // Official brand artwork served from the app's own domain — the copy that used
 // to live in Supabase storage (brand/logo.png) is an outdated crude version.
@@ -75,8 +78,8 @@ export function buildReportHtml(o: {
   const crewHtml = crew.length ? `
     <div style="font-size:18px;font-weight:800;color:${I};margin:26px 0 6px">כוח אדם באתר</div>
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;border:1px solid ${LINE};border-radius:12px;overflow:hidden">
-      <tr>${th('קבלן')}${th('עובדים', 'width:20%')}${th('שעות', 'width:20%')}</tr>
-      ${crew.map((r, i) => `<tr style="background:${i % 2 ? '#f6f8f4' : '#ffffff'}">${td(esc(r.contractor))}${td(String(r.workers))}${td(String(r.hours))}</tr>`).join('')}
+      <tr>${th('קבלן')}${th('עובדים', 'width:16%')}${th('שעות עבודה', 'width:28%')}</tr>
+      ${crew.map((r, i) => `<tr style="background:${i % 2 ? '#f6f8f4' : '#ffffff'}">${td(esc(r.contractor))}${td(String(r.workers))}${td(esc(crewHours(r)))}</tr>`).join('')}
     </table>` : ''
   const missing = filledMissing(parseMissing(v[MISSING_KEY]))
   const missingHtml = missing.length ? `
@@ -140,7 +143,7 @@ export function buildReportText(o: { projectName: string; authorName: string; en
   }
   const crew = filledCrew(parseCrew(v[CREW_KEY]))
   if (crew.length) {
-    lines.push('', `כוח אדם באתר:\n${crew.map((r) => `- ${r.contractor}: ${r.workers} עובדים, ${r.hours} שעות`).join('\n')}`)
+    lines.push('', `כוח אדם באתר:\n${crew.map((r) => `- ${r.contractor}: ${r.workers} עובדים, ${crewHours(r)}`).join('\n')}`)
   }
   const training = String(v[SAFETY_TRAINING_KEY] ?? '').trim()
   const incident = String(v[SAFETY_INCIDENT_KEY] ?? '').trim()

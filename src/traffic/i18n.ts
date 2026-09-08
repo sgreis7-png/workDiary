@@ -111,6 +111,8 @@ export const TL = {
   form_crew_contractor: { he: 'קבלן', en: 'Contractor' },
   form_crew_workers:  { he: 'עובדים', en: 'Workers' },
   form_crew_hours:    { he: 'שעות', en: 'Hours' },
+  form_crew_from:     { he: 'משעה', en: 'From' },
+  form_crew_to:       { he: 'עד שעה', en: 'To' },
   form_crew_add:      { he: '+ קבלן', en: '+ Contractor' },
   form_crew_free:     { he: 'קבלן אחר…', en: 'Other contractor…' },
   form_blocking_q:    { he: 'הבלת"מ חוסם עבודה?', en: 'Does the issue block work?' },
