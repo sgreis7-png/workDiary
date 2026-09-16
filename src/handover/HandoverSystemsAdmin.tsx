@@ -44,7 +44,7 @@ export function HandoverSystemsAdmin() {
     ;[next[i], next[j]] = [next[j], next[i]]
     setRows(next)
     try { await reorderHandoverSystems(next.map((s) => s.id)); await load() }
-    catch (e) { setErr(String((e as Error).message ?? e)) }
+    catch (e) { setErr(String((e as Error).message ?? e)); await load() }
   }
 
   return (
