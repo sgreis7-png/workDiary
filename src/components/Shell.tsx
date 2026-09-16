@@ -15,6 +15,7 @@ import { chatUnackedStatus, fetchProfileMetas, type UserMessage } from '../lib/m
 import { ensurePush, enablePush, pushSupported } from '../lib/push'
 import { useDT } from '../defects/i18n'
 import { st } from '../safety/i18n'
+import { ht } from '../handover/i18n'
 import { tl } from '../traffic/i18n'
 import { GlobalDictation } from './GlobalDictation'
 
@@ -266,6 +267,13 @@ export function Shell() {
               ],
             },
             {
+              key: 'handover',
+              label: ht(lang, 'nav_section_handover'),
+              items: [
+                ...(can('handover') ? [{ to: '/handover', icon: '📋', label: ht(lang, 'nav_handover') }] : []),
+              ],
+            },
+            {
               key: 'quality',
               label: t('nav_section_defects'),
               items: [
@@ -303,6 +311,7 @@ export function Shell() {
                 ...(isAdmin ? [{ to: '/admin/feedback', icon: '📢', label: t('nav_feedback_admin') }] : []),
                 ...(isAdmin ? [{ to: '/admin/audit', icon: '⧉', label: t('nav_audit') }] : []),
                 ...(isAdmin ? [{ to: '/admin/safety-topics', icon: '⛑', label: st(lang, 'nav_safety_topics') }] : []),
+                ...(isAdmin ? [{ to: '/admin/handover-systems', icon: '📋', label: ht(lang, 'nav_handover_systems') }] : []),
                 ...(isAdmin ? [{ to: '/admin/wbs', icon: '🧱', label: tl(lang, 'nav_wbs') }] : []),
                 ...(isAdmin ? [{ to: '/admin/traffic-settings', icon: '🚦', label: tl(lang, 'nav_tl_settings') }] : []),
               ],

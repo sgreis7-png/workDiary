@@ -44,6 +44,10 @@ const SafetyFormScreen = lazy(() => import('./safety/SafetyFormScreen').then((m)
 const SafetyList = lazy(() => import('./safety/SafetyList').then((m) => ({ default: m.SafetyList })))
 const SafetyView = lazy(() => import('./safety/SafetyView').then((m) => ({ default: m.SafetyView })))
 const SafetyTopicsAdmin = lazy(() => import('./safety/SafetyTopicsAdmin').then((m) => ({ default: m.SafetyTopicsAdmin })))
+const HandoverFormScreen = lazy(() => import('./handover/HandoverFormScreen').then((m) => ({ default: m.HandoverFormScreen })))
+const HandoverList = lazy(() => import('./handover/HandoverList').then((m) => ({ default: m.HandoverList })))
+const HandoverView = lazy(() => import('./handover/HandoverView').then((m) => ({ default: m.HandoverView })))
+const HandoverSystemsAdmin = lazy(() => import('./handover/HandoverSystemsAdmin').then((m) => ({ default: m.HandoverSystemsAdmin })))
 // Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
 // deliveries/issues screens (task 12) and the admin screens (task 13) exist.
 const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
@@ -142,6 +146,11 @@ export default function App() {
         <Route path="safety/new" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id/edit" element={<RequirePerm area="safety" edit><SafetyFormScreen /></RequirePerm>} />
         <Route path="safety/:id" element={<RequirePerm area="safety"><SafetyView /></RequirePerm>} />
+        <Route path="handover" element={<RequirePerm area="handover"><HandoverList /></RequirePerm>} />
+        <Route path="handover/new" element={<RequirePerm area="handover" edit><HandoverFormScreen /></RequirePerm>} />
+        {/* a saved handover is a signed document: editing it is admin-only, matching 0077's RLS */}
+        <Route path="handover/:id/edit" element={<RequireAdmin><HandoverFormScreen /></RequireAdmin>} />
+        <Route path="handover/:id" element={<RequirePerm area="handover"><HandoverView /></RequirePerm>} />
         <Route path="gantt" element={<RequirePerm area="gantt"><GanttScreen /></RequirePerm>} />
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
@@ -150,6 +159,7 @@ export default function App() {
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
         <Route path="admin/safety-topics" element={<RequireAdmin><SafetyTopicsAdmin /></RequireAdmin>} />
+        <Route path="admin/handover-systems" element={<RequireAdmin><HandoverSystemsAdmin /></RequireAdmin>} />
         <Route path="admin/wbs" element={<RequireAdmin><WbsTemplates /></RequireAdmin>} />
         <Route path="admin/traffic-settings" element={<RequireAdmin><TrafficSettings /></RequireAdmin>} />
       </Route>
