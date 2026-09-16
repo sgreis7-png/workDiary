@@ -40,7 +40,11 @@ export function HandoverView() {
   const onDelete = async () => {
     if (!window.confirm(ht(lang, 'view_delete_confirm'))) return
     try { await deleteHandover(form.id); nav('/handover') }
-    catch (e) { window.alert('⚠ ' + String((e as Error).message ?? e)) }
+    catch (e) {
+      const msg = e instanceof Error && e.message === 'forbidden'
+        ? ht(lang, 'err_forbidden_delete') : String((e as Error).message ?? e)
+      window.alert('⚠ ' + msg)
+    }
   }
 
   const print = () => {

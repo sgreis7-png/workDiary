@@ -35,17 +35,21 @@ export async function createHandover(input: HandoverInput): Promise<string> {
 // rewritten by the person who filled it. A non-admin's update matches no row, and Postgres
 // reports success with zero rows affected rather than an error; .select('id') is what tells
 // the two apart, so the screen can say "you cannot" instead of "saved".
+//
+// The thrown message is a sentinel, not user-visible text — this layer has no lang, so the
+// callers (HandoverFormScreen's save catch, HandoverView's delete catch) map it through
+// src/handover/i18n.ts. A literal Hebrew string here would reach an English user verbatim.
 export async function updateHandover(id: string, input: HandoverInput): Promise<void> {
   const { data, error } = await supabase.from('handover_forms')
     .update({ ...input, updated_at: new Date().toISOString() }).eq('id', id).select('id')
   if (error) throw error
-  if (!data || data.length === 0) throw new Error('אין הרשאה לערוך טופס מסירה חתום')
+  if (!data || data.length === 0) throw new Error('forbidden')
 }
 
 export async function deleteHandover(id: string): Promise<void> {
   const { data, error } = await supabase.from('handover_forms').delete().eq('id', id).select('id')
   if (error) throw error
-  if (!data || data.length === 0) throw new Error('אין הרשאה למחוק טופס מסירה חתום')
+  if (!data || data.length === 0) throw new Error('forbidden')
 }
 
 // ---------- system catalogue ----------

@@ -47,6 +47,9 @@ export const S = {
   err_attendee: { he: 'נדרש לפחות נוכח אחד עם שם ותפקיד', en: 'At least one attendee with a name and a role is required' },
   err_systems:  { he: 'יש לסמן תקין או לא תקין לכל המערכות', en: 'Every system must be marked OK or faulty' },
   err_receiver: { he: 'יש למלא שם מקבל הפרויקט, תפקיד וחתימה', en: 'Receiver name, role and signature are required' },
+  err_catalogue: { he: 'טעינת רשימת המערכות נכשלה — לא ניתן לשמור טופס חדש. יש לבדוק חיבור ולנסות שוב', en: 'Failed to load the systems list — a new form cannot be saved. Check your connection and try again' },
+  err_forbidden_edit:   { he: 'אין הרשאה לערוך טופס מסירה חתום', en: 'You are not allowed to edit a signed handover form' },
+  err_forbidden_delete: { he: 'אין הרשאה למחוק טופס מסירה חתום', en: 'You are not allowed to delete a signed handover form' },
 
   sign_title:   { he: 'חתימת מקבל הפרויקט', en: 'Receiver signature' },
 

@@ -57,6 +57,7 @@ export function HandoverFormScreen() {
   const [recName, setRecName] = useState('')
   const [recRole, setRecRole] = useState('')
   const [recSig, setRecSig] = useState<Sig | null>(null)
+  const [signedAt, setSignedAt] = useState<string | null>(null)
   const [signing, setSigning] = useState(false)
   const [errors, setErrors] = useState<HandoverError[]>([])
   const [saveErr, setSaveErr] = useState('')
@@ -64,7 +65,15 @@ export function HandoverFormScreen() {
   const [restored, setRestored] = useState(false)
   const [draftNotice, setDraftNotice] = useState(false)
 
-  useEffect(() => { fetchHandoverSystems().then(setCatalogue).catch(() => {}) }, [])
+  useEffect(() => {
+    fetchHandoverSystems().then(setCatalogue).catch(() => {
+      // Offline or the request failed: leave the catalogue empty rather than let the
+      // screen look like the systems table itself is broken (finding 4) — the Save
+      // button below is disabled for a new form until this succeeds.
+      setSaveErr(ht(lang, 'err_catalogue'))
+    })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // load the record (edit) or restore a pending draft (new)
   useEffect(() => {
@@ -83,6 +92,7 @@ export function HandoverFormScreen() {
         setSavedSystems(f.systems)
         setNotes(f.notes)
         setRecName(f.receiver_name); setRecRole(f.receiver_role); setRecSig(f.receiver_signature)
+        setSignedAt(f.signed_at)
         setLoading(false); setRestored(true)
       } else {
         try {
@@ -108,13 +118,22 @@ export function HandoverFormScreen() {
 
   // the rows to show: active catalogue + anything the record already carries
   useEffect(() => {
-    if (!restored || catalogue.length === 0) return
+    if (!restored) return
+    if (editing) {
+      // A signed handover is a fixed document: rows are exactly what the customer signed,
+      // never merged with the live catalogue. Otherwise a system added after signing would
+      // appear as an unmarked row, and validateHandover would force an admin correction to
+      // tick a system the customer never saw inspected (finding 2).
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setSystems(savedSystems)
+      return
+    }
+    if (catalogue.length === 0) return
     // derives the visible rows from two independent async sources (catalogue fetch,
     // record/draft restore); no single event handler owns this transition, so there is
     // no other place to synchronize it from.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSystems((cur) => systemChecksFor(catalogue, cur.length ? cur : savedSystems))
-  }, [restored, catalogue, savedSystems])
+  }, [editing, restored, catalogue, savedSystems])
 
   // header prefill from the project — only empty fields, never over a typed value
   useEffect(() => {
@@ -168,7 +187,9 @@ export function HandoverFormScreen() {
       ...draft,
       attendees: attendees.filter((a) => a.name.trim() || a.role.trim()),
       notes,
-      signed_at: new Date().toISOString(),
+      // Only a new form stamps "now" — an admin correction on an already-signed record must
+      // not restamp the customer's original signing time (finding 3).
+      signed_at: editing && signedAt ? signedAt : new Date().toISOString(),
     }
     try {
       if (editing && id) {
@@ -180,7 +201,12 @@ export function HandoverFormScreen() {
         nav(`/handover/${newId}`)
       }
     } catch (e) {
-      setSaveErr(String((e as Error).message ?? e))
+      // Only updateHandover can throw the 'forbidden' sentinel here — createHandover has no
+      // such check, so the edit-form wording is always the right one.
+      const msg = e instanceof Error && e.message === 'forbidden'
+        ? ht(lang, 'err_forbidden_edit')
+        : String((e as Error).message ?? e)
+      setSaveErr(msg)
       setBusy(false)
       window.scrollTo({ top: 0, behavior: 'smooth' })
     }
@@ -329,7 +355,7 @@ export function HandoverFormScreen() {
 
         <div className="form-actions">
           <Button variant="ghost" onClick={() => nav('/handover')}>{lang === 'he' ? 'ביטול' : 'Cancel'}</Button>
-          <Button variant="primary" onClick={save} disabled={busy}>
+          <Button variant="primary" onClick={save} disabled={busy || (!editing && catalogue.length === 0)}>
             {busy ? <><span className="spin" />{lang === 'he' ? 'שומר…' : 'Saving…'}</> : (lang === 'he' ? 'שמירה' : 'Save')}
           </Button>
         </div>
