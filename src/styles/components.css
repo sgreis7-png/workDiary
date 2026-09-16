@@ -195,6 +195,14 @@ select.input { cursor: pointer; }
 .rtable__row--progress { display: grid; grid-template-columns: 1.1fr 1.4fr 1.3fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--missing { display: grid; grid-template-columns: 0.9fr 1.5fr 0.7fr 1.5fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--workers { display: grid; grid-template-columns: 1.3fr 0.9fr 150px 34px; gap: 12px; align-items: center; padding: 10px 14px; }
+.rtable__row--attendees { display: grid; grid-template-columns: 1.4fr 1fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
+.rtable__row--handover { display: grid; grid-template-columns: 1.1fr 190px 1.4fr; gap: 12px; align-items: center; padding: 10px 14px; }
+.handover-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.handover-status label { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
+@media (max-width: 720px) {
+  .rtable__row--attendees { grid-template-columns: 1fr 34px; }
+  .rtable__row--handover { grid-template-columns: 1fr; }
+}
 .rtable__row--crew { display: grid; grid-template-columns: 2fr 0.9fr 1fr 1fr auto; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--contractors { display: grid; grid-template-columns: 2fr 1fr auto auto; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--wbs { display: grid; grid-template-columns: 90px 2fr 2fr auto auto auto; gap: 12px; align-items: center; padding: 10px 14px; }

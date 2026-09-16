@@ -13,6 +13,7 @@ import { PERM_AREAS, resolvePerm, type PermArea, type PermLevel } from './perms'
 const SQL = readFileSync('supabase/migrations/0045_enforce_perm_areas.sql', 'utf8')
 const SQL61 = readFileSync('supabase/migrations/0061_safety_forms.sql', 'utf8')
 const SQL64 = readFileSync('supabase/migrations/0064_traffic_light_schema.sql', 'utf8')
+const SQL77 = readFileSync('supabase/migrations/0077_handover_forms.sql', 'utf8')
 
 /** The seeded rows for an ordinary member: the 0045 block plus later role-keyed seeds. */
 function seededDefaults(): Record<string, PermLevel> {
@@ -29,6 +30,9 @@ function seededDefaults(): Record<string, PermLevel> {
     out[area] = level as PermLevel
   }
   for (const [, area, level] of SQL64.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
+    out[area] = level as PermLevel
+  }
+  for (const [, area, level] of SQL77.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
     out[area] = level as PermLevel
   }
   return out
