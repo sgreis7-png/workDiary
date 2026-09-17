@@ -66,10 +66,6 @@ export const S = {
   systems_add:    { he: '+ מערכת חדשה', en: '+ New system' },
   systems_active: { he: 'פעיל', en: 'Active' },
 
-  form_extra:        { he: 'שדות נוספים', en: 'Extra fields' },
-  form_extra_label:  { he: 'שם השדה', en: 'Field name' },
-  form_extra_value:  { he: 'ערך', en: 'Value' },
-  form_add_extra:    { he: '+ הוספת שדה', en: '+ Add field' },
   form_add_system:   { he: '+ הוספת מערכת', en: '+ Add system' },
   form_share:        { he: 'להוסיף לכל המסירות', en: 'Add to every handover' },
   form_share_hint:   { he: 'בלי סימון — השדה קיים במסירה הזו בלבד', en: 'Unchecked, the field exists in this handover only' },
@@ -82,9 +78,6 @@ export const S = {
   },
   remove_row_confirm: { he: 'להסיר את השורה?', en: 'Remove this row?' },
 
-  fields_title:  { he: 'ניהול שדות מסירה', en: 'Manage handover fields' },
-  fields_add:    { he: '+ שדה חדש', en: '+ New field' },
-  nav_handover_fields: { he: 'שדות כותרת במסירה', en: 'Handover header fields' },
   view_extra:    { he: 'שדות נוספים', en: 'Extra fields' },
 } as const
 

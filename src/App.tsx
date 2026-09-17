@@ -48,7 +48,6 @@ const HandoverFormScreen = lazy(() => import('./handover/HandoverFormScreen').th
 const HandoverList = lazy(() => import('./handover/HandoverList').then((m) => ({ default: m.HandoverList })))
 const HandoverView = lazy(() => import('./handover/HandoverView').then((m) => ({ default: m.HandoverView })))
 const HandoverSystemsAdmin = lazy(() => import('./handover/HandoverSystemsAdmin').then((m) => ({ default: m.HandoverSystemsAdmin })))
-const HandoverExtraFieldsAdmin = lazy(() => import('./handover/HandoverExtraFieldsAdmin').then((m) => ({ default: m.HandoverExtraFieldsAdmin })))
 // Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
 // deliveries/issues screens (task 12) and the admin screens (task 13) exist.
 const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
@@ -161,7 +160,6 @@ export default function App() {
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
         <Route path="admin/safety-topics" element={<RequireAdmin><SafetyTopicsAdmin /></RequireAdmin>} />
         <Route path="admin/handover-systems" element={<RequirePerm area="handover" edit><HandoverSystemsAdmin /></RequirePerm>} />
-        <Route path="admin/handover-fields" element={<RequirePerm area="handover" edit><HandoverExtraFieldsAdmin /></RequirePerm>} />
         <Route path="admin/wbs" element={<RequireAdmin><WbsTemplates /></RequireAdmin>} />
         <Route path="admin/traffic-settings" element={<RequireAdmin><TrafficSettings /></RequireAdmin>} />
       </Route>

@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import {
-  blankAttendee, canManageCatalogueRow, cleanExtraFields, extraFieldsFor, handoverMatchesText,
+  blankAttendee, canManageCatalogueRow, handoverMatchesText,
   systemChecksFor, validateHandover,
-  type HandoverDraft, type HandoverExtraFieldDef, type HandoverRec, type HandoverSystem,
+  type HandoverDraft, type HandoverRec, type HandoverSystem,
 } from './model'
 
 const sig = { v: 1 as const, strokes: [[[0, 0], [9, 9]]] }
@@ -89,45 +89,6 @@ describe('handoverMatchesText', () => {
 describe('blankAttendee', () => {
   it('starts empty', () => {
     expect(blankAttendee()).toEqual({ name: '', role: '' })
-  })
-})
-
-describe('cleanExtraFields', () => {
-  // A shared header field nobody filled in must not land in the signed document as an empty
-  // row, and a row whose label was typed then cleared is not a field at all.
-  it('drops rows with a blank label, trims label and value, keeps order', () => {
-    const rows = [
-      { label: '  מס׳ הזמנה  ', value: '  4711 ' },
-      { label: '   ', value: 'ignored' },
-      { label: 'קבלן', value: '' },
-    ]
-    expect(cleanExtraFields(rows)).toEqual([
-      { label: 'מס׳ הזמנה', value: '4711' },
-      { label: 'קבלן', value: '' },
-    ])
-  })
-  it('returns an empty array for no rows', () => {
-    expect(cleanExtraFields([])).toEqual([])
-  })
-})
-
-describe('extraFieldsFor', () => {
-  const cat: HandoverExtraFieldDef[] = [
-    { id: '1', label: 'מס׳ הזמנה', sort_order: 10, active: true, builtin: false, created_by: 'u1' },
-    { id: '2', label: 'קבלן', sort_order: 20, active: false, builtin: false, created_by: 'u1' },
-  ]
-  it('offers the active catalogue as empty rows on a new form', () => {
-    expect(extraFieldsFor(cat, [])).toEqual([{ label: 'מס׳ הזמנה', value: '' }])
-  })
-  it('keeps a saved value whose field has since been deactivated', () => {
-    expect(extraFieldsFor(cat, [{ label: 'קבלן', value: 'דוד' }])).toEqual([
-      { label: 'מס׳ הזמנה', value: '' },
-      { label: 'קבלן', value: 'דוד' },
-    ])
-  })
-  it('reuses a saved value for a field still in the catalogue', () => {
-    expect(extraFieldsFor(cat, [{ label: 'מס׳ הזמנה', value: '99' }]))
-      .toEqual([{ label: 'מס׳ הזמנה', value: '99' }])
   })
 })
 

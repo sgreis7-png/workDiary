@@ -9,12 +9,12 @@ import { useAuth } from '../auth'
 import { SignaturePad } from '../safety/SignaturePad'
 import { sigIsEmpty, sigSvg, type Sig } from '../safety/signature'
 import {
-  createHandover, createHandoverExtraField, createHandoverSystem, DUPLICATE_LABEL,
-  fetchHandoverExtraFields, fetchHandoverSystems, fetchProjectHeader, getHandover, updateHandover,
+  createHandover, createHandoverSystem, DUPLICATE_LABEL,
+  fetchHandoverSystems, fetchProjectHeader, getHandover, updateHandover,
 } from './api'
 import {
-  blankAttendee, cleanExtraFields, extraFieldsFor, systemChecksFor, validateHandover,
-  type HandoverAttendee, type HandoverError, type HandoverExtraField, type HandoverExtraFieldDef,
+  blankAttendee, systemChecksFor, validateHandover,
+  type HandoverAttendee, type HandoverError, type HandoverExtraField,
   type HandoverInput, type HandoverSystem, type HandoverSystemCheck, type SystemStatus,
 } from './model'
 import { ht } from './i18n'
@@ -30,7 +30,6 @@ interface Draft {
   project_nature: string
   attendees: HandoverAttendee[]
   systems: HandoverSystemCheck[]
-  extra_fields: HandoverExtraField[]
   notes: string
   receiver_name: string
   receiver_role: string
@@ -48,9 +47,10 @@ export function HandoverFormScreen() {
   const [loading, setLoading] = useState(editing)
   const [catalogue, setCatalogue] = useState<HandoverSystem[]>([])
   const [savedSystems, setSavedSystems] = useState<HandoverSystemCheck[]>([])
-  const [fieldCatalogue, setFieldCatalogue] = useState<HandoverExtraFieldDef[]>([])
+  // The "שדות נוספים" UI was dropped as redundant with the systems add-row, but a record
+  // saved while it existed still carries its extra_fields — held here untouched so an admin
+  // editing that handover does not silently strip data the customer already saw and signed.
   const [savedExtra, setSavedExtra] = useState<HandoverExtraField[]>([])
-  const [extra, setExtra] = useState<HandoverExtraField[]>([])
   // Labels of system rows added in this session — the only ones the ✕ may remove. Everything
   // else on the form is either a built-in form-70 row or a row the saved record already
   // carries, and the 14 built-in systems can never be dropped from a signed handover
@@ -59,9 +59,7 @@ export function HandoverFormScreen() {
   // it is already in the shared catalogue, not something this screen owns.
   const [addedSystemLabels, setAddedSystemLabels] = useState<Set<string>>(new Set())
   const [newSystem, setNewSystem] = useState('')
-  const [newField, setNewField] = useState('')
   const [shareSystem, setShareSystem] = useState(false)
-  const [shareField, setShareField] = useState(false)
   const [addErr, setAddErr] = useState('')
   const [projectId, setProjectId] = useState('')
   const [date, setDate] = useState(today())
@@ -89,11 +87,6 @@ export function HandoverFormScreen() {
       // button below is disabled for a new form until this succeeds.
       setSaveErr(ht(lang, 'err_catalogue'))
     })
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
-  useEffect(() => {
-    fetchHandoverExtraFields().then(setFieldCatalogue).catch(() => setSaveErr(ht(lang, 'err_catalogue')))
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
@@ -126,7 +119,6 @@ export function HandoverFormScreen() {
             setClient(d.client_name ?? ''); setSite(d.site_location ?? ''); setNature(d.project_nature ?? '')
             setAttendees(d.attendees?.length ? d.attendees : [blankAttendee()])
             setSavedSystems(d.systems ?? [])
-            setSavedExtra(d.extra_fields ?? [])
             setNotes(d.notes ?? '')
             setRecName(d.receiver_name ?? ''); setRecRole(d.receiver_role ?? '')
             setRecSig(d.receiver_signature ?? null)
@@ -159,17 +151,6 @@ export function HandoverFormScreen() {
     setSystems((cur) => systemChecksFor(catalogue, cur.length ? cur : savedSystems))
   }, [editing, restored, catalogue, savedSystems])
 
-  // the header fields to show — same settle-once derivation as the systems rows above
-  useEffect(() => {
-    if (!restored) return
-    if (editing) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- same settle-once derivation as the systems rows above
-      setExtra(savedExtra)
-      return
-    }
-    setExtra((cur) => extraFieldsFor(fieldCatalogue, cur.length ? cur : savedExtra))
-  }, [restored, editing, fieldCatalogue, savedExtra])
-
   // header prefill from the project — only empty fields, never over a typed value
   useEffect(() => {
     if (editing || !restored || !projectId) return
@@ -190,13 +171,13 @@ export function HandoverFormScreen() {
     const t = setTimeout(() => {
       const d: Draft = {
         project_id: projectId, handover_date: date, client_name: client, site_location: site,
-        project_nature: nature, attendees, systems, extra_fields: extra, notes,
+        project_nature: nature, attendees, systems, notes,
         receiver_name: recName, receiver_role: recRole, receiver_signature: recSig,
       }
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* storage full / private mode */ }
     }, 400)
     return () => clearTimeout(t)
-  }, [editing, restored, busy, projectId, date, client, site, nature, attendees, systems, extra, notes, recName, recRole, recSig])
+  }, [editing, restored, busy, projectId, date, client, site, nature, attendees, systems, notes, recName, recRole, recSig])
 
   const updAttendee = (i: number, patch: Partial<HandoverAttendee>) =>
     setAttendees((as) => as.map((a, k) => (k === i ? { ...a, ...patch } : a)))
@@ -235,27 +216,6 @@ export function HandoverFormScreen() {
     setNewSystem(''); setAddErr('')
   }
 
-  const addExtraField = async () => {
-    const label = newField.trim()
-    if (!label) return
-    if (extra.some((f) => foldLabel(f.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
-    if (shareField) {
-      const nextOrder = (fieldCatalogue.reduce((m, f) => Math.max(m, f.sort_order), 0)) + 10
-      try {
-        await createHandoverExtraField(label, nextOrder)
-        setFieldCatalogue(await fetchHandoverExtraFields())
-      } catch (e) {
-        setAddErr((e as Error).message === DUPLICATE_LABEL ? ht(lang, 'form_dup_label') : String((e as Error).message))
-        return
-      }
-    }
-    setExtra((fs) => [...fs, { label, value: '' }])
-    setNewField(''); setAddErr('')
-  }
-
-  const setExtraValue = (i: number, value: string) =>
-    setExtra((fs) => fs.map((f, k) => (k === i ? { ...f, value } : f)))
-  const removeExtra = (i: number) => setExtra((fs) => fs.filter((_, k) => k !== i))
   // The ✕ removes the row from this handover's own list only — it never touches the shared
   // catalogue, so a shared system removed here is still there next time someone opens the form.
   // It is only ever rendered for a row this session added (see addedSystemLabels), so it can
@@ -270,7 +230,7 @@ export function HandoverFormScreen() {
   const save = async () => {
     const draft = {
       project_id: projectId, handover_date: date, client_name: client, site_location: site,
-      project_nature: nature, attendees, systems, extra_fields: extra, receiver_name: recName,
+      project_nature: nature, attendees, systems, extra_fields: savedExtra, receiver_name: recName,
       receiver_role: recRole, receiver_signature: recSig,
     }
     const errs = validateHandover(draft)
@@ -280,7 +240,10 @@ export function HandoverFormScreen() {
     const input: HandoverInput = {
       ...draft,
       attendees: attendees.filter((a) => a.name.trim() || a.role.trim()),
-      extra_fields: cleanExtraFields(extra),
+      // A brand-new form has no extra fields to preserve (savedExtra starts empty); an edit
+      // writes back exactly what the record already carried, since this screen no longer has
+      // any UI to add, change or remove one (finding — "שדות נוספים" was redundant with the
+      // systems add-row and dropped, but a signed record's own fields must not be stripped).
       notes,
       // Only a new form stamps "now" — an admin correction on an already-signed record must
       // not restamp the customer's original signing time (finding 3).
@@ -428,32 +391,6 @@ export function HandoverFormScreen() {
                 {ht(lang, 'form_share')}
               </label>
               <Button variant="ghost" type="button" onClick={addSystemRow}>{ht(lang, 'form_add_system')}</Button>
-            </div>
-          </div>
-        </motion.div>
-
-        <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{ht(lang, 'form_extra')}</motion.div>
-        <motion.div variants={riseIn}>
-          <div className="rtable">
-            <div className="rtable__head rtable__row--extra">
-              <span>{ht(lang, 'form_extra_label')}</span><span>{ht(lang, 'form_extra_value')}</span><span />
-            </div>
-            {extra.map((f, i) => (
-              <div key={f.label} className="rtable__row rtable__row--extra">
-                <strong>{f.label}</strong>
-                <input className="input" value={f.value} placeholder={ht(lang, 'form_extra_value')}
-                  onChange={(e) => setExtraValue(i, e.target.value)} />
-                <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => removeExtra(i)}>✕</button>
-              </div>
-            ))}
-            <div className="addrow">
-              <input className="input" value={newField} placeholder={ht(lang, 'form_extra_label')}
-                onChange={(e) => setNewField(e.target.value)} />
-              <label title={ht(lang, 'form_share_hint')}>
-                <input type="checkbox" checked={shareField} onChange={() => setShareField((v) => !v)} />
-                {ht(lang, 'form_share')}
-              </label>
-              <Button variant="ghost" type="button" onClick={addExtraField}>{ht(lang, 'form_add_extra')}</Button>
             </div>
           </div>
           {addErr && <div className="alert" style={{ marginTop: 10 }}>⚠ {addErr}</div>}

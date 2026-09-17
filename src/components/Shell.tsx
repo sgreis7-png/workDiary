@@ -312,7 +312,6 @@ export function Shell() {
                 ...(isAdmin ? [{ to: '/admin/audit', icon: '⧉', label: t('nav_audit') }] : []),
                 ...(isAdmin ? [{ to: '/admin/safety-topics', icon: '⛑', label: st(lang, 'nav_safety_topics') }] : []),
                 ...(canEdit('handover') ? [{ to: '/admin/handover-systems', icon: '📋', label: ht(lang, 'nav_handover_systems') }] : []),
-                ...(canEdit('handover') ? [{ to: '/admin/handover-fields', icon: '📋', label: ht(lang, 'nav_handover_fields') }] : []),
                 ...(isAdmin ? [{ to: '/admin/wbs', icon: '🧱', label: tl(lang, 'nav_wbs') }] : []),
                 ...(isAdmin ? [{ to: '/admin/traffic-settings', icon: '🚦', label: tl(lang, 'nav_tl_settings') }] : []),
               ],
