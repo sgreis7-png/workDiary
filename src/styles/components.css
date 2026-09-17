@@ -196,7 +196,11 @@ select.input { cursor: pointer; }
 .rtable__row--missing { display: grid; grid-template-columns: 0.9fr 1.5fr 0.7fr 1.5fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--workers { display: grid; grid-template-columns: 1.3fr 0.9fr 150px 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .rtable__row--attendees { display: grid; grid-template-columns: 1.4fr 1fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
-.rtable__row--handover { display: grid; grid-template-columns: 1.1fr 190px 1.4fr; gap: 12px; align-items: center; padding: 10px 14px; }
+.rtable__row--extra { display: grid; grid-template-columns: 1.1fr 1.6fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
+.addrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; }
+.addrow label { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
+@media (max-width: 720px) { .rtable__row--extra { grid-template-columns: 1fr 34px; } }
+.rtable__row--handover { display: grid; grid-template-columns: 1.1fr 190px 1.4fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .handover-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .handover-status label { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }
 @media (max-width: 720px) {
