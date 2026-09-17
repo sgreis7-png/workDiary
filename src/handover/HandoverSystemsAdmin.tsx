@@ -2,16 +2,19 @@ import { useEffect, useState } from 'react'
 import { Button } from '../components/ui'
 import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
+import { useAuth } from '../auth'
 import {
-  createHandoverSystem, fetchHandoverSystems, reorderHandoverSystems, updateHandoverSystem,
+  createHandoverSystem, deleteHandoverSystem, fetchHandoverSystems, reorderHandoverSystems,
+  updateHandoverSystem,
 } from './api'
-import type { HandoverSystem } from './model'
+import { canManageCatalogueRow, type HandoverSystem } from './model'
 import { ht } from './i18n'
 
 // Admin-editable catalogue behind the handover form. Labels are copied into each saved
 // handover, so renaming a system here never rewrites a document a customer signed.
 export function HandoverSystemsAdmin() {
   const { lang } = useI18n()
+  const { user, isAdmin } = useAuth()
   const [rows, setRows] = useState<HandoverSystem[] | null>(null)
   const [label, setLabel] = useState('')
   const [err, setErr] = useState('')
@@ -27,15 +30,15 @@ export function HandoverSystemsAdmin() {
     try {
       await createHandoverSystem(l, (rows.length + 1) * 10)
       setLabel(''); setErr(''); await load()
-    } catch (e) { setErr(String((e as Error).message ?? e)) }
+    } catch (e) { setErr(String((e as Error).message ?? e)); await load() }
   }
   const rename = async (id: string, next: string) => {
     try { await updateHandoverSystem(id, { label: next }); await load() }
-    catch (e) { setErr(String((e as Error).message ?? e)) }
+    catch (e) { setErr(String((e as Error).message ?? e)); await load() }
   }
   const toggle = async (s: HandoverSystem) => {
     try { await updateHandoverSystem(s.id, { active: !s.active }); await load() }
-    catch (e) { setErr(String((e as Error).message ?? e)) }
+    catch (e) { setErr(String((e as Error).message ?? e)); await load() }
   }
   const move = async (i: number, dir: -1 | 1) => {
     const next = [...rows]
@@ -45,6 +48,14 @@ export function HandoverSystemsAdmin() {
     setRows(next)
     try { await reorderHandoverSystems(next.map((s) => s.id)); await load() }
     catch (e) { setErr(String((e as Error).message ?? e)); await load() }
+  }
+  const remove = async (s: HandoverSystem) => {
+    if (!window.confirm(`${ht(lang, 'form_remove')}: ${s.label}?`)) return
+    try { await deleteHandoverSystem(s.id); await load() }
+    catch (e) {
+      setErr((e as Error).message === 'forbidden' ? ht(lang, 'form_no_delete') : String((e as Error).message))
+      await load()
+    }
   }
 
   return (
@@ -70,6 +81,11 @@ export function HandoverSystemsAdmin() {
             <span style={{ display: 'flex', gap: 4 }}>
               <button type="button" className="rtable__del" title="↑" onClick={() => move(i, -1)}>↑</button>
               <button type="button" className="rtable__del" title="↓" onClick={() => move(i, 1)}>↓</button>
+              {canManageCatalogueRow(s, user?.id, isAdmin) ? (
+                <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => remove(s)}>✕</button>
+              ) : (
+                <span className="rtable__del" title={ht(lang, 'form_builtin_lock')} aria-hidden="true">🔒</span>
+              )}
             </span>
           </div>
         ))}
