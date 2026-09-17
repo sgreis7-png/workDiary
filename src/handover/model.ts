@@ -3,7 +3,16 @@ import { sigIsEmpty, type Sig } from '../safety/signature'
 export interface HandoverAttendee { name: string; role: string }
 export type SystemStatus = 'ok' | 'bad'
 export interface HandoverSystemCheck { label: string; status: SystemStatus | null; note: string }
-export interface HandoverSystem { id: string; label: string; sort_order: number; active: boolean }
+export interface HandoverSystem {
+  id: string; label: string; sort_order: number; active: boolean
+  builtin: boolean; created_by: string | null
+}
+export interface HandoverExtraField { label: string; value: string }
+/** A row of the shared header-field catalogue (handover_extra_fields). */
+export interface HandoverExtraFieldDef {
+  id: string; label: string; sort_order: number; active: boolean
+  builtin: boolean; created_by: string | null
+}
 
 export interface HandoverRec {
   id: string
@@ -15,6 +24,7 @@ export interface HandoverRec {
   attendees: HandoverAttendee[]
   systems: HandoverSystemCheck[]
   notes: string
+  extra_fields: HandoverExtraField[]
   receiver_name: string
   receiver_role: string
   receiver_signature: Sig | null
@@ -34,6 +44,7 @@ export interface HandoverDraft {
   project_nature: string
   attendees: HandoverAttendee[]
   systems: HandoverSystemCheck[]
+  extra_fields: HandoverExtraField[]
   receiver_name: string
   receiver_role: string
   receiver_signature: Sig | null
@@ -42,6 +53,7 @@ export interface HandoverDraft {
 export type HandoverError = 'project' | 'header' | 'attendee' | 'systems' | 'receiver'
 
 export const blankAttendee = (): HandoverAttendee => ({ name: '', role: '' })
+export const blankExtraField = (): HandoverExtraField => ({ label: '', value: '' })
 
 /**
  * Everything the paper form leaves no room to skip. A handover is the customer's receipt:
@@ -75,6 +87,40 @@ export function systemChecksFor(
   const activeLabels = new Set(active.map((s) => s.label))
   const retired = saved.filter((s) => !activeLabels.has(s.label))
   return [...rows, ...retired]
+}
+
+/** Save shaping: a row without a label is not a field. Values may legitimately be blank. */
+export function cleanExtraFields(rows: HandoverExtraField[]): HandoverExtraField[] {
+  return rows
+    .map((r) => ({ label: r.label.trim(), value: r.value.trim() }))
+    .filter((r) => r.label !== '')
+}
+
+/**
+ * The header rows the form shows: every active catalogue field, plus any field the saved
+ * record carries that is no longer active. Values already entered are preserved by label.
+ * Same rule as systemChecksFor — a signed document keeps what it was signed with.
+ */
+export function extraFieldsFor(
+  catalogue: HandoverExtraFieldDef[], saved: HandoverExtraField[],
+): HandoverExtraField[] {
+  const byLabel = new Map(saved.map((f) => [f.label, f]))
+  const active = catalogue.filter((f) => f.active)
+  const rows = active.map((f) => byLabel.get(f.label) ?? { label: f.label, value: '' })
+  const activeLabels = new Set(active.map((f) => f.label))
+  return [...rows, ...saved.filter((f) => !activeLabels.has(f.label))]
+}
+
+/**
+ * May this viewer rename or delete a catalogue row? Mirrors 0079's policies: never a builtin
+ * row, otherwise its author or an admin. Kept here so the screens and the database agree.
+ */
+export function canManageCatalogueRow(
+  row: { builtin: boolean; created_by: string | null },
+  userId: string | undefined, isAdmin: boolean,
+): boolean {
+  if (row.builtin) return false
+  return isAdmin || (!!userId && row.created_by === userId)
 }
 
 /** Free-text filter for the list screen: customer, receiver or site. */
