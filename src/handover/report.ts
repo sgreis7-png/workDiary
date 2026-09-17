@@ -24,6 +24,15 @@ export function handoverFormHtml(f: HandoverRec, projectName: string, lang: Lang
         s.status === 'ok' ? `✔ ${S.form_ok[lang]}` : s.status === 'bad' ? `✘ ${S.form_bad[lang]}` : ''}</td>
       <td style="${TD}">${esc(s.note)}</td>
     </tr>`).join('')
+  const extras = (f.extra_fields ?? []).length === 0 ? '' : `
+    <table style="border-collapse:collapse;width:100%;margin-bottom:14px">
+      <tr><th style="${TD}" colspan="2">${S.view_extra[lang]}</th></tr>
+      ${f.extra_fields.map((x) => `
+      <tr>
+        <td style="${TD};width:34%">${esc(x.label)}</td>
+        <td style="${TD}">${esc(x.value)}</td>
+      </tr>`).join('')}
+    </table>`
   return `
   <div dir="rtl" style="direction:rtl;font-family:Arial,'Segoe UI',sans-serif;color:#111;max-width:760px;margin:0 auto">
     <h2 style="text-align:center;margin:8px 0">${S.view_title[lang]} — ${esc(projectName)}</h2>
@@ -41,6 +50,7 @@ export function handoverFormHtml(f: HandoverRec, projectName: string, lang: Lang
         <td style="${TD}"><span dir="ltr">${esc(f.handover_date)}</span></td>
       </tr>
     </table>
+    ${extras}
     <table style="border-collapse:collapse;width:100%;margin-bottom:14px">
       <tr>
         <th style="${TD}">${S.form_attendees[lang]}</th>

@@ -15,6 +15,7 @@ const rec: HandoverRec = {
   receiver_signature: { v: 1, strokes: [[[1, 1], [5, 5]]] },
   signed_at: '2026-09-16T08:00:00Z',
   created_by: 'u', created_at: '', updated_at: '',
+  extra_fields: [{ label: 'מס׳ הזמנה', value: '4711' }],
 }
 
 describe('handoverFormHtml', () => {
@@ -50,5 +51,19 @@ describe('handoverFormHtml', () => {
   it('escapes html in user-entered text', () => {
     const evil = { ...rec, client_name: '<img src=x>' }
     expect(handoverFormHtml(evil, 'p', 'he')).not.toContain('<img src=x>')
+  })
+  it('renders extra header fields with their label and value', () => {
+    expect(html).toContain('מס׳ הזמנה')
+    expect(html).toContain('4711')
+  })
+  it('omits the extra-fields table when the record has none', () => {
+    const bare = handoverFormHtml({ ...rec, extra_fields: [] }, 'p', 'he')
+    expect(bare).not.toContain('שדות נוספים')
+  })
+  it('escapes an extra field label and value', () => {
+    const evil = handoverFormHtml(
+      { ...rec, extra_fields: [{ label: '<b>x</b>', value: '<img src=x>' }] }, 'p', 'he')
+    expect(evil).not.toContain('<img src=x>')
+    expect(evil).toContain('&lt;img src=x&gt;')
   })
 })
