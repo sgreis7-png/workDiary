@@ -53,7 +53,6 @@ export interface HandoverDraft {
 export type HandoverError = 'project' | 'header' | 'attendee' | 'systems' | 'receiver'
 
 export const blankAttendee = (): HandoverAttendee => ({ name: '', role: '' })
-export const blankExtraField = (): HandoverExtraField => ({ label: '', value: '' })
 
 /**
  * Everything the paper form leaves no room to skip. A handover is the customer's receipt:

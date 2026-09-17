@@ -51,6 +51,13 @@ export function HandoverFormScreen() {
   const [fieldCatalogue, setFieldCatalogue] = useState<HandoverExtraFieldDef[]>([])
   const [savedExtra, setSavedExtra] = useState<HandoverExtraField[]>([])
   const [extra, setExtra] = useState<HandoverExtraField[]>([])
+  // Labels of system rows added in this session — the only ones the ✕ may remove. Everything
+  // else on the form is either a built-in form-70 row or a row the saved record already
+  // carries, and the 14 built-in systems can never be dropped from a signed handover
+  // (finding 1) — gating on session membership rather than a builtin flag also means a
+  // shared row someone else added earlier today is not removable here either, which is fine:
+  // it is already in the shared catalogue, not something this screen owns.
+  const [addedSystemLabels, setAddedSystemLabels] = useState<Set<string>>(new Set())
   const [newSystem, setNewSystem] = useState('')
   const [newField, setNewField] = useState('')
   const [shareSystem, setShareSystem] = useState(false)
@@ -87,7 +94,8 @@ export function HandoverFormScreen() {
 
   useEffect(() => {
     fetchHandoverExtraFields().then(setFieldCatalogue).catch(() => setSaveErr(ht(lang, 'err_catalogue')))
-  }, [lang])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   // load the record (edit) or restore a pending draft (new)
   useEffect(() => {
@@ -210,13 +218,20 @@ export function HandoverFormScreen() {
     if (!label) return
     if (systems.some((s) => foldLabel(s.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
     if (shareSystem) {
-      try { await createHandoverSystem(label, (catalogue.length + 1) * 10) }
-      catch (e) {
+      // sort_order from a catalogue snapshot fetched once on mount collides the moment two
+      // rows are shared in the same session (both would compute the same next slot) —
+      // refetch so the second add sees the first.
+      const nextOrder = (catalogue.reduce((m, s) => Math.max(m, s.sort_order), 0)) + 10
+      try {
+        await createHandoverSystem(label, nextOrder)
+        setCatalogue(await fetchHandoverSystems())
+      } catch (e) {
         setAddErr((e as Error).message === DUPLICATE_LABEL ? ht(lang, 'form_dup_label') : String((e as Error).message))
         return
       }
     }
     setSystems((ss) => [...ss, { label, status: null, note: '' }])
+    setAddedSystemLabels((s) => new Set(s).add(foldLabel(label)))
     setNewSystem(''); setAddErr('')
   }
 
@@ -225,8 +240,11 @@ export function HandoverFormScreen() {
     if (!label) return
     if (extra.some((f) => foldLabel(f.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
     if (shareField) {
-      try { await createHandoverExtraField(label, (fieldCatalogue.length + 1) * 10) }
-      catch (e) {
+      const nextOrder = (fieldCatalogue.reduce((m, f) => Math.max(m, f.sort_order), 0)) + 10
+      try {
+        await createHandoverExtraField(label, nextOrder)
+        setFieldCatalogue(await fetchHandoverExtraFields())
+      } catch (e) {
         setAddErr((e as Error).message === DUPLICATE_LABEL ? ht(lang, 'form_dup_label') : String((e as Error).message))
         return
       }
@@ -240,7 +258,14 @@ export function HandoverFormScreen() {
   const removeExtra = (i: number) => setExtra((fs) => fs.filter((_, k) => k !== i))
   // The ✕ removes the row from this handover's own list only — it never touches the shared
   // catalogue, so a shared system removed here is still there next time someone opens the form.
-  const removeSystemRow = (i: number) => setSystems((ss) => ss.filter((_, k) => k !== i))
+  // It is only ever rendered for a row this session added (see addedSystemLabels), so it can
+  // never be the way a form-70 built-in row disappears from a signed handover (finding 1).
+  // A 28px target on a phone is one careless tap away from dropping a system silently, hence
+  // the confirm even for a row that is allowed to go.
+  const removeSystemRow = (i: number) => {
+    if (!window.confirm(ht(lang, 'remove_row_confirm'))) return
+    setSystems((ss) => ss.filter((_, k) => k !== i))
+  }
 
   const save = async () => {
     const draft = {
@@ -390,13 +415,15 @@ export function HandoverFormScreen() {
                 </div>
                 <input className="input" value={s.note} placeholder={ht(lang, 'form_note')}
                   onChange={(e) => setNote(i, e.target.value)} />
-                <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => removeSystemRow(i)}>✕</button>
+                {addedSystemLabels.has(foldLabel(s.label))
+                  ? <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => removeSystemRow(i)}>✕</button>
+                  : <span />}
               </div>
             ))}
             <div className="addrow">
               <input className="input" value={newSystem} placeholder={ht(lang, 'form_system')}
                 onChange={(e) => setNewSystem(e.target.value)} />
-              <label>
+              <label title={ht(lang, 'form_share_hint')}>
                 <input type="checkbox" checked={shareSystem} onChange={() => setShareSystem((v) => !v)} />
                 {ht(lang, 'form_share')}
               </label>

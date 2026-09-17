@@ -30,7 +30,7 @@ export function handoverFormHtml(f: HandoverRec, projectName: string, lang: Lang
       ${f.extra_fields.map((x) => `
       <tr>
         <td style="${TD};width:34%">${esc(x.label)}</td>
-        <td style="${TD}">${esc(x.value)}</td>
+        <td style="${TD}"><span dir="auto">${esc(x.value)}</span></td>
       </tr>`).join('')}
     </table>`
   return `

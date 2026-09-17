@@ -44,6 +44,10 @@ export function HandoverSystemsAdmin() {
     catch (e) { setErr(errMessage(e)); await load() }
   }
   const toggle = async (s: HandoverSystem) => {
+    // Turning off a built-in row hides it from every handover filled after this moment —
+    // that is the documented way to retire a form-70 system, but it is still a one-tap
+    // removal from a signed customer document's future occurrences, so it gets a confirm.
+    if (s.builtin && s.active && !window.confirm(ht(lang, 'systems_disable_builtin_confirm'))) return
     try { await updateHandoverSystem(s.id, { active: !s.active }); await load() }
     catch (e) { setErr(errMessage(e)); await load() }
   }

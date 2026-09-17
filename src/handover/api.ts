@@ -119,7 +119,7 @@ export async function updateHandoverExtraField(
 ): Promise<void> {
   const { data, error } = await supabase.from('handover_extra_fields')
     .update(patch).eq('id', id).select('id')
-  if (error) throw error
+  if (error) throw new Error(isDuplicate(error) ? DUPLICATE_LABEL : error.message)
   if (!data || data.length === 0) throw new Error('forbidden')
 }
 

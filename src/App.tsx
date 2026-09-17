@@ -160,8 +160,8 @@ export default function App() {
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />
         <Route path="admin/safety-topics" element={<RequireAdmin><SafetyTopicsAdmin /></RequireAdmin>} />
-        <Route path="admin/handover-systems" element={<RequireAdmin><HandoverSystemsAdmin /></RequireAdmin>} />
-        <Route path="admin/handover-fields" element={<RequireAdmin><HandoverExtraFieldsAdmin /></RequireAdmin>} />
+        <Route path="admin/handover-systems" element={<RequirePerm area="handover" edit><HandoverSystemsAdmin /></RequirePerm>} />
+        <Route path="admin/handover-fields" element={<RequirePerm area="handover" edit><HandoverExtraFieldsAdmin /></RequirePerm>} />
         <Route path="admin/wbs" element={<RequireAdmin><WbsTemplates /></RequireAdmin>} />
         <Route path="admin/traffic-settings" element={<RequireAdmin><TrafficSettings /></RequireAdmin>} />
       </Route>

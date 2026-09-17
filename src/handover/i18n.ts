@@ -76,6 +76,11 @@ export const S = {
   form_dup_label:    { he: 'השדה כבר קיים ברשימה', en: 'That field already exists' },
   form_builtin_lock: { he: 'שדה מובנה — אפשר לכבות, לא למחוק', en: 'Built-in field — can be switched off, not deleted' },
   form_no_delete:    { he: 'רק מי שהוסיף את השדה, או מנהל מערכת, יכול למחוק אותו', en: 'Only the field’s author or an administrator can delete it' },
+  systems_disable_builtin_confirm: {
+    he: 'המערכת הזו לא תופיע יותר בטופסי מסירה חדשים. להמשיך?',
+    en: 'This system will no longer appear on new handovers. Continue?',
+  },
+  remove_row_confirm: { he: 'להסיר את השורה?', en: 'Remove this row?' },
 
   fields_title:  { he: 'ניהול שדות מסירה', en: 'Manage handover fields' },
   fields_add:    { he: '+ שדה חדש', en: '+ New field' },
