@@ -9,12 +9,13 @@ import { useAuth } from '../auth'
 import { SignaturePad } from '../safety/SignaturePad'
 import { sigIsEmpty, sigSvg, type Sig } from '../safety/signature'
 import {
-  createHandover, fetchHandoverSystems, fetchProjectHeader, getHandover, updateHandover,
+  createHandover, createHandoverExtraField, createHandoverSystem, DUPLICATE_LABEL,
+  fetchHandoverExtraFields, fetchHandoverSystems, fetchProjectHeader, getHandover, updateHandover,
 } from './api'
 import {
-  blankAttendee, systemChecksFor, validateHandover,
-  type HandoverAttendee, type HandoverError, type HandoverInput, type HandoverSystem,
-  type HandoverSystemCheck, type SystemStatus,
+  blankAttendee, cleanExtraFields, extraFieldsFor, systemChecksFor, validateHandover,
+  type HandoverAttendee, type HandoverError, type HandoverExtraField, type HandoverExtraFieldDef,
+  type HandoverInput, type HandoverSystem, type HandoverSystemCheck, type SystemStatus,
 } from './model'
 import { ht } from './i18n'
 
@@ -29,6 +30,7 @@ interface Draft {
   project_nature: string
   attendees: HandoverAttendee[]
   systems: HandoverSystemCheck[]
+  extra_fields: HandoverExtraField[]
   notes: string
   receiver_name: string
   receiver_role: string
@@ -46,6 +48,21 @@ export function HandoverFormScreen() {
   const [loading, setLoading] = useState(editing)
   const [catalogue, setCatalogue] = useState<HandoverSystem[]>([])
   const [savedSystems, setSavedSystems] = useState<HandoverSystemCheck[]>([])
+  const [fieldCatalogue, setFieldCatalogue] = useState<HandoverExtraFieldDef[]>([])
+  const [savedExtra, setSavedExtra] = useState<HandoverExtraField[]>([])
+  const [extra, setExtra] = useState<HandoverExtraField[]>([])
+  // Labels of system rows added in this session — the only ones the ✕ may remove. Everything
+  // else on the form is either a built-in form-70 row or a row the saved record already
+  // carries, and the 14 built-in systems can never be dropped from a signed handover
+  // (finding 1) — gating on session membership rather than a builtin flag also means a
+  // shared row someone else added earlier today is not removable here either, which is fine:
+  // it is already in the shared catalogue, not something this screen owns.
+  const [addedSystemLabels, setAddedSystemLabels] = useState<Set<string>>(new Set())
+  const [newSystem, setNewSystem] = useState('')
+  const [newField, setNewField] = useState('')
+  const [shareSystem, setShareSystem] = useState(false)
+  const [shareField, setShareField] = useState(false)
+  const [addErr, setAddErr] = useState('')
   const [projectId, setProjectId] = useState('')
   const [date, setDate] = useState(today())
   const [client, setClient] = useState('')
@@ -75,6 +92,11 @@ export function HandoverFormScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
+  useEffect(() => {
+    fetchHandoverExtraFields().then(setFieldCatalogue).catch(() => setSaveErr(ht(lang, 'err_catalogue')))
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // load the record (edit) or restore a pending draft (new)
   useEffect(() => {
     let alive = true
@@ -90,6 +112,7 @@ export function HandoverFormScreen() {
         setClient(f.client_name); setSite(f.site_location); setNature(f.project_nature)
         setAttendees(f.attendees.length ? f.attendees : [blankAttendee()])
         setSavedSystems(f.systems)
+        setSavedExtra(f.extra_fields ?? [])
         setNotes(f.notes)
         setRecName(f.receiver_name); setRecRole(f.receiver_role); setRecSig(f.receiver_signature)
         setSignedAt(f.signed_at)
@@ -103,6 +126,7 @@ export function HandoverFormScreen() {
             setClient(d.client_name ?? ''); setSite(d.site_location ?? ''); setNature(d.project_nature ?? '')
             setAttendees(d.attendees?.length ? d.attendees : [blankAttendee()])
             setSavedSystems(d.systems ?? [])
+            setSavedExtra(d.extra_fields ?? [])
             setNotes(d.notes ?? '')
             setRecName(d.receiver_name ?? ''); setRecRole(d.receiver_role ?? '')
             setRecSig(d.receiver_signature ?? null)
@@ -135,6 +159,17 @@ export function HandoverFormScreen() {
     setSystems((cur) => systemChecksFor(catalogue, cur.length ? cur : savedSystems))
   }, [editing, restored, catalogue, savedSystems])
 
+  // the header fields to show — same settle-once derivation as the systems rows above
+  useEffect(() => {
+    if (!restored) return
+    if (editing) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- same settle-once derivation as the systems rows above
+      setExtra(savedExtra)
+      return
+    }
+    setExtra((cur) => extraFieldsFor(fieldCatalogue, cur.length ? cur : savedExtra))
+  }, [restored, editing, fieldCatalogue, savedExtra])
+
   // header prefill from the project — only empty fields, never over a typed value
   useEffect(() => {
     if (editing || !restored || !projectId) return
@@ -155,13 +190,13 @@ export function HandoverFormScreen() {
     const t = setTimeout(() => {
       const d: Draft = {
         project_id: projectId, handover_date: date, client_name: client, site_location: site,
-        project_nature: nature, attendees, systems, notes,
+        project_nature: nature, attendees, systems, extra_fields: extra, notes,
         receiver_name: recName, receiver_role: recRole, receiver_signature: recSig,
       }
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* storage full / private mode */ }
     }, 400)
     return () => clearTimeout(t)
-  }, [editing, restored, busy, projectId, date, client, site, nature, attendees, systems, notes, recName, recRole, recSig])
+  }, [editing, restored, busy, projectId, date, client, site, nature, attendees, systems, extra, notes, recName, recRole, recSig])
 
   const updAttendee = (i: number, patch: Partial<HandoverAttendee>) =>
     setAttendees((as) => as.map((a, k) => (k === i ? { ...a, ...patch } : a)))
@@ -173,10 +208,69 @@ export function HandoverFormScreen() {
   const setNote = (i: number, note: string) =>
     setSystems((ss) => ss.map((s, k) => (k === i ? { ...s, note } : s)))
 
+  // "טלפון " and "טלפון" (or two spellings differing only in case) must count as the same
+  // label — both lists key their rows by label, so two rows that only look distinct here
+  // would share a React key and React would silently merge or drop one row's state.
+  const foldLabel = (s: string) => s.trim().toLocaleLowerCase()
+
+  const addSystemRow = async () => {
+    const label = newSystem.trim()
+    if (!label) return
+    if (systems.some((s) => foldLabel(s.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
+    if (shareSystem) {
+      // sort_order from a catalogue snapshot fetched once on mount collides the moment two
+      // rows are shared in the same session (both would compute the same next slot) —
+      // refetch so the second add sees the first.
+      const nextOrder = (catalogue.reduce((m, s) => Math.max(m, s.sort_order), 0)) + 10
+      try {
+        await createHandoverSystem(label, nextOrder)
+        setCatalogue(await fetchHandoverSystems())
+      } catch (e) {
+        setAddErr((e as Error).message === DUPLICATE_LABEL ? ht(lang, 'form_dup_label') : String((e as Error).message))
+        return
+      }
+    }
+    setSystems((ss) => [...ss, { label, status: null, note: '' }])
+    setAddedSystemLabels((s) => new Set(s).add(foldLabel(label)))
+    setNewSystem(''); setAddErr('')
+  }
+
+  const addExtraField = async () => {
+    const label = newField.trim()
+    if (!label) return
+    if (extra.some((f) => foldLabel(f.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
+    if (shareField) {
+      const nextOrder = (fieldCatalogue.reduce((m, f) => Math.max(m, f.sort_order), 0)) + 10
+      try {
+        await createHandoverExtraField(label, nextOrder)
+        setFieldCatalogue(await fetchHandoverExtraFields())
+      } catch (e) {
+        setAddErr((e as Error).message === DUPLICATE_LABEL ? ht(lang, 'form_dup_label') : String((e as Error).message))
+        return
+      }
+    }
+    setExtra((fs) => [...fs, { label, value: '' }])
+    setNewField(''); setAddErr('')
+  }
+
+  const setExtraValue = (i: number, value: string) =>
+    setExtra((fs) => fs.map((f, k) => (k === i ? { ...f, value } : f)))
+  const removeExtra = (i: number) => setExtra((fs) => fs.filter((_, k) => k !== i))
+  // The ✕ removes the row from this handover's own list only — it never touches the shared
+  // catalogue, so a shared system removed here is still there next time someone opens the form.
+  // It is only ever rendered for a row this session added (see addedSystemLabels), so it can
+  // never be the way a form-70 built-in row disappears from a signed handover (finding 1).
+  // A 28px target on a phone is one careless tap away from dropping a system silently, hence
+  // the confirm even for a row that is allowed to go.
+  const removeSystemRow = (i: number) => {
+    if (!window.confirm(ht(lang, 'remove_row_confirm'))) return
+    setSystems((ss) => ss.filter((_, k) => k !== i))
+  }
+
   const save = async () => {
     const draft = {
       project_id: projectId, handover_date: date, client_name: client, site_location: site,
-      project_nature: nature, attendees, systems, receiver_name: recName,
+      project_nature: nature, attendees, systems, extra_fields: extra, receiver_name: recName,
       receiver_role: recRole, receiver_signature: recSig,
     }
     const errs = validateHandover(draft)
@@ -186,6 +280,7 @@ export function HandoverFormScreen() {
     const input: HandoverInput = {
       ...draft,
       attendees: attendees.filter((a) => a.name.trim() || a.role.trim()),
+      extra_fields: cleanExtraFields(extra),
       notes,
       // Only a new form stamps "now" — an admin correction on an already-signed record must
       // not restamp the customer's original signing time (finding 3).
@@ -302,7 +397,7 @@ export function HandoverFormScreen() {
         <motion.div variants={riseIn}>
           <div className="rtable">
             <div className="rtable__head rtable__row--handover">
-              <span>{ht(lang, 'form_system')}</span><span>{ht(lang, 'form_status')}</span><span>{ht(lang, 'form_note')}</span>
+              <span>{ht(lang, 'form_system')}</span><span>{ht(lang, 'form_status')}</span><span>{ht(lang, 'form_note')}</span><span />
             </div>
             {systems.map((s, i) => (
               <div key={s.label} className="rtable__row rtable__row--handover"
@@ -320,9 +415,48 @@ export function HandoverFormScreen() {
                 </div>
                 <input className="input" value={s.note} placeholder={ht(lang, 'form_note')}
                   onChange={(e) => setNote(i, e.target.value)} />
+                {addedSystemLabels.has(foldLabel(s.label))
+                  ? <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => removeSystemRow(i)}>✕</button>
+                  : <span />}
               </div>
             ))}
+            <div className="addrow">
+              <input className="input" value={newSystem} placeholder={ht(lang, 'form_system')}
+                onChange={(e) => setNewSystem(e.target.value)} />
+              <label title={ht(lang, 'form_share_hint')}>
+                <input type="checkbox" checked={shareSystem} onChange={() => setShareSystem((v) => !v)} />
+                {ht(lang, 'form_share')}
+              </label>
+              <Button variant="ghost" type="button" onClick={addSystemRow}>{ht(lang, 'form_add_system')}</Button>
+            </div>
           </div>
+        </motion.div>
+
+        <motion.div variants={riseIn} className="form__section" style={{ marginTop: 30 }}>{ht(lang, 'form_extra')}</motion.div>
+        <motion.div variants={riseIn}>
+          <div className="rtable">
+            <div className="rtable__head rtable__row--extra">
+              <span>{ht(lang, 'form_extra_label')}</span><span>{ht(lang, 'form_extra_value')}</span><span />
+            </div>
+            {extra.map((f, i) => (
+              <div key={f.label} className="rtable__row rtable__row--extra">
+                <strong>{f.label}</strong>
+                <input className="input" value={f.value} placeholder={ht(lang, 'form_extra_value')}
+                  onChange={(e) => setExtraValue(i, e.target.value)} />
+                <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => removeExtra(i)}>✕</button>
+              </div>
+            ))}
+            <div className="addrow">
+              <input className="input" value={newField} placeholder={ht(lang, 'form_extra_label')}
+                onChange={(e) => setNewField(e.target.value)} />
+              <label title={ht(lang, 'form_share_hint')}>
+                <input type="checkbox" checked={shareField} onChange={() => setShareField((v) => !v)} />
+                {ht(lang, 'form_share')}
+              </label>
+              <Button variant="ghost" type="button" onClick={addExtraField}>{ht(lang, 'form_add_extra')}</Button>
+            </div>
+          </div>
+          {addErr && <div className="alert" style={{ marginTop: 10 }}>⚠ {addErr}</div>}
         </motion.div>
 
         <motion.div variants={riseIn} style={{ marginTop: 24 }}>

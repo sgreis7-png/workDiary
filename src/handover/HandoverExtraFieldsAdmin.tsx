@@ -4,18 +4,18 @@ import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import {
-  createHandoverSystem, deleteHandoverSystem, DUPLICATE_LABEL, fetchHandoverSystems, reorderHandoverSystems,
-  updateHandoverSystem,
+  createHandoverExtraField, deleteHandoverExtraField, DUPLICATE_LABEL, fetchHandoverExtraFields,
+  reorderHandoverExtraFields, updateHandoverExtraField,
 } from './api'
-import { canManageCatalogueRow, type HandoverSystem } from './model'
+import { canManageCatalogueRow, type HandoverExtraFieldDef } from './model'
 import { ht } from './i18n'
 
-// Admin-editable catalogue behind the handover form. Labels are copied into each saved
-// handover, so renaming a system here never rewrites a document a customer signed.
-export function HandoverSystemsAdmin() {
+// Admin-editable catalogue behind the handover form's extra header fields. Labels are copied
+// into each saved handover, so renaming a field here never rewrites a document a customer signed.
+export function HandoverExtraFieldsAdmin() {
   const { lang } = useI18n()
   const { user, isAdmin } = useAuth()
-  const [rows, setRows] = useState<HandoverSystem[] | null>(null)
+  const [rows, setRows] = useState<HandoverExtraFieldDef[] | null>(null)
   const [label, setLabel] = useState('')
   const [err, setErr] = useState('')
 
@@ -26,7 +26,7 @@ export function HandoverSystemsAdmin() {
     return String(msg ?? e)
   }
 
-  const load = () => fetchHandoverSystems().then(setRows).catch((e) => setErr(String((e as Error).message ?? e)))
+  const load = () => fetchHandoverExtraFields().then(setRows).catch((e) => setErr(String((e as Error).message ?? e)))
   useEffect(() => { load() }, [])
 
   if (rows === null) return <Loader full />
@@ -35,20 +35,16 @@ export function HandoverSystemsAdmin() {
     const l = label.trim()
     if (!l) return
     try {
-      await createHandoverSystem(l, (rows.length + 1) * 10)
+      await createHandoverExtraField(l, (rows.length + 1) * 10)
       setLabel(''); setErr(''); await load()
     } catch (e) { setErr(errMessage(e)); await load() }
   }
   const rename = async (id: string, next: string) => {
-    try { await updateHandoverSystem(id, { label: next }); await load() }
+    try { await updateHandoverExtraField(id, { label: next }); await load() }
     catch (e) { setErr(errMessage(e)); await load() }
   }
-  const toggle = async (s: HandoverSystem) => {
-    // Turning off a built-in row hides it from every handover filled after this moment —
-    // that is the documented way to retire a form-70 system, but it is still a one-tap
-    // removal from a signed customer document's future occurrences, so it gets a confirm.
-    if (s.builtin && s.active && !window.confirm(ht(lang, 'systems_disable_builtin_confirm'))) return
-    try { await updateHandoverSystem(s.id, { active: !s.active }); await load() }
+  const toggle = async (f: HandoverExtraFieldDef) => {
+    try { await updateHandoverExtraField(f.id, { active: !f.active }); await load() }
     catch (e) { setErr(errMessage(e)); await load() }
   }
   const move = async (i: number, dir: -1 | 1) => {
@@ -57,12 +53,12 @@ export function HandoverSystemsAdmin() {
     if (j < 0 || j >= next.length) return
     ;[next[i], next[j]] = [next[j], next[i]]
     setRows(next)
-    try { await reorderHandoverSystems(next.map((s) => s.id)); await load() }
+    try { await reorderHandoverExtraFields(next.map((f) => f.id)); await load() }
     catch (e) { setErr(errMessage(e)); await load() }
   }
-  const remove = async (s: HandoverSystem) => {
-    if (!window.confirm(`${ht(lang, 'form_remove')}: ${s.label}?`)) return
-    try { await deleteHandoverSystem(s.id); await load() }
+  const remove = async (f: HandoverExtraFieldDef) => {
+    if (!window.confirm(`${ht(lang, 'form_remove')}: ${f.label}?`)) return
+    try { await deleteHandoverExtraField(f.id); await load() }
     catch (e) { setErr(errMessage(e)); await load() }
   }
 
@@ -71,30 +67,30 @@ export function HandoverSystemsAdmin() {
       <div className="page__head">
         <div>
           <div className="kicker">Agrotop</div>
-          <h1 className="page-title">{ht(lang, 'systems_title')}</h1>
+          <h1 className="page-title">{ht(lang, 'fields_title')}</h1>
         </div>
       </div>
       {err && <div className="alert">⚠ {err}</div>}
       <div className="rtable">
-        {rows.map((s, i) => (
-          <div key={s.id} className="rtable__row rtable__row--attendees">
-            {canManageCatalogueRow(s, user?.id, isAdmin) ? (
-              <input className="input" defaultValue={s.label} onBlur={(e) => {
+        {rows.map((f, i) => (
+          <div key={f.id} className="rtable__row rtable__row--attendees">
+            {canManageCatalogueRow(f, user?.id, isAdmin) ? (
+              <input className="input" defaultValue={f.label} onBlur={(e) => {
                 const v = e.target.value.trim()
-                if (v && v !== s.label) rename(s.id, v)
+                if (v && v !== f.label) rename(f.id, v)
               }} />
             ) : (
-              <input className="input" defaultValue={s.label} readOnly />
+              <input className="input" defaultValue={f.label} readOnly />
             )}
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
-              <input type="checkbox" checked={s.active} onChange={() => toggle(s)} />
+              <input type="checkbox" checked={f.active} onChange={() => toggle(f)} />
               {ht(lang, 'systems_active')}
             </label>
             <span style={{ display: 'flex', gap: 4 }}>
               <button type="button" className="rtable__del" title="↑" onClick={() => move(i, -1)}>↑</button>
               <button type="button" className="rtable__del" title="↓" onClick={() => move(i, 1)}>↓</button>
-              {canManageCatalogueRow(s, user?.id, isAdmin) ? (
-                <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => remove(s)}>✕</button>
+              {canManageCatalogueRow(f, user?.id, isAdmin) ? (
+                <button type="button" className="rtable__del" title={ht(lang, 'form_remove')} onClick={() => remove(f)}>✕</button>
               ) : (
                 <span className="rtable__del" title={ht(lang, 'form_builtin_lock')} aria-hidden="true">🔒</span>
               )}
@@ -102,9 +98,9 @@ export function HandoverSystemsAdmin() {
           </div>
         ))}
         <div className="rtable__foot" style={{ display: 'flex', gap: 10 }}>
-          <input className="input" value={label} placeholder={ht(lang, 'form_system')}
+          <input className="input" value={label} placeholder={ht(lang, 'form_extra_label')}
             onChange={(e) => setLabel(e.target.value)} />
-          <Button variant="ghost" type="button" onClick={add}>{ht(lang, 'systems_add')}</Button>
+          <Button variant="ghost" type="button" onClick={add}>{ht(lang, 'fields_add')}</Button>
         </div>
       </div>
     </div>
