@@ -199,7 +199,12 @@ select.input { cursor: pointer; }
 .rtable__row--extra { display: grid; grid-template-columns: 1.1fr 1.6fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .addrow { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; padding: 10px 14px; }
 .addrow label { display: inline-flex; gap: 6px; align-items: center; white-space: nowrap; }
-@media (max-width: 720px) { .rtable__row--extra { grid-template-columns: 1fr 34px; } }
+@media (max-width: 720px) {
+  .rtable__row--extra { grid-template-columns: 1fr 34px; grid-template-areas: 'label del' 'value value'; gap: 10px; padding: 14px; }
+  .rtable__row--extra > strong { grid-area: label; }
+  .rtable__row--extra > input { grid-area: value; }
+  .rtable__row--extra > .rtable__del { grid-area: del; }
+}
 .rtable__row--handover { display: grid; grid-template-columns: 1.1fr 190px 1.4fr 34px; gap: 12px; align-items: center; padding: 10px 14px; }
 .handover-status { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
 .handover-status label { display: inline-flex; gap: 5px; align-items: center; white-space: nowrap; }

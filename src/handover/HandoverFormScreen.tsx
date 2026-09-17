@@ -200,10 +200,15 @@ export function HandoverFormScreen() {
   const setNote = (i: number, note: string) =>
     setSystems((ss) => ss.map((s, k) => (k === i ? { ...s, note } : s)))
 
+  // "טלפון " and "טלפון" (or two spellings differing only in case) must count as the same
+  // label — both lists key their rows by label, so two rows that only look distinct here
+  // would share a React key and React would silently merge or drop one row's state.
+  const foldLabel = (s: string) => s.trim().toLocaleLowerCase()
+
   const addSystemRow = async () => {
     const label = newSystem.trim()
     if (!label) return
-    if (systems.some((s) => s.label === label)) { setAddErr(ht(lang, 'form_dup_label')); return }
+    if (systems.some((s) => foldLabel(s.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
     if (shareSystem) {
       try { await createHandoverSystem(label, (catalogue.length + 1) * 10) }
       catch (e) {
@@ -218,7 +223,7 @@ export function HandoverFormScreen() {
   const addExtraField = async () => {
     const label = newField.trim()
     if (!label) return
-    if (extra.some((f) => f.label === label)) { setAddErr(ht(lang, 'form_dup_label')); return }
+    if (extra.some((f) => foldLabel(f.label) === foldLabel(label))) { setAddErr(ht(lang, 'form_dup_label')); return }
     if (shareField) {
       try { await createHandoverExtraField(label, (fieldCatalogue.length + 1) * 10) }
       catch (e) {
