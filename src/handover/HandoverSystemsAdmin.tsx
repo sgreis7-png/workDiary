@@ -4,7 +4,7 @@ import { Loader } from '../components/Loader'
 import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import {
-  createHandoverSystem, deleteHandoverSystem, fetchHandoverSystems, reorderHandoverSystems,
+  createHandoverSystem, deleteHandoverSystem, DUPLICATE_LABEL, fetchHandoverSystems, reorderHandoverSystems,
   updateHandoverSystem,
 } from './api'
 import { canManageCatalogueRow, type HandoverSystem } from './model'
@@ -19,6 +19,13 @@ export function HandoverSystemsAdmin() {
   const [label, setLabel] = useState('')
   const [err, setErr] = useState('')
 
+  const errMessage = (e: unknown) => {
+    const msg = (e as Error).message
+    if (msg === DUPLICATE_LABEL) return ht(lang, 'form_dup_label')
+    if (msg === 'forbidden') return ht(lang, 'form_no_delete')
+    return String(msg ?? e)
+  }
+
   const load = () => fetchHandoverSystems().then(setRows).catch((e) => setErr(String((e as Error).message ?? e)))
   useEffect(() => { load() }, [])
 
@@ -30,15 +37,15 @@ export function HandoverSystemsAdmin() {
     try {
       await createHandoverSystem(l, (rows.length + 1) * 10)
       setLabel(''); setErr(''); await load()
-    } catch (e) { setErr(String((e as Error).message ?? e)); await load() }
+    } catch (e) { setErr(errMessage(e)); await load() }
   }
   const rename = async (id: string, next: string) => {
     try { await updateHandoverSystem(id, { label: next }); await load() }
-    catch (e) { setErr(String((e as Error).message ?? e)); await load() }
+    catch (e) { setErr(errMessage(e)); await load() }
   }
   const toggle = async (s: HandoverSystem) => {
     try { await updateHandoverSystem(s.id, { active: !s.active }); await load() }
-    catch (e) { setErr(String((e as Error).message ?? e)); await load() }
+    catch (e) { setErr(errMessage(e)); await load() }
   }
   const move = async (i: number, dir: -1 | 1) => {
     const next = [...rows]
@@ -47,15 +54,12 @@ export function HandoverSystemsAdmin() {
     ;[next[i], next[j]] = [next[j], next[i]]
     setRows(next)
     try { await reorderHandoverSystems(next.map((s) => s.id)); await load() }
-    catch (e) { setErr(String((e as Error).message ?? e)); await load() }
+    catch (e) { setErr(errMessage(e)); await load() }
   }
   const remove = async (s: HandoverSystem) => {
     if (!window.confirm(`${ht(lang, 'form_remove')}: ${s.label}?`)) return
     try { await deleteHandoverSystem(s.id); await load() }
-    catch (e) {
-      setErr((e as Error).message === 'forbidden' ? ht(lang, 'form_no_delete') : String((e as Error).message))
-      await load()
-    }
+    catch (e) { setErr(errMessage(e)); await load() }
   }
 
   return (
@@ -70,10 +74,14 @@ export function HandoverSystemsAdmin() {
       <div className="rtable">
         {rows.map((s, i) => (
           <div key={s.id} className="rtable__row rtable__row--attendees">
-            <input className="input" defaultValue={s.label} onBlur={(e) => {
-              const v = e.target.value.trim()
-              if (v && v !== s.label) rename(s.id, v)
-            }} />
+            {canManageCatalogueRow(s, user?.id, isAdmin) ? (
+              <input className="input" defaultValue={s.label} onBlur={(e) => {
+                const v = e.target.value.trim()
+                if (v && v !== s.label) rename(s.id, v)
+              }} />
+            ) : (
+              <input className="input" defaultValue={s.label} readOnly />
+            )}
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
               <input type="checkbox" checked={s.active} onChange={() => toggle(s)} />
               {ht(lang, 'systems_active')}

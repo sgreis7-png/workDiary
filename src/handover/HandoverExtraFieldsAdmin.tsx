@@ -74,10 +74,14 @@ export function HandoverExtraFieldsAdmin() {
       <div className="rtable">
         {rows.map((f, i) => (
           <div key={f.id} className="rtable__row rtable__row--attendees">
-            <input className="input" defaultValue={f.label} onBlur={(e) => {
-              const v = e.target.value.trim()
-              if (v && v !== f.label) rename(f.id, v)
-            }} />
+            {canManageCatalogueRow(f, user?.id, isAdmin) ? (
+              <input className="input" defaultValue={f.label} onBlur={(e) => {
+                const v = e.target.value.trim()
+                if (v && v !== f.label) rename(f.id, v)
+              }} />
+            ) : (
+              <input className="input" defaultValue={f.label} readOnly />
+            )}
             <label style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
               <input type="checkbox" checked={f.active} onChange={() => toggle(f)} />
               {ht(lang, 'systems_active')}
