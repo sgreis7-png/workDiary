@@ -19,11 +19,18 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
   const { t } = useI18n()
   const { user } = useAuth()
   const panel = useRef<HTMLDivElement>(null)
-  useDialog(panel, onClose)
   const [recipients, setRecipients] = useState<string[]>([])
   const [query, setQuery] = useState('')
   const [subject, setSubject] = useState(initialSubject)
   const [busy, setBusy] = useState(false)
+  // A send cannot be recalled once it has left, and closing the dialog does not stop it: the
+  // request carries on, the mail arrives, and the confirmation is shown to a component that is
+  // no longer there. So the user — who saw a spinner and then nothing — opens the dialog and
+  // sends again, and every recipient gets the report twice. Easy to do by accident on a phone,
+  // where a slow connection makes the wait long and a tap outside the panel is a close. While a
+  // send is in flight the dialog stays put until it has an answer to show.
+  const dismiss = () => { if (!busy) onClose() }
+  useDialog(panel, dismiss)
   const [err, setErr] = useState('')
   const [sent, setSent] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
@@ -125,7 +132,7 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
   }
 
   return (
-    <div className="modal-backdrop" onClick={onClose}>
+    <div className="modal-backdrop" onClick={dismiss}>
       <div className="modal" ref={panel} role="dialog" aria-modal="true" aria-label="שליחת דוח במייל" tabIndex={-1} onClick={(e) => e.stopPropagation()} dir="rtl" style={{ maxWidth: 520 }}>
         <h2>{t('send_title')}</h2>
         {sent ? (
@@ -212,7 +219,7 @@ export function SendMailDialog({ subject: initialSubject, html, onClose, onSent 
             <label className="field__label" style={{ marginTop: 12, display: 'block' }}>{t('send_subject')}</label>
             <input className="input" value={subject} onChange={(e) => setSubject(e.target.value)} />
             <div className="form-actions">
-              <button className="btn btn--ghost" onClick={onClose}>{t('cancel')}</button>
+              <button className="btn btn--ghost" disabled={busy} onClick={dismiss}>{t('cancel')}</button>
               {/* Outlook is the primary button again, because it is the path that actually
                   delivers today: the server-side send cannot reach anyone but the Resend account
                   owner until a domain is verified there. Swap them back the moment it is. */}
