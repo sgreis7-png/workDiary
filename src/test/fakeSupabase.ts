@@ -17,6 +17,8 @@ export interface FakeState {
   inserted: Record<string, unknown>
   calls: Call[]
   uploads: string[]
+  /** object names already in the bucket — an upload onto one of these collides */
+  stored: Set<string>
   removed: string[]
   /** TTLs passed to createSignedUrls, in call order */
   signTtls: number[]
@@ -32,7 +34,7 @@ export interface FakeState {
 export function newFakeState(overrides: Partial<FakeState> = {}): FakeState {
   return {
     rows: {}, fail: {}, inserted: {},
-    calls: [], uploads: [], removed: [], signTtls: [],
+    calls: [], uploads: [], stored: new Set(), removed: [], signTtls: [],
     failUploadAt: -1,
   rpcRows: {},
   rpcFail: {}, userId: 'user-1',
@@ -108,10 +110,20 @@ export function makeFakeSupabase(s: FakeState) {
     auth: { getUser: () => Promise.resolve({ data: { user: { id: s.userId } } }) },
     storage: {
       from: () => ({
-        upload: (path: string) => {
+        // Collisions behave as production does. The photos bucket has insert, select and
+        // delete policies but no update policy, so `upsert: true` onto an existing object is an
+        // RLS refusal, while a plain upload gets storage's 409 "already exists".
+        upload: (path: string, _body?: unknown, opts?: { upsert?: boolean }) => {
           const i = s.uploads.length
           s.uploads.push(path)
-          return Promise.resolve({ error: i === s.failUploadAt ? { message: 'upload failed' } : null })
+          if (i === s.failUploadAt) return Promise.resolve({ error: { message: 'upload failed' } })
+          if (s.stored.has(path)) {
+            return Promise.resolve({ error: opts?.upsert
+              ? { message: 'new row violates row-level security policy', status: 400, statusCode: '403' }
+              : { message: 'The resource already exists', status: 400, statusCode: '409' } })
+          }
+          s.stored.add(path)
+          return Promise.resolve({ error: null })
         },
         remove: (paths: string[]) => { s.removed.push(...paths); return Promise.resolve({ error: null }) },
         createSignedUrls: (paths: string[], ttl: number) => {

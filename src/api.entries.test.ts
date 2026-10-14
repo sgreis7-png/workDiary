@@ -16,7 +16,7 @@ const { MAIL_PHOTO_TTL } = await import('./lib/storagePaths')
 const file = (name: string) => new File(['x'], name, { type: 'image/jpeg' })
 
 beforeEach(() => {
-  state.calls = []; state.uploads = []; state.removed = []; state.signTtls = []
+  state.calls = []; state.uploads = []; state.stored = new Set(); state.removed = []; state.signTtls = []
   state.failUploadAt = -1; state.fail = {}
   state.inserted = { entries: { id: 'entry-1' } }
 })
@@ -51,7 +51,7 @@ describe('createEntry', () => {
 
   it('gives a photo the same path every time, so a retry cannot double it', async () => {
     // This is the whole idempotency argument: same entry id + same files -> same object names,
-    // upserted. A uuid per attempt would have uploaded the file again under a new name and
+    // and a collision with an earlier attempt counts as done. A uuid per attempt would have uploaded the file again under a new name and
     // left the entry showing each photo twice.
     await createEntry('proj-1', {}, [file('a.jpg'), file('b.jpg')], 'entry-1')
     const first = [...state.uploads]
@@ -85,6 +85,26 @@ describe('createEntry', () => {
     // the first photo is already committed — the entry is left partial, but retrying the same
     // id now completes it instead of creating a second entry
     expect(state.calls.filter((c) => c.table === 'entry_photos')).toHaveLength(1)
+  })
+
+  it('finishes a save that was cut off after some photos were stored', async () => {
+    // A field worker on a weak signal loses the connection halfway through the photos. The
+    // draft keeps the entry id, so pressing save again sends the same paths, and the photos
+    // that already made it are in the bucket. That retry used to be refused every time (the
+    // bucket has no update policy for an upsert to use), so the report could never be saved
+    // from that draft. An object that exists is a finished upload, so the retry must accept it.
+    state.failUploadAt = 1
+    await expect(createEntry('proj-1', {}, [file('a.jpg'), file('b.jpg')], 'entry-1')).rejects.toBeTruthy()
+    state.failUploadAt = -1
+    await expect(createEntry('proj-1', {}, [file('a.jpg'), file('b.jpg')], 'entry-1')).resolves.toBe('entry-1')
+    expect(new Set(state.calls.filter((c) => c.table === 'entry_photos')
+      .map((c) => (c.payload as { storage_path: string }).storage_path)))
+      .toEqual(new Set(['entry-1/0-a.jpg', 'entry-1/1-b.jpg']))
+  })
+
+  it('still surfaces a refused upload that is not a collision', async () => {
+    state.failUploadAt = 0
+    await expect(createEntry('proj-1', {}, [file('a.jpg')], 'entry-1')).rejects.toBeTruthy()
   })
 
   it('lets the photos that did upload finish even when one of them fails', async () => {

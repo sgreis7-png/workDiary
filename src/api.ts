@@ -138,14 +138,22 @@ async function savePhotos(entryId: string, files: File[]): Promise<void> {
     // retry uploads the file again under a new name and the entry ends up with doubles. The
     // index keeps two files of the same name apart.
     const path = `${entryId}/${i}-${safe}`
-    const { error: upErr } = await supabase.storage.from('photos').upload(path, f, { upsert: true })
-    if (upErr) throw upErr
+    // Not `upsert: true`: the photos bucket has no update policy, so an upsert onto a photo a
+    // cut-off save already stored was refused on every retry and the draft could never be saved.
+    // Storage writes an object whole or not at all, so one that exists is this photo, finished.
+    const { error: upErr } = await supabase.storage.from('photos').upload(path, f)
+    if (upErr && !isAlreadyStored(upErr)) throw upErr
     const { error: pErr } = await supabase.from('entry_photos')
       .upsert({ entry_id: entryId, storage_path: path }, { onConflict: 'storage_path' })
     if (pErr) throw pErr
   }))
   const failed = results.find((r): r is PromiseRejectedResult => r.status === 'rejected')
   if (failed) throw failed.reason
+}
+
+/** Storage's "the resource already exists" — 409 in the body, the HTTP status varies by version. */
+function isAlreadyStored(e: { status?: number; statusCode?: string }): boolean {
+  return e.statusCode === '409' || e.status === 409
 }
 
 /** Add photos to an entry that already has some. Unlike savePhotos this cannot key the path
