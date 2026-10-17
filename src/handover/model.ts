@@ -1,7 +1,7 @@
 import { sigIsEmpty, type Sig } from '../safety/signature'
 
 export interface HandoverAttendee { name: string; role: string }
-export type SystemStatus = 'ok' | 'bad'
+export type SystemStatus = 'ok' | 'bad' | 'na'
 export interface HandoverSystemCheck { label: string; status: SystemStatus | null; note: string }
 export interface HandoverSystem {
   id: string; label: string; sort_order: number; active: boolean

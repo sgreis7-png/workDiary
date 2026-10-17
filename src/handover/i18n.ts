@@ -32,6 +32,7 @@ export const S = {
   form_status:     { he: 'תקין / לא תקין', en: 'OK / faulty' },
   form_ok:         { he: 'תקין', en: 'OK' },
   form_bad:        { he: 'לא תקין', en: 'Faulty' },
+  form_na:         { he: 'לא רלוונטי', en: 'N/A' },
   form_note:       { he: 'הערות', en: 'Notes' },
   form_notes:      { he: 'הערות כלליות', en: 'General notes' },
   form_receiver:   { he: 'מקבל הפרויקט', en: 'Project receiver' },

@@ -21,7 +21,8 @@ export function handoverFormHtml(f: HandoverRec, projectName: string, lang: Lang
     <tr>
       <td style="${TD}">${esc(s.label)}</td>
       <td style="${TD};text-align:center;white-space:nowrap">${
-        s.status === 'ok' ? `✔ ${S.form_ok[lang]}` : s.status === 'bad' ? `✘ ${S.form_bad[lang]}` : ''}</td>
+        s.status === 'ok' ? `✔ ${S.form_ok[lang]}` : s.status === 'bad' ? `✘ ${S.form_bad[lang]}`
+          : s.status === 'na' ? `– ${S.form_na[lang]}` : ''}</td>
       <td style="${TD}">${esc(s.note)}</td>
     </tr>`).join('')
   const extras = (f.extra_fields ?? []).length === 0 ? '' : `

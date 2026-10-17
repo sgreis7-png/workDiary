@@ -9,6 +9,7 @@ const rec: HandoverRec = {
   systems: [
     { label: 'אוורור', status: 'ok', note: '' },
     { label: 'מערכת מים', status: 'bad', note: 'דליפה בשעון' },
+    { label: 'גז', status: 'na', note: '' },
   ],
   notes: 'נמסר לאחר הרצה',
   receiver_name: 'מיכאל', receiver_role: 'מנהל הלול',
@@ -65,5 +66,11 @@ describe('handoverFormHtml', () => {
       { ...rec, extra_fields: [{ label: '<b>x</b>', value: '<img src=x>' }] }, 'p', 'he')
     expect(evil).not.toContain('<img src=x>')
     expect(evil).toContain('&lt;img src=x&gt;')
+  })
+  // "Not relevant" is a third answer the customer signs; printed blank, it reads as a
+  // system nobody checked — in either language the report goes out in.
+  it('prints the not-relevant mark in Hebrew and English', () => {
+    expect(html).toContain('לא רלוונטי')
+    expect(handoverFormHtml(rec, 'Site 3', 'en')).toContain('N/A')
   })
 })

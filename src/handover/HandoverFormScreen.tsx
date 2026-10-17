@@ -375,6 +375,10 @@ export function HandoverFormScreen() {
                     <input type="radio" name={`st-${i}`} checked={s.status === 'bad'} onChange={() => setStatus(i, 'bad')} />
                     {ht(lang, 'form_bad')}
                   </label>
+                  <label>
+                    <input type="radio" name={`st-${i}`} checked={s.status === 'na'} onChange={() => setStatus(i, 'na')} />
+                    {ht(lang, 'form_na')}
+                  </label>
                 </div>
                 <input className="input" value={s.note} placeholder={ht(lang, 'form_note')}
                   onChange={(e) => setNote(i, e.target.value)} />

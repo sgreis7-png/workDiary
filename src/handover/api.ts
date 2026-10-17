@@ -98,16 +98,15 @@ export async function reorderHandoverSystems(orderedIds: string[]): Promise<void
 
 // ---------- header prefill ----------
 
-/** Header values for a new form. `projects` has no customer column, so the project name is
- *  the best guess for both the customer and the scope — the form lets the user correct
- *  them, and typing over a wrong guess is still faster than typing into three blanks. */
+/** Header values for a new form. `projects` has no customer column, so the customer is left
+ *  blank for the user to type; the project name fills the site and the scope. */
 export async function fetchProjectHeader(
   projectId: string,
 ): Promise<{ client_name: string; site_location: string; project_nature: string } | null> {
   const { data, error } = await supabase.from('projects')
-    .select('name,location').eq('id', projectId).maybeSingle()
+    .select('name').eq('id', projectId).maybeSingle()
   if (error) throw error
   if (!data) return null
-  const p = data as unknown as { name: string; location: string | null }
-  return { client_name: p.name ?? '', site_location: p.location ?? '', project_nature: p.name ?? '' }
+  const p = data as unknown as { name: string }
+  return { client_name: '', site_location: p.name ?? '', project_nature: p.name ?? '' }
 }
