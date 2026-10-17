@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Logo } from '../components/Logo'
 import { Button, Field } from '../components/ui'
@@ -7,12 +7,23 @@ import { useI18n } from '../i18n'
 import { useAuth } from '../auth'
 import { requestPasswordReset } from '../api'
 
+/**
+ * Where to go after signing in. Only the OAuth consent page is resumed: Supabase sends a person
+ * there with a one-shot authorization_id, and dropping them on the diary instead would strand
+ * the claude.ai connection they just started. Every other route keeps landing on the index.
+ */
+function returnPath(state: unknown): string {
+  const from = (state as { from?: { pathname?: string; search?: string } } | null)?.from
+  return from?.pathname === '/oauth/consent' ? `${from.pathname}${from.search ?? ''}` : '/'
+}
+
 type Mode = 'signin' | 'register' | 'forgot'
 
 export default function Login() {
   const { t } = useI18n()
   const { signIn, register } = useAuth()
   const nav = useNavigate()
+  const loc = useLocation()
   const [mode, setMode] = useState<Mode>('signin')
   const [email, setEmail] = useState('')
   const [pw, setPw] = useState('')
@@ -41,7 +52,7 @@ export default function Login() {
     const { error } = mode === 'register' ? await register(email, pw, code) : await signIn(email, pw)
     setBusy(false)
     if (error) return setErr(t(error as never))
-    nav('/')
+    nav(returnPath(loc.state), { replace: true })
   }
 
   const swap = (m: Mode) => { setMode(m); setErr(''); setPw(''); setPw2(''); setCode(''); setResetSent(false); if (m === 'register') setEmail('') }

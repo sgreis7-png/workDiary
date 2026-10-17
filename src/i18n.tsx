@@ -378,6 +378,19 @@ export const STRINGS = {
 
   today:          { he: 'היום', en: 'Today' },
   entries_on_day: { he: 'רשומות ביום זה', en: 'entries this day' },
+
+  oauth_title:        { he: 'חיבור Claude ליומן העבודה', en: 'Connect Claude to the Work Diary' },
+  oauth_client:       { he: 'האפליקציה המבקשת גישה', en: 'App requesting access' },
+  oauth_signed_as:    { he: 'מחובר/ת בתור', en: 'Signed in as' },
+  oauth_scopes:       { he: 'הרשאות מבוקשות', en: 'Requested permissions' },
+  oauth_explain:      { he: 'Claude יוכל לקרוא את הנתונים שאתם רואים באפליקציה. הוא לא יכול לשנות דבר.', en: 'Claude will be able to read the data you can see in the app. It cannot change anything.' },
+  oauth_approve:      { he: 'אישור וחיבור', en: 'Approve and connect' },
+  oauth_deny:         { he: 'ביטול', en: 'Deny' },
+  oauth_not_enabled:  { he: 'החיבור ל-Claude לא מופעל עבורכם. פנו למנהל המערכת כדי שיפעיל אותו.', en: 'The Claude connection is not enabled for you. Ask your admin to turn it on.' },
+  oauth_missing_id:   { he: 'הקישור אינו תקין: חסר מזהה בקשה. חזרו ל-Claude ונסו שוב.', en: 'This link is not valid: the request id is missing. Go back to Claude and try again.' },
+  oauth_load_failed:  { he: 'לא ניתן לטעון את בקשת החיבור. ייתכן שפג תוקפה — חזרו ל-Claude ונסו שוב.', en: 'Could not load the connection request. It may have expired — go back to Claude and try again.' },
+  oauth_action_failed:{ he: 'הפעולה נכשלה. נסו שוב.', en: 'That did not work. Please try again.' },
+  oauth_redirecting:  { he: 'מחזיר אתכם ל-Claude…', en: 'Taking you back to Claude…' },
 } as const
 
 export const MONTHS: Record<Lang, string[]> = {

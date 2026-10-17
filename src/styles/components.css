@@ -1227,3 +1227,13 @@ button.coop-group__head[aria-expanded='false'] { border-bottom: 0; }
 /* safety briefing form: topic checkboxes */
 .topic-list { display: flex; flex-wrap: wrap; gap: 10px 20px; }
 .topic-chip { display: flex; align-items: center; gap: 8px; font-size: 14px; cursor: pointer; }
+
+/* OAuth consent (Claude connector) */
+.consent { min-block-size: 100dvh; display: grid; place-items: center; padding: 20px 16px; overflow: clip; }
+.consent__card { inline-size: min(100%, 460px); padding: 24px 20px; display: flex; flex-direction: column; gap: 14px; text-align: start; }
+.consent__card h1 { font-size: 24px; }
+.consent__row { display: flex; flex-direction: column; gap: 4px; font-size: 14px; }
+.consent__row b { color: var(--ink-3); font-weight: 600; font-size: 12px; }
+.consent__scopes { display: flex; flex-wrap: wrap; gap: 6px; }
+.consent__actions { display: flex; flex-direction: column; gap: 8px; margin-block-start: 6px; }
+.consent__actions .btn { inline-size: 100%; justify-content: center; }

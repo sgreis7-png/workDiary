@@ -50,6 +50,8 @@ const HandoverView = lazy(() => import('./handover/HandoverView').then((m) => ({
 const HandoverSystemsAdmin = lazy(() => import('./handover/HandoverSystemsAdmin').then((m) => ({ default: m.HandoverSystemsAdmin })))
 // Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
 // deliveries/issues screens (task 12) and the admin screens (task 13) exist.
+// OAuth consent for the Claude connector: signed-in, but deliberately outside the Shell (no nav).
+const OAuthConsent = lazy(() => import('./screens/OAuthConsent'))
 const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
 const TrafficProject = lazy(() => import('./screens/traffic/TrafficProject'))
 const Deliveries = lazy(() => import('./screens/traffic/Deliveries'))
@@ -114,6 +116,7 @@ export default function App() {
       <Route path="/login" element={<Login />} />
       <Route path="/set-password" element={<SetPassword />} />
       <Route path="/report/:id" element={<RequireAuth><ReportView /></RequireAuth>} />
+      <Route path="/oauth/consent" element={<RequireAuth><OAuthConsent /></RequireAuth>} />
       <Route element={<RequireAuth><Shell /></RequireAuth>}>
         <Route index element={<Home />} />
         <Route path="defects" element={<RequirePerm area="defects"><Coops /></RequirePerm>} />
