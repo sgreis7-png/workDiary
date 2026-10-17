@@ -6,7 +6,7 @@ export type PermLevel = 'none' | 'view' | 'edit'
 export type PermArea =
   | 'dashboard' | 'logbook' | 'calendar' | 'search' | 'projects' | 'export'
   | 'defects' | 'form_builder' | 'coops_manage' | 'alert_rules' | 'gantt' | 'control_center'
-  | 'safety' | 'handover' | 'traffic_light' | 'deliveries'
+  | 'safety' | 'handover' | 'traffic_light' | 'deliveries' | 'claude'
 
 export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = [
   { key: 'logbook', label: 'יומן עבודה', label_en: 'Work diary' },
@@ -25,6 +25,7 @@ export const PERM_AREAS: { key: PermArea; label: string; label_en: string }[] = 
   { key: 'form_builder', label: 'בוני טפסים', label_en: 'Form builders' },
   { key: 'traffic_light', label: 'דוח רמזור', label_en: 'Traffic-light report' },
   { key: 'deliveries', label: 'רשימת אספקות — הזנה ועדכון', label_en: 'Deliveries — entry & updates' },
+  { key: 'claude', label: 'חיבור Claude', label_en: 'Claude connector' },
 ]
 
 /** Role defaults — an explicit user_permissions row overrides these. */
@@ -45,6 +46,7 @@ const MEMBER_DEFAULTS: Record<PermArea, PermLevel> = {
   handover: 'edit', // טופסי מסירת פרויקט — מנהלי עבודה בשטח מחתימים את הלקוח
   traffic_light: 'none', // דוח רמזור — סמנכ"ל, מנהלים ואדמין בלבד
   deliveries: 'none',    // רכש/יבוא מקבלים הענקה ידנית
+  claude: 'none',        // חיבור Claude לקריאה בלבד — אדמין מפעיל לכל אדם בנפרד
 }
 
 /** Manager defaults — the schedule, the control centre and the statistics are the point of the
@@ -68,6 +70,7 @@ const MANAGER_DEFAULTS: Record<PermArea, PermLevel> = {
   handover: 'edit', // טופסי מסירת פרויקט — מנהלי עבודה בשטח מחתימים את הלקוח
   traffic_light: 'edit', // מנהלים רואים ומנהלים משימות רמזור
   deliveries: 'none',
+  claude: 'none', // אדמין מפעיל לכל אדם בנפרד
 }
 
 export const ROLE_DEFAULTS: Record<Exclude<Role, 'admin'>, Record<PermArea, PermLevel>> = {

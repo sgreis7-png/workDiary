@@ -14,6 +14,7 @@ const SQL = readFileSync('supabase/migrations/0045_enforce_perm_areas.sql', 'utf
 const SQL61 = readFileSync('supabase/migrations/0061_safety_forms.sql', 'utf8')
 const SQL64 = readFileSync('supabase/migrations/0064_traffic_light_schema.sql', 'utf8')
 const SQL77 = readFileSync('supabase/migrations/0077_handover_forms.sql', 'utf8')
+const SQL81 = readFileSync('supabase/migrations/0081_claude_connector.sql', 'utf8')
 
 /** The seeded rows for an ordinary member: the 0045 block plus later role-keyed seeds. */
 function seededDefaults(): Record<string, PermLevel> {
@@ -33,6 +34,9 @@ function seededDefaults(): Record<string, PermLevel> {
     out[area] = level as PermLevel
   }
   for (const [, area, level] of SQL77.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
+    out[area] = level as PermLevel
+  }
+  for (const [, area, level] of SQL81.matchAll(/\('member',\s*'(\w+)',\s*'(none|view|edit)'\)/g)) {
     out[area] = level as PermLevel
   }
   return out
@@ -77,6 +81,12 @@ describe('perm_defaults mirrors MEMBER_DEFAULTS', () => {
       expect(m.length, area).toBe(1)
       expect(m[0][1], area).toBe(resolvePerm('manager', {}, area))
     }
+  })
+
+  it('seeds a manager row for the claude connector that matches MANAGER_DEFAULTS', () => {
+    const m = [...SQL81.matchAll(/\('manager',\s*'claude',\s*'(none|view|edit)'\)/g)]
+    expect(m.length).toBe(1)
+    expect(m[0][1]).toBe(resolvePerm('manager', {}, 'claude'))
   })
 })
 
