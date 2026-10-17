@@ -46,16 +46,19 @@ export interface HandoverDraft {
 }
 
 /**
- * Header after the user picks a project. The project name goes to the site only. The customer
- * is cleared: `projects` has no customer column, and a customer left over from the project
- * picked before (or a restored draft) would be signed as the wrong one. A scope that is just
- * the old project's name is leftover from the old prefill and is cleared too; a typed scope stays.
+ * Header after the user picks a project. The project name goes to the site only. Customer and
+ * scope are cleared: `projects` holds neither, and a value left from the project picked before
+ * (or a restored draft) would be signed as the wrong one. The user types both.
  */
-export function headerForProject(
-  cur: { client: string; site: string; nature: string }, oldName: string, newName: string,
-): { client: string; site: string; nature: string } {
-  const leftover = !!oldName && cur.nature.trim() === oldName.trim()
-  return { client: '', site: newName, nature: leftover ? '' : cur.nature }
+export function headerForProject(newName: string): { client: string; site: string; nature: string } {
+  return { client: '', site: newName, nature: '' }
+}
+
+/** A restored draft's customer or scope that is just some project's name is a leftover of the
+ *  old prefill, not something the user typed — drop it. */
+export function dropProjectName(v: string, projectNames: string[]): string {
+  const t = v.trim()
+  return t && projectNames.some((n) => n.trim() === t) ? '' : v
 }
 
 export type HandoverError = 'project' | 'header' | 'attendee' | 'systems' | 'receiver'

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
-  headerForProject,
+  dropProjectName, headerForProject,
   blankAttendee, canManageCatalogueRow, handoverMatchesText,
   systemChecksFor, validateHandover,
   type HandoverDraft, type HandoverRec, type HandoverSystem,
@@ -125,16 +125,14 @@ describe('validateHandover with an added system row', () => {
 // or keeping one typed for the previously picked project, puts a wrong customer on a signed
 // document that only an admin can fix.
 describe('headerForProject', () => {
-  it('puts the project name in the site only and leaves the customer blank', () => {
-    expect(headerForProject({ client: '', site: '', nature: '' }, '', 'כפר יובל'))
-      .toEqual({ client: '', site: 'כפר יובל', nature: '' })
+  it('puts the project name in the site only and leaves customer and scope blank', () => {
+    expect(headerForProject('כפר יובל')).toEqual({ client: '', site: 'כפר יובל', nature: '' })
   })
-  it('clears a customer and a leftover scope from the project picked before', () => {
-    expect(headerForProject({ client: 'באר מילכה', site: 'באר מילכה', nature: 'באר מילכה' }, 'באר מילכה', 'כפר יובל'))
-      .toEqual({ client: '', site: 'כפר יובל', nature: '' })
-  })
-  it('keeps a scope the user typed', () => {
-    expect(headerForProject({ client: 'x', site: 'a', nature: 'לול פיטום' }, 'באר מילכה', 'כפר יובל').nature)
-      .toBe('לול פיטום')
+})
+
+describe('dropProjectName', () => {
+  it('drops a restored value that is just a project name, keeps a typed one', () => {
+    expect(dropProjectName('באר מילכה', ['כפר יובל', 'באר מילכה'])).toBe('')
+    expect(dropProjectName('לול פיטום', ['כפר יובל', 'באר מילכה'])).toBe('לול פיטום')
   })
 })

@@ -16,7 +16,7 @@ import {
   blankAttendee, systemChecksFor, validateHandover,
   type HandoverAttendee, type HandoverError, type HandoverExtraField,
   type HandoverInput, type HandoverSystem, type HandoverSystemCheck, type SystemStatus,
-  headerForProject,
+  dropProjectName, headerForProject,
 } from './model'
 import { ht } from './i18n'
 
@@ -34,7 +34,6 @@ interface Draft {
   notes: string
   receiver_name: string
   receiver_role: string
-  receiver_signature: Sig | null
 }
 
 export function HandoverFormScreen() {
@@ -117,16 +116,14 @@ export function HandoverFormScreen() {
           if (raw) {
             const d = JSON.parse(raw) as Draft
             setProjectId(d.project_id ?? ''); setDate(d.handover_date ?? today())
-            // drafts saved before the prefill fix carry the project name as the customer
-            const pname = projects.find((p) => p.id === d.project_id)?.name ?? ''
-            const dc = d.client_name ?? ''
-            setClient(pname && dc.trim() === pname.trim() ? '' : dc)
-            setSite(d.site_location ?? ''); setNature(d.project_nature ?? '')
+            // drafts saved before the prefill fix carry a project name as customer and scope
+            const names = projects.map((p) => p.name)
+            setClient(dropProjectName(d.client_name ?? '', names))
+            setSite(d.site_location ?? ''); setNature(dropProjectName(d.project_nature ?? '', names))
             setAttendees(d.attendees?.length ? d.attendees : [blankAttendee()])
             setSavedSystems(d.systems ?? [])
             setNotes(d.notes ?? '')
             setRecName(d.receiver_name ?? ''); setRecRole(d.receiver_role ?? '')
-            setRecSig(d.receiver_signature ?? null)
             setDraftNotice(true)
           }
         } catch { /* corrupt draft — start clean */ }
@@ -156,28 +153,28 @@ export function HandoverFormScreen() {
     setSystems((cur) => systemChecksFor(catalogue, cur.length ? cur : savedSystems))
   }, [editing, restored, catalogue, savedSystems])
 
-  // picking a project rewrites the header from it: the site becomes the project name, and
-  // the customer is cleared because a customer typed for another project is the wrong one
+  // picking a project rewrites the header: site = project name, customer and scope cleared;
+  // the signature goes too, since it was given for whatever the form said before
   const pickProject = (id: string) => {
-    const nameOf = (pid: string) => projects.find((p) => p.id === pid)?.name ?? ''
-    const h = headerForProject({ client, site, nature }, nameOf(projectId), nameOf(id))
-    setProjectId(id); setClient(h.client); setSite(h.site); setNature(h.nature)
+    const h = headerForProject(projects.find((p) => p.id === id)?.name ?? '')
+    setProjectId(id); setClient(h.client); setSite(h.site); setNature(h.nature); setRecSig(null)
   }
 
-  // draft persistence — new forms only; the signature rides along on purpose, because the
-  // customer signs on site and the phone may not see the network until the drive home
+  // draft persistence — new forms only. The signature is never kept: a draft restored on a
+  // later visit would hand the next form the previous customer's signature, so every form
+  // is signed fresh on screen.
   useEffect(() => {
     if (editing || !restored || busy) return
     const t = setTimeout(() => {
       const d: Draft = {
         project_id: projectId, handover_date: date, client_name: client, site_location: site,
         project_nature: nature, attendees, systems, notes,
-        receiver_name: recName, receiver_role: recRole, receiver_signature: recSig,
+        receiver_name: recName, receiver_role: recRole,
       }
       try { localStorage.setItem(DRAFT_KEY, JSON.stringify(d)) } catch { /* storage full / private mode */ }
     }, 400)
     return () => clearTimeout(t)
-  }, [editing, restored, busy, projectId, date, client, site, nature, attendees, systems, notes, recName, recRole, recSig])
+  }, [editing, restored, busy, projectId, date, client, site, nature, attendees, systems, notes, recName, recRole])
 
   const updAttendee = (i: number, patch: Partial<HandoverAttendee>) =>
     setAttendees((as) => as.map((a, k) => (k === i ? { ...a, ...patch } : a)))
@@ -424,7 +421,7 @@ export function HandoverFormScreen() {
           </div>
           <div className="span-2">
             {sigIsEmpty(recSig) ? (
-              <Button variant="ghost" type="button" onClick={() => setSigning(true)}>✍ {ht(lang, 'form_sign')}</Button>
+              <Button variant="ghost" type="button" onClick={() => setSigning(true)}>✍ {ht(lang, 'form_sign')} *</Button>
             ) : (
               <button type="button" className="sig-thumb" title={ht(lang, 'form_sign')}
                 onClick={() => setSigning(true)} dangerouslySetInnerHTML={{ __html: sigSvg(recSig) }} />
