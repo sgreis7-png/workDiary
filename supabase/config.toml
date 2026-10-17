@@ -412,3 +412,9 @@ enabled = true
 # declarative_schema_path = "./database"
 # JSON string passed through to pg-delta SQL formatting.
 # format_options = "{\"keywordCase\":\"upper\",\"indent\":2,\"maxWidth\":80,\"commaStyle\":\"trailing\"}"
+
+# Remote MCP server for the claude.ai connector. Its OAuth protected-resource metadata route must
+# be reachable without a token, so the gateway JWT check is off; the function verifies the
+# caller's token itself (auth.getUser) on every MCP request.
+[functions.mcp]
+verify_jwt = false

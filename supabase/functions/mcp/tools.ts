@@ -9,7 +9,7 @@
 import { z } from 'zod'
 import {
   READ, cols, scrubEntryValues, scrubDeep, DENIED_COLUMN, PRIVATE_FIELD_TYPES, PRIVATE_LABEL, type PermArea,
-} from './allowlist'
+} from './allowlist.ts'
 
 /** The slice of the supabase-js client the tools use. Builders are loosely typed on purpose:
  *  the fake in tests and the real PostgREST builder share only the chained method names. */
