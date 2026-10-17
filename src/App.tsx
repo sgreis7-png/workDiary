@@ -48,10 +48,11 @@ const HandoverFormScreen = lazy(() => import('./handover/HandoverFormScreen').th
 const HandoverList = lazy(() => import('./handover/HandoverList').then((m) => ({ default: m.HandoverList })))
 const HandoverView = lazy(() => import('./handover/HandoverView').then((m) => ({ default: m.HandoverView })))
 const HandoverSystemsAdmin = lazy(() => import('./handover/HandoverSystemsAdmin').then((m) => ({ default: m.HandoverSystemsAdmin })))
-// Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
-// deliveries/issues screens (task 12) and the admin screens (task 13) exist.
 // OAuth consent for the Claude connector: signed-in, but deliberately outside the Shell (no nav).
 const OAuthConsent = lazy(() => import('./screens/OAuthConsent'))
+const ClaudeConnector = lazy(() => import('./screens/ClaudeConnector'))
+// Traffic-light (רמזור) module. Board (task 10), project drill-down (task 11), the
+// deliveries/issues screens (task 12) and the admin screens (task 13) exist.
 const TrafficBoard = lazy(() => import('./screens/traffic/TrafficBoard'))
 const TrafficProject = lazy(() => import('./screens/traffic/TrafficProject'))
 const Deliveries = lazy(() => import('./screens/traffic/Deliveries'))
@@ -70,6 +71,11 @@ function RequireAuth({ children }: { children: ReactElement }) {
 function RequireAdmin({ children }: { children: ReactElement }) {
   const { isAdmin } = useAuth()
   return isAdmin ? children : <Navigate to="/" replace />
+}
+/** Claude connector screen: admins and managers only; members never see it. */
+function RequireAdminOrManager({ children }: { children: ReactElement }) {
+  const { user } = useAuth()
+  return user?.role === 'admin' || user?.role === 'manager' ? children : <Navigate to="/" replace />
 }
 /** Area gate: `edit` demands edit level; otherwise view is enough. */
 function RequirePerm({ area, edit, children }: { area: PermArea; edit?: boolean; children: ReactElement }) {
@@ -158,6 +164,7 @@ export default function App() {
         <Route path="export" element={<RequirePerm area="export"><ExportView /></RequirePerm>} />
         <Route path="admin/fields" element={<RequirePerm area="form_builder" edit><FormBuilder /></RequirePerm>} />
         <Route path="admin/defect-items" element={<RequirePerm area="form_builder" edit><DefectFormBuilder /></RequirePerm>} />
+        <Route path="claude" element={<RequireAdminOrManager><ClaudeConnector /></RequireAdminOrManager>} />
         <Route path="admin/users" element={<RequireAdmin><Users /></RequireAdmin>} />
         <Route path="admin/feedback" element={<RequireAdmin><Feedback /></RequireAdmin>} />
         <Route path="admin/audit" element={<RequireAdmin><AuditLog /></RequireAdmin>} />

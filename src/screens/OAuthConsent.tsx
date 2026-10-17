@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router-dom'
+import { Link, useSearchParams } from 'react-router-dom'
 import type { OAuthAuthorizationDetails } from '@supabase/supabase-js'
 import { supabase } from '../lib/supabase'
 import { useAuth } from '../auth'
@@ -66,7 +66,12 @@ export default function OAuthConsent() {
         <Logo height={48} />
         <h1>{t('oauth_title')}</h1>
         {state.kind === 'error' ? (
-          <p role="alert" className="alert">⚠ {t(state.msg)}</p>
+          <>
+            <p role="alert" className="alert consent__alert">{t(state.msg)}</p>
+            <div className="consent__actions">
+              <Link className="btn btn--ghost" to="/">{t('oauth_home')}</Link>
+            </div>
+          </>
         ) : (
           <>
             <div className="consent__row">
@@ -75,7 +80,7 @@ export default function OAuthConsent() {
             </div>
             <div className="consent__row">
               <b>{t('oauth_signed_as')}</b>
-              <span dir="ltr" style={{ textAlign: 'start' }}>{state.details.user.email}</span>
+              <span dir="ltr" className="consent__email">{state.details.user.email}</span>
             </div>
             {eligible ? (
               <>
@@ -90,9 +95,9 @@ export default function OAuthConsent() {
                 </div>
               </>
             ) : (
-              <p role="alert" className="alert">⚠ {t('oauth_not_enabled')}</p>
+              <p role="alert" className="alert consent__alert">{t('oauth_not_enabled')}</p>
             )}
-            {failed && <p role="alert" className="alert">⚠ {t('oauth_action_failed')}</p>}
+            {failed && <p role="alert" className="alert consent__alert">{t('oauth_action_failed')}</p>}
             <div className="consent__actions">
               {eligible && <Button variant="primary" disabled={busy} onClick={() => decide(true)}>{t('oauth_approve')}</Button>}
               <Button variant="ghost" disabled={busy} onClick={() => decide(false)}>{t('oauth_deny')}</Button>

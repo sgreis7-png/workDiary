@@ -307,6 +307,7 @@ export function Shell() {
               items: [
                 ...(canEdit('form_builder') ? [{ to: '/admin/fields', icon: '⚙', label: t('nav_fields') }] : []),
                 ...(canEdit('form_builder') ? [{ to: '/admin/defect-items', icon: '⚙', label: dt('nav_form_builder') }] : []),
+                ...(isAdmin || user?.role === 'manager' ? [{ to: '/claude', icon: '✦', label: t('nav_claude') }] : []),
                 ...(isAdmin ? [{ to: '/admin/users', icon: '◎', label: t('nav_users') }] : []),
                 ...(isAdmin ? [{ to: '/admin/feedback', icon: '📢', label: t('nav_feedback_admin') }] : []),
                 ...(isAdmin ? [{ to: '/admin/audit', icon: '⧉', label: t('nav_audit') }] : []),

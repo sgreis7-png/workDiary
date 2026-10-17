@@ -7,3 +7,8 @@
 export function canConnectClaude(role: string | undefined, claudeLevel: string): boolean {
   return (role === 'admin' || role === 'manager') && claudeLevel !== 'none'
 }
+
+/** The URL a person pastes into claude.ai. A trailing slash on the env value must not leak into it. */
+export function connectorUrl(supabaseUrl: string): string {
+  return `${supabaseUrl.replace(/\/+$/, '')}/functions/v1/mcp`
+}
