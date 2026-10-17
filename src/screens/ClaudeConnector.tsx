@@ -7,6 +7,11 @@ import { useI18n } from '../i18n'
 import { Button } from '../components/ui'
 import { Loader } from '../components/Loader'
 
+/** Text with `{Latin tokens}` isolated as LTR runs, so punctuation and separators around them keep their place in RTL. */
+function Rich({ text }: { text: string }) {
+  return <>{text.split(/\{([^}]*)\}/).map((part, i) => (i % 2 ? <bdi key={i} dir="ltr">{part}</bdi> : part))}</>
+}
+
 const URL_TEXT = connectorUrl(import.meta.env.VITE_SUPABASE_URL as string)
 
 const STEPS = ['claude_step1', 'claude_step2', 'claude_step3', 'claude_step4', 'claude_step5', 'claude_step6'] as const
@@ -50,7 +55,7 @@ export default function ClaudeConnector() {
         <h1 className="page-title">{t('claude_title')}</h1>
       </div>
 
-      <p className="claude__lead">{t('claude_intro')}</p>
+      <p className="claude__lead"><Rich text={t('claude_intro')} /></p>
 
       {isAdmin && (
         <div className="panel claude__panel">
@@ -67,17 +72,17 @@ export default function ClaudeConnector() {
             <label className="claude__label" htmlFor="claude-url">{t('claude_url_label')}</label>
             <div className="claude__url">
               <input id="claude-url" ref={inputRef} className="input" dir="ltr" readOnly value={URL_TEXT} onFocus={(e) => e.currentTarget.select()} />
-              <Button variant="primary" onClick={onCopy}>{copy === 'copied' ? t('claude_copied') : t('claude_copy')}</Button>
+              <Button variant="primary" onClick={onCopy}>{t('claude_copy')}</Button>
             </div>
             <p className="claude__status" role="status">
-              {copy === 'copied' ? t('claude_copied') : copy === 'manual' ? t('claude_copy_manual') : ''}
+              {copy === 'copied' ? `✓ ${t('claude_copied')}` : copy === 'manual' ? t('claude_copy_manual') : ''}
             </p>
           </section>
 
           <section className="panel claude__panel">
             <h2>{t('claude_steps_h')}</h2>
             <ol className="claude__list">
-              {STEPS.map((k) => <li key={k}>{t(k)}</li>)}
+              {STEPS.map((k) => <li key={k}><Rich text={t(k)} /></li>)}
             </ol>
           </section>
 
@@ -92,16 +97,16 @@ export default function ClaudeConnector() {
 
       <div className="claude__cols">
         <section className="panel claude__panel">
-          <h2>{t('claude_can_h')}</h2>
+          <h2><Rich text={t('claude_can_h')} /></h2>
           <ul className="claude__list">
-            {CAN.map((k) => <li key={k}>{t(k)}</li>)}
+            {CAN.map((k) => <li key={k}><Rich text={t(k)} /></li>)}
           </ul>
           <p className="claude__note">{t('claude_can_note')}</p>
         </section>
         <section className="panel claude__panel">
-          <h2>{t('claude_cannot_h')}</h2>
+          <h2><Rich text={t('claude_cannot_h')} /></h2>
           <ul className="claude__list">
-            {CANNOT.map((k) => <li key={k}>{t(k)}</li>)}
+            {CANNOT.map((k) => <li key={k}><Rich text={t(k)} /></li>)}
           </ul>
         </section>
       </div>
