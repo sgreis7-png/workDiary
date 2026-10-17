@@ -45,6 +45,19 @@ export interface HandoverDraft {
   receiver_signature: Sig | null
 }
 
+/**
+ * Header after the user picks a project. The project name goes to the site only. The customer
+ * is cleared: `projects` has no customer column, and a customer left over from the project
+ * picked before (or a restored draft) would be signed as the wrong one. A scope that is just
+ * the old project's name is leftover from the old prefill and is cleared too; a typed scope stays.
+ */
+export function headerForProject(
+  cur: { client: string; site: string; nature: string }, oldName: string, newName: string,
+): { client: string; site: string; nature: string } {
+  const leftover = !!oldName && cur.nature.trim() === oldName.trim()
+  return { client: '', site: newName, nature: leftover ? '' : cur.nature }
+}
+
 export type HandoverError = 'project' | 'header' | 'attendee' | 'systems' | 'receiver'
 
 export const blankAttendee = (): HandoverAttendee => ({ name: '', role: '' })

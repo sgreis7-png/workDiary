@@ -10,12 +10,13 @@ import { SignaturePad } from '../safety/SignaturePad'
 import { sigIsEmpty, sigSvg, type Sig } from '../safety/signature'
 import {
   createHandover, createHandoverSystem, DUPLICATE_LABEL,
-  fetchHandoverSystems, fetchProjectHeader, getHandover, updateHandover,
+  fetchHandoverSystems, getHandover, updateHandover,
 } from './api'
 import {
   blankAttendee, systemChecksFor, validateHandover,
   type HandoverAttendee, type HandoverError, type HandoverExtraField,
   type HandoverInput, type HandoverSystem, type HandoverSystemCheck, type SystemStatus,
+  headerForProject,
 } from './model'
 import { ht } from './i18n'
 
@@ -116,7 +117,11 @@ export function HandoverFormScreen() {
           if (raw) {
             const d = JSON.parse(raw) as Draft
             setProjectId(d.project_id ?? ''); setDate(d.handover_date ?? today())
-            setClient(d.client_name ?? ''); setSite(d.site_location ?? ''); setNature(d.project_nature ?? '')
+            // drafts saved before the prefill fix carry the project name as the customer
+            const pname = projects.find((p) => p.id === d.project_id)?.name ?? ''
+            const dc = d.client_name ?? ''
+            setClient(pname && dc.trim() === pname.trim() ? '' : dc)
+            setSite(d.site_location ?? ''); setNature(d.project_nature ?? '')
             setAttendees(d.attendees?.length ? d.attendees : [blankAttendee()])
             setSavedSystems(d.systems ?? [])
             setNotes(d.notes ?? '')
@@ -151,18 +156,13 @@ export function HandoverFormScreen() {
     setSystems((cur) => systemChecksFor(catalogue, cur.length ? cur : savedSystems))
   }, [editing, restored, catalogue, savedSystems])
 
-  // header prefill from the project — only empty fields, never over a typed value
-  useEffect(() => {
-    if (editing || !restored || !projectId) return
-    let alive = true
-    fetchProjectHeader(projectId).then((h) => {
-      if (!alive || !h) return
-      setClient((c) => (c.trim() ? c : h.client_name))
-      setSite((s) => (s.trim() ? s : h.site_location))
-      setNature((n) => (n.trim() ? n : h.project_nature))
-    }).catch(() => {})
-    return () => { alive = false }
-  }, [editing, restored, projectId])
+  // picking a project rewrites the header from it: the site becomes the project name, and
+  // the customer is cleared because a customer typed for another project is the wrong one
+  const pickProject = (id: string) => {
+    const nameOf = (pid: string) => projects.find((p) => p.id === pid)?.name ?? ''
+    const h = headerForProject({ client, site, nature }, nameOf(projectId), nameOf(id))
+    setProjectId(id); setClient(h.client); setSite(h.site); setNature(h.nature)
+  }
 
   // draft persistence — new forms only; the signature rides along on purpose, because the
   // customer signs on site and the phone may not see the network until the drive home
@@ -272,6 +272,7 @@ export function HandoverFormScreen() {
 
   if (loading) return <Loader full />
 
+  const headerMissing = (v: string) => errors.includes('header') && !v.trim()
   const errKey = { project: 'err_project', header: 'err_header', attendee: 'err_attendee', systems: 'err_systems', receiver: 'err_receiver' } as const
 
   return (
@@ -305,7 +306,7 @@ export function HandoverFormScreen() {
         <motion.div variants={riseIn} className="form-grid">
           <div>
             <Field label={ht(lang, 'form_project')}>
-              <select className="input" value={projectId} onChange={(e) => setProjectId(e.target.value)}
+              <select className="input" value={projectId} onChange={(e) => pickProject(e.target.value)}
                 style={errors.includes('project') ? { borderColor: 'var(--clay)' } : undefined}>
                 <option value="">— {lang === 'he' ? 'בחירה' : 'Choose'} —</option>
                 {[...projects].sort((a, b) => Number(b.active) - Number(a.active))
@@ -319,18 +320,21 @@ export function HandoverFormScreen() {
             </Field>
           </div>
           <div>
-            <Field label={ht(lang, 'form_client')}>
-              <input className="input" value={client} onChange={(e) => setClient(e.target.value)} />
+            <Field label={`${ht(lang, 'form_client')} *`}>
+              <input className="input" required value={client} onChange={(e) => setClient(e.target.value)}
+                style={headerMissing(client) ? { borderColor: 'var(--clay)' } : undefined} />
             </Field>
           </div>
           <div>
-            <Field label={ht(lang, 'form_site')}>
-              <input className="input" value={site} onChange={(e) => setSite(e.target.value)} />
+            <Field label={`${ht(lang, 'form_site')} *`}>
+              <input className="input" required value={site} onChange={(e) => setSite(e.target.value)}
+                style={headerMissing(site) ? { borderColor: 'var(--clay)' } : undefined} />
             </Field>
           </div>
           <div className="span-2">
-            <Field label={ht(lang, 'form_nature')}>
-              <input className="input" value={nature} onChange={(e) => setNature(e.target.value)} />
+            <Field label={`${ht(lang, 'form_nature')} *`}>
+              <input className="input" required value={nature} onChange={(e) => setNature(e.target.value)}
+                style={headerMissing(nature) ? { borderColor: 'var(--clay)' } : undefined} />
             </Field>
           </div>
         </motion.div>

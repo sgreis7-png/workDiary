@@ -95,18 +95,3 @@ export async function reorderHandoverSystems(orderedIds: string[]): Promise<void
   await Promise.all(orderedIds.map((id, i) =>
     supabase.from('handover_systems').update({ sort_order: (i + 1) * 10 }).eq('id', id)))
 }
-
-// ---------- header prefill ----------
-
-/** Header values for a new form. `projects` has no customer column, so the customer is left
- *  blank for the user to type; the project name fills the site and the scope. */
-export async function fetchProjectHeader(
-  projectId: string,
-): Promise<{ client_name: string; site_location: string; project_nature: string } | null> {
-  const { data, error } = await supabase.from('projects')
-    .select('name').eq('id', projectId).maybeSingle()
-  if (error) throw error
-  if (!data) return null
-  const p = data as unknown as { name: string }
-  return { client_name: '', site_location: p.name ?? '', project_nature: p.name ?? '' }
-}

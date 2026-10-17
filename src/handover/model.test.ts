@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  headerForProject,
   blankAttendee, canManageCatalogueRow, handoverMatchesText,
   systemChecksFor, validateHandover,
   type HandoverDraft, type HandoverRec, type HandoverSystem,
@@ -117,5 +118,23 @@ describe('validateHandover with an added system row', () => {
       { label: 'גנרטור', status: null, note: '' },
     ] }
     expect(validateHandover(d)).toContain('systems')
+  })
+})
+
+// The customer is the one name on the receipt that the project cannot supply. Prefilling it,
+// or keeping one typed for the previously picked project, puts a wrong customer on a signed
+// document that only an admin can fix.
+describe('headerForProject', () => {
+  it('puts the project name in the site only and leaves the customer blank', () => {
+    expect(headerForProject({ client: '', site: '', nature: '' }, '', 'כפר יובל'))
+      .toEqual({ client: '', site: 'כפר יובל', nature: '' })
+  })
+  it('clears a customer and a leftover scope from the project picked before', () => {
+    expect(headerForProject({ client: 'באר מילכה', site: 'באר מילכה', nature: 'באר מילכה' }, 'באר מילכה', 'כפר יובל'))
+      .toEqual({ client: '', site: 'כפר יובל', nature: '' })
+  })
+  it('keeps a scope the user typed', () => {
+    expect(headerForProject({ client: 'x', site: 'a', nature: 'לול פיטום' }, 'באר מילכה', 'כפר יובל').nature)
+      .toBe('לול פיטום')
   })
 })
