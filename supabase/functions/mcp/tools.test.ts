@@ -41,9 +41,10 @@ describe('claude connector tools', () => {
     expect(await tool('list_people').run(ctx(s), { limit: 2 })).toEqual({ rows: [{ id: 'a' }, { id: 'b' }], truncated: true })
   })
 
-  it('limit is capped at 1000', () => {
+  it('limit is capped at 999 so limit + 1 fits in PostgREST max_rows (1000)', () => {
     expect(tool('list_people').input.safeParse({ limit: 5000 }).success).toBe(false)
-    expect(tool('list_people').input.safeParse({ limit: 1000 }).success).toBe(true)
+    expect(tool('list_people').input.safeParse({ limit: 1000 }).success).toBe(false)
+    expect(tool('list_people').input.safeParse({ limit: 999 }).success).toBe(true)
     expect(tool('list_issues').input.safeParse({ from: '17/10/2026' }).success).toBe(false)
   })
 
@@ -101,7 +102,9 @@ describe('claude connector tools', () => {
 
   it('rpc output is scrubbed of nested owner_email', async () => {
     const s = newFakeState({ rpcRows: { traffic_light: [{ project: 'p1', color: 'red', axes: [{ owner_email: 'a@b.c', owner_name: 'Dana' }] }] } })
-    const out = JSON.stringify(await tool('traffic_light').run(ctx(s), { project_id: PID }))
+    const res = await tool('traffic_light').run(ctx(s), { project_id: PID }) as { rows: unknown[] }
+    expect(Array.isArray(res.rows)).toBe(true)
+    const out = JSON.stringify(res)
     expect(out).not.toContain('owner_email')
     expect(out).not.toContain('a@b.c')
     expect(out).toContain('Dana')
@@ -133,6 +136,26 @@ describe('claude connector tools', () => {
     const out = await tool('get_schedule').run(ctx(s), { project_id: PID }) as { tasks: { overdue: boolean }[] }
     expect(out.tasks.map((t) => t.overdue)).toEqual([true, false])
   })
+  it('get_schedule reports truncation for tasks and links beyond the 999 default', async () => {
+    const many = (n: number, p: string) => Array.from({ length: n }, (_, i) => ({ id: `${p}${i}`, is_summary: true }))
+    const s = newFakeState({ rows: { gantt_charts: [{ id: 'c1' }], gantt_tasks: many(1000, 't'), gantt_links: many(1000, 'l') } })
+    const out = await tool('get_schedule').run(ctx(s), { project_id: PID }) as {
+      tasks: unknown[]; links: unknown[]; truncated: boolean; links_truncated: boolean
+    }
+    expect(out.tasks).toHaveLength(999)
+    expect(out.links).toHaveLength(999)
+    expect(out.truncated).toBe(true)
+    expect(out.links_truncated).toBe(true)
+    const small = newFakeState({ rows: { gantt_charts: [{ id: 'c1' }], gantt_tasks: many(3, 't'), gantt_links: many(2, 'l') } })
+    const ok = await tool('get_schedule').run(ctx(small), { project_id: PID }) as { truncated: boolean; links_truncated: boolean }
+    expect([ok.truncated, ok.links_truncated]).toEqual([false, false])
+  })
+
+  it('stats description says it takes no arguments and keys by id', () => {
+    expect(tool('stats').description).toMatch(/no arguments/)
+    expect(tool('stats').description).toMatch(/keyed by id/)
+  })
+
   it('list_deliveries returns rows even when the deliveries area is not viewable', async () => {
     const s = newFakeState({ rows: { project_deliveries: [{ id: 'd1' }] } })
     expect(await tool('list_deliveries').run(ctx(s, () => false), {})).toEqual({ rows: [{ id: 'd1' }], truncated: false })
@@ -196,7 +219,7 @@ describe('claude connector tools', () => {
     const ids = Array.from({ length: 400 }, (_, i) => `u${i}`)
     const fake = makeFakeSupabase(newFakeState({ rows: { entries: ids.map((u) => ({ id: u, created_by: u, values: {} })), field_definitions: [] } }))
     const db = { rpc: fake.rpc, from: (t: string) => (t === 'profiles' ? { select: () => chain() } : fake.from(t)) } as unknown as ToolCtx['db']
-    await tool('search_diary').run({ db, canView: async () => true }, { limit: 1000 })
+    await tool('search_diary').run({ db, canView: async () => true }, { limit: 999 })
     expect(sizes.length).toBeGreaterThan(1)
     expect(Math.max(...sizes)).toBeLessThanOrEqual(150)
   })

@@ -50,7 +50,8 @@ function PermissionsDialog({ user, onClose }: { user: AppUser; onClose: () => vo
         {err && <div className="alert">{err}</div>}
         {!overrides ? <Loader label={t('loading')} /> : (
           <div className="perm-grid">
-            {PERM_AREAS.map((a) => (
+            {/* The Claude connector is for managers and admins; a member can never use it. */}
+            {PERM_AREAS.filter((a) => !(a.key === 'claude' && user.role === 'member')).map((a) => (
               <div key={a.key} className="perm-row">
                 <span className="perm-row__label">{lang === 'he' ? a.label : a.label_en}</span>
                 <select

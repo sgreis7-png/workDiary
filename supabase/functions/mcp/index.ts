@@ -29,7 +29,8 @@ const INSTRUCTIONS =
   'A result of { "denied": "<area>" } means the user has no permission for that area in the app — ' +
   'tell them so; it is not an empty result. Text content is mostly Hebrew.'
 
-const REFUSAL: Record<'role' | 'not_enabled', string> = {
+const REFUSAL: Record<'role' | 'not_enabled' | 'no_email_claim', string> = {
+  no_email_claim: 'ההתחברות לא כוללת כתובת דוא"ל — יש להתחבר מחדש ולאשר גישה לכתובת.\nYour login does not include an email address — reconnect and allow email access.',
   role: 'חיבור Claude זמין רק למנהלים ולמנהלי מערכת.\nThe Claude connector is only available to managers and administrators.',
   not_enabled: 'חיבור Claude לא הופעל עבורך. פנה למנהל המערכת.\nClaude connector is not enabled for you. Ask your administrator.',
 }
@@ -41,6 +42,7 @@ const allow = makeLimiter({ capacity: DEFAULT_CAPACITY, refillPerSec: DEFAULT_RE
 type Caller =
   | { kind: 'ok'; userId: string; tools: ToolCtx }
   | { kind: 'refused'; text: string }
+  | { kind: 'unavailable' }
 
 const errorResult = (text: string): ToolCallResult => ({ content: [{ type: 'text', text }], isError: true })
 
@@ -48,6 +50,7 @@ function handlerFor(def: ToolDef) {
   return async (args: unknown, ctx: Ctx): Promise<ToolCallResult> => {
     const caller = ctx.authInfo?.extra?.caller as Caller | undefined
     if (!caller) return errorResult('unauthenticated')
+    if (caller.kind === 'unavailable') return errorResult(UNAVAILABLE)
     if (caller.kind === 'refused') return errorResult(caller.text)
     if (!allow(caller.userId)) return errorResult('rate_limited')
     try {
@@ -101,13 +104,23 @@ function unauthorized(): Response {
   })
 }
 
+const UNAVAILABLE =
+  'השירות אינו זמין זמנית, נסו שוב בעוד דקה\nService temporarily unavailable, try again in a minute'
+
+function unavailable(): Response {
+  return new Response(JSON.stringify({ error: 'unavailable', message: UNAVAILABLE }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json', 'Retry-After': '60' },
+  })
+}
+
 async function callerFor(authorization: string): Promise<Caller | null> {
   const db = createClient(SUPABASE_URL, ANON, {
     global: { headers: { Authorization: authorization } },
     auth: { persistSession: false },
   }) as unknown as GateDb
   try {
-    const g = await gate(db)
+    const g = await gate(db, authorization.replace(/^Bearer\s+/i, ''))
     if (g.ok) {
       const canView = async (area: string) => {
         const { data, error } = await db.rpc('can_view', { p_area: area })
@@ -117,6 +130,7 @@ async function callerFor(authorization: string): Promise<Caller | null> {
       return { kind: 'ok', userId: g.userId, tools: { db, canView } }
     }
     if (g.reason === 'unauthenticated') return null
+    if (g.reason === 'unavailable') return { kind: 'unavailable' }
     return { kind: 'refused', text: REFUSAL[g.reason] }
   } catch (e) {
     // The permission lookup itself failed: say so rather than guess either way.
@@ -127,13 +141,19 @@ async function callerFor(authorization: string): Promise<Caller | null> {
 const routes = new Hono({ strict: false })
 
 routes.get(METADATA_PATH, (c) =>
-  c.json({ resource: RESOURCE, authorization_servers: [`${SUPABASE_URL}/auth/v1`] }))
+  // 'email' matters: the database's is_member()/perm_level() read the e-mail claim of the token.
+  c.json({
+    resource: RESOURCE,
+    authorization_servers: [`${SUPABASE_URL}/auth/v1`],
+    scopes_supported: ['openid', 'email', 'profile'],
+  }))
 
 routes.on(['POST', 'GET'], '/', async (c) => {
   const authorization = c.req.header('Authorization') ?? ''
   if (!/^Bearer\s+\S+/i.test(authorization)) return unauthorized()
   const caller = await callerFor(authorization)
   if (!caller) return unauthorized()
+  if (caller.kind === 'unavailable') return unavailable()
   return mcpHandler(c.req.raw, {
     authInfo: { token: authorization.replace(/^Bearer\s+/i, ''), scopes: [], extra: { caller } },
   })

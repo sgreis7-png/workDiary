@@ -7,12 +7,15 @@ import type { SupabaseLike } from './tools.ts'
 
 export type GateResult =
   | { ok: true; userId: string }
-  | { ok: false; reason: 'unauthenticated' | 'role' | 'not_enabled' }
+  | { ok: false; reason: 'unauthenticated' | 'unavailable' | 'no_email_claim' | 'role' | 'not_enabled' }
 
-/** SupabaseLike plus the one auth call the gate needs. */
+/** SupabaseLike plus the one auth call the gate needs. The token is passed explicitly. */
 export interface GateDb extends SupabaseLike {
   auth: {
-    getUser(): PromiseLike<{ data: { user: { id: string } | null }; error: { message: string } | null }>
+    getUser(jwt?: string): PromiseLike<{
+      data: { user: { id: string } | null }
+      error: { message: string; status?: number; name?: string } | null
+    }>
   }
 }
 
@@ -26,9 +29,28 @@ async function rpcValue(db: SupabaseLike, name: string, args?: Record<string, un
   return data
 }
 
-export async function gate(db: GateDb): Promise<GateResult> {
-  const { data, error } = await db.auth.getUser()
-  if (error || !data.user) return { ok: false, reason: 'unauthenticated' }
+/** Payload of a JWT, decoded without checking the signature (getUser has already validated it). */
+function jwtPayload(jwt: string): Record<string, unknown> {
+  try {
+    const b64 = (jwt.split('.')[1] ?? '').replace(/-/g, '+').replace(/_/g, '/')
+    const bin = atob(b64 + '='.repeat((4 - (b64.length % 4)) % 4))
+    const p = JSON.parse(new TextDecoder().decode(Uint8Array.from(bin, (c) => c.charCodeAt(0))))
+    return p && typeof p === 'object' ? p : {}
+  } catch { return {} }
+}
+
+/** Only a rejected token means "log in again"; a network or 5xx failure is an outage. */
+const isRejectedToken = (e: { status?: number }) => e.status === 401 || e.status === 403
+
+export async function gate(db: GateDb, jwt: string): Promise<GateResult> {
+  const { data, error } = await db.auth.getUser(jwt)
+  if (error) return { ok: false, reason: isRejectedToken(error) ? 'unauthenticated' : 'unavailable' }
+  if (!data.user) return { ok: false, reason: 'unauthenticated' }
+
+  // is_member()/perm_level() read the e-mail claim of this very token; without it every
+  // permission check answers "no" and the person is told they are not enabled for no reason.
+  const email = jwtPayload(jwt).email
+  if (typeof email !== 'string' || !email) return { ok: false, reason: 'no_email_claim' }
 
   const role = await rpcValue(db, 'my_role')
   if (typeof role !== 'string' || !ELIGIBLE_ROLES.includes(role)) return { ok: false, reason: 'role' }

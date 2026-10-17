@@ -6,10 +6,18 @@ import { gate, type GateDb } from './gate.ts'
 // member through, or that read can_view for the wrong area, would quietly hand the connector to
 // the whole field staff — and nothing in the app would show it happened.
 
-type Fake = { user: { id: string } | null; role: string; areas: string[]; calls: { name: string; args?: unknown }[] }
+type AuthErr = { message: string; status?: number; name?: string }
+type Fake = {
+  user: { id: string } | null; role: string; areas: string[]; calls: { name: string; args?: unknown }[]
+  authError: AuthErr
+}
+
+const b64 = (o: unknown) => btoa(JSON.stringify(o)).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+const jwtWith = (claims: Record<string, unknown>) => `${b64({ alg: 'ES256' })}.${b64(claims)}.sig`
+const JWT = jwtWith({ sub: 'u1', email: 'dana@example.com' })
 
 function fakeDb(f: Partial<Fake>): { db: GateDb; calls: Fake['calls'] } {
-  const s: Fake = { user: { id: 'u1' }, role: 'member', areas: [], calls: [], ...f }
+  const s: Fake = { user: { id: 'u1' }, role: 'member', areas: [], calls: [], authError: { message: 'invalid JWT', status: 401 }, ...f }
   const db: GateDb = {
     from() { throw new Error('gate must not read tables') },
     rpc(name, args) {
@@ -20,7 +28,7 @@ function fakeDb(f: Partial<Fake>): { db: GateDb; calls: Fake['calls'] } {
     },
     auth: {
       getUser: () => Promise.resolve(
-        s.user ? { data: { user: s.user }, error: null } : { data: { user: null }, error: { message: 'invalid JWT' } },
+        s.user ? { data: { user: s.user }, error: null } : { data: { user: null }, error: s.authError },
       ),
     },
   }
@@ -30,36 +38,68 @@ function fakeDb(f: Partial<Fake>): { db: GateDb; calls: Fake['calls'] } {
 describe('gate', () => {
   it('no user → unauthenticated, and asks the database nothing', async () => {
     const { db, calls } = fakeDb({ user: null })
-    expect(await gate(db)).toEqual({ ok: false, reason: 'unauthenticated' })
+    expect(await gate(db, JWT)).toEqual({ ok: false, reason: 'unauthenticated' })
     expect(calls).toEqual([])
   })
 
   it('member role → role, even when the claude area is granted', async () => {
     // A stray user_permissions row must not lift a member over the role floor.
     const { db } = fakeDb({ role: 'member', areas: ['claude'] })
-    expect(await gate(db)).toEqual({ ok: false, reason: 'role' })
+    expect(await gate(db, JWT)).toEqual({ ok: false, reason: 'role' })
   })
 
   it('manager without claude → not_enabled', async () => {
     const { db, calls } = fakeDb({ role: 'manager', areas: ['logbook'] })
-    expect(await gate(db)).toEqual({ ok: false, reason: 'not_enabled' })
+    expect(await gate(db, JWT)).toEqual({ ok: false, reason: 'not_enabled' })
     expect(calls).toContainEqual({ name: 'can_view', args: { p_area: 'claude' } })
   })
 
   it('manager with claude → ok with the user id', async () => {
     const { db } = fakeDb({ user: { id: 'mgr-7' }, role: 'manager', areas: ['claude'] })
-    expect(await gate(db)).toEqual({ ok: true, userId: 'mgr-7' })
+    expect(await gate(db, JWT)).toEqual({ ok: true, userId: 'mgr-7' })
   })
 
   it('admin → ok', async () => {
     // perm_level gives admins edit everywhere, so can_view('claude') is true for them.
     const { db } = fakeDb({ user: { id: 'adm-1' }, role: 'admin', areas: ['claude'] })
-    expect(await gate(db)).toEqual({ ok: true, userId: 'adm-1' })
+    expect(await gate(db, JWT)).toEqual({ ok: true, userId: 'adm-1' })
   })
 
   it('a failing permission lookup is an error, never a pass', async () => {
     const { db } = fakeDb({ role: 'manager' })
     db.rpc = () => Promise.resolve({ data: null, error: { message: 'boom' } })
-    await expect(gate(db)).rejects.toThrow('boom')
+    await expect(gate(db, JWT)).rejects.toThrow('boom')
+  })
+
+  it.each([401, 403])('a rejected token (%i) → unauthenticated', async (status) => {
+    const { db } = fakeDb({ user: null, authError: { message: 'bad', status } })
+    expect(await gate(db, JWT)).toEqual({ ok: false, reason: 'unauthenticated' })
+  })
+
+  it.each([
+    ['network failure', { message: 'fetch failed', name: 'AuthRetryableFetchError', status: 0 }],
+    ['5xx', { message: 'upstream', status: 503 }],
+    ['no status at all', { message: 'boom' }],
+  ])('%s → unavailable, not a logout', async (_n, authError) => {
+    const { db, calls } = fakeDb({ user: null, authError })
+    expect(await gate(db, JWT)).toEqual({ ok: false, reason: 'unavailable' })
+    expect(calls).toEqual([])
+  })
+
+  it('passes the bearer token to getUser explicitly', async () => {
+    const { db } = fakeDb({ role: 'admin', areas: ['claude'] })
+    const seen: unknown[] = []
+    const real = db.auth.getUser
+    db.auth.getUser = (j) => { seen.push(j); return real(j) }
+    await gate(db, JWT)
+    expect(seen).toEqual([JWT])
+  })
+
+  it('a token without an email claim → no_email_claim, before any permission lookup', async () => {
+    for (const jwt of [jwtWith({ sub: 'u1' }), jwtWith({ sub: 'u1', email: '' }), 'garbage']) {
+      const { db, calls } = fakeDb({ role: 'admin', areas: ['claude'] })
+      expect(await gate(db, jwt)).toEqual({ ok: false, reason: 'no_email_claim' })
+      expect(calls).toEqual([])
+    }
   })
 })

@@ -30,7 +30,8 @@ export interface ToolDef {
 }
 
 /** Tools fetch limit + 1 rows; the extra row is only a "there was more" signal. A report that
- *  silently under-counts is worse than one that says it was cut. */
+ *  silently under-counts is worse than one that says it was cut. PostgREST caps a response at
+ *  max_rows = 1000, so LIMIT stops at 999: limit + 1 must still fit or the signal is lost. */
 export function page<T>(rows: T[], limit: number): { rows: T[]; truncated: boolean } {
   return { rows: rows.slice(0, limit), truncated: rows.length > limit }
 }
@@ -38,7 +39,7 @@ export function page<T>(rows: T[], limit: number): { rows: T[]; truncated: boole
 // ---------- shared argument shapes ----------
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'expected YYYY-MM-DD')
 const UUID = z.string().uuid()
-const LIMIT = z.number().int().min(1).max(1000).default(200)
+const LIMIT = z.number().int().min(1).max(999).default(200)
 const TEXT = z.string().min(1).max(200)
 
 // ---------- query plumbing ----------
@@ -104,7 +105,7 @@ function defineTool<S extends z.ZodRawShape>(o: {
 }
 
 const DATES = 'Dates are YYYY-MM-DD. '
-const LIST = 'Returns { rows, truncated }; truncated is true when more rows exist than limit (default 200, max 1000). '
+const LIST = 'Returns { rows, truncated }; truncated is true when more rows exist than limit (default 200, max 999). '
 
 // ---------- tools ----------
 
@@ -296,18 +297,19 @@ const list_safety_forms = defineTool({
 const get_schedule = defineTool({
   name: 'get_schedule',
   description:
-    'The active Gantt schedule of a project. Args: project_id, limit? (tasks, default 1000). ' +
-    'Returns { chart, tasks, links, truncated }. Task: wbs, name, start_ts, finish_ts, base_start_ts, base_finish_ts, pct, milestone, is_summary, critical, overdue (finish before today, pct < 100, not a summary). ' + DATES,
+    'The active Gantt schedule of a project. Args: project_id, limit? (applies to tasks and to links separately, default 999, max 999). ' +
+    'Returns { chart, tasks, links, truncated, links_truncated } (each flag is true when that list was cut at limit). Task: wbs, name, start_ts, finish_ts, base_start_ts, base_finish_ts, pct, milestone, is_summary, critical, overdue (finish before today, pct < 100, not a summary). ' + DATES,
   gate: 'gantt_tasks',
-  shape: { project_id: UUID, limit: LIMIT.default(1000) },
+  shape: { project_id: UUID, limit: LIMIT.default(999) },
   async body(ctx, a) {
     const { data: charts } = await run(ctx.db.from('gantt_charts').select(cols('gantt_charts'))
       .eq('project_id', a.project_id).eq('active', true).order('imported_at', { ascending: false }).limit(1))
     const chart = charts[0]
-    if (!chart) return { chart: null, tasks: [], links: [], truncated: false }
+    if (!chart) return { chart: null, tasks: [], links: [], truncated: false, links_truncated: false }
     const { rows, truncated } = page((await run(ctx.db.from('gantt_tasks').select(cols('gantt_tasks'))
       .eq('chart_id', chart.id).order('sort_order').limit(a.limit + 1))).data, a.limit)
-    const { data: links } = await run(ctx.db.from('gantt_links').select(cols('gantt_links')).eq('chart_id', chart.id))
+    const { rows: links, truncated: links_truncated } = page((await run(ctx.db.from('gantt_links').select(cols('gantt_links'))
+      .eq('chart_id', chart.id).order('id').limit(a.limit + 1))).data, a.limit)
     const today = todayIL()
     return {
       chart,
@@ -317,6 +319,7 @@ const get_schedule = defineTool({
       })),
       links,
       truncated,
+      links_truncated,
     }
   },
 })
@@ -341,13 +344,13 @@ const traffic_light = defineTool({
   name: 'traffic_light',
   description:
     'Traffic-light status per active project (the app function traffic_light). Args: project_id? (omit for all). ' +
-    'Returns an array; each item: project_id, name, manager, color (overall), gray_reason, axes { time, supply, client, crew, issues } each with color and reason, due, last_entry_on, action_line. ' + DATES,
+    'Returns { rows }; each row: project_id, name, manager, color (overall), gray_reason, axes { time, supply, client, crew, issues } each with color and reason, due, last_entry_on, action_line. ' + DATES,
   area: 'traffic_light',
   shape: { project_id: UUID.optional() },
   async body(ctx, a) {
     const r = await ctx.db.rpc('traffic_light', a.project_id ? { p_project: a.project_id } : {})
     if (r.error) throw new Error(r.error.message)
-    return r.data
+    return { rows: r.data ?? [] }
   },
 })
 
@@ -387,8 +390,8 @@ const list_handovers = defineTool({
 const stats = defineTool({
   name: 'stats',
   description:
-    'Diary statistics (the app function dashboard_stats, which takes no arguments). Args: none. ' +
-    'Returns { total, this_week, this_month, total_photos, unsent, malfunctions_this_month, by_project, latest_by_project, by_worker, by_weather }. ' + DATES,
+    'Diary statistics (the app function dashboard_stats). Takes no arguments: always whole-organisation figures. ' +
+    'Returns { total, this_week, this_month, total_photos, unsent, malfunctions_this_month, by_project, latest_by_project, by_worker, by_weather }. by_project and by_worker are keyed by id (project id / user id), not by name; resolve names with list_projects / list_people. ' + DATES,
   area: 'dashboard',
   shape: {},
   async body(ctx) {

@@ -137,7 +137,7 @@ export const READ: Record<string, { area: PermArea | null; columns: string[] }> 
     area: null,
     columns: [
       'id', 'project_id', 'item', 'wbs_template_id', 'need_date', 'status', 'eta', 'notes',
-      'updated_at', 'updated_by',
+      'updated_at',
     ],
   },
 
