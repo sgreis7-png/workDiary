@@ -7,7 +7,9 @@
 //
 // Deno-safe: imports only zod and ./allowlist (Task 5 maps 'zod' to npm:zod in deno.json).
 import { z } from 'zod'
-import { READ, cols, scrubEntryValues, scrubDeep, type PermArea } from './allowlist'
+import {
+  READ, cols, scrubEntryValues, scrubDeep, DENIED_COLUMN, PRIVATE_FIELD_TYPES, PRIVATE_LABEL, type PermArea,
+} from './allowlist'
 
 /** The slice of the supabase-js client the tools use. Builders are loosely typed on purpose:
  *  the fake in tests and the real PostgREST builder share only the chained method names. */
@@ -52,11 +54,25 @@ async function run(b: Builder): Promise<{ data: Record<string, unknown>[]; count
 /** ilike pattern from user text; % and _ are wildcards, and , ( ) break PostgREST or-filters. */
 const like = (t: string) => `%${t.replace(/[%_\\,()*"]/g, ' ').trim()}%`
 
+const CHUNK = 150
+
+/** `select ... where col in (ids)`, in chunks: 1000 uuids in one GET is ~40 KB of URL and gets a 414. */
+async function selectIn(
+  ctx: ToolCtx, table: string, col: string, ids: unknown[],
+  // deno-lint-ignore no-explicit-any
+  refine: (q: any) => any = (q) => q,
+): Promise<Record<string, unknown>[]> {
+  const uniq = [...new Set(ids.filter((x) => x != null))]
+  const out: Record<string, unknown>[] = []
+  for (let i = 0; i < uniq.length; i += CHUNK) {
+    out.push(...(await run(refine(ctx.db.from(table).select(cols(table)).in(col, uniq.slice(i, i + CHUNK))))).data)
+  }
+  return out
+}
+
 /** Display names for user ids in one lookup. Unknown ids simply have no name. */
 async function namesOf(ctx: ToolCtx, ids: unknown[]): Promise<Map<string, string>> {
-  const uniq = [...new Set(ids.filter((x): x is string => typeof x === 'string'))]
-  if (!uniq.length) return new Map()
-  const { data } = await run(ctx.db.from('profiles').select(cols('profiles')).in('id', uniq))
+  const data = await selectIn(ctx, 'profiles', 'id', ids.filter((x) => typeof x === 'string'))
   return new Map(data.map((p) => [String(p.id), String(p.name ?? '')]))
 }
 
@@ -96,7 +112,7 @@ const list_projects = defineTool({
   name: 'list_projects',
   description:
     'List projects. Args: active? (boolean), text? (name contains), limit?. ' + LIST +
-    'Each row: id, name, location, active, start_date, end_date, pmo, priority, project_type, budget, manager_names (string[]). ' + DATES,
+    'Each row: id, name, active, created_at, location, budget, pmo, start_date, end_date, staff, notes, priority, contract_due_date, project_type, manager_names (string[]). ' + DATES,
   shape: { active: z.boolean().optional(), text: TEXT.optional(), limit: LIMIT },
   async body(ctx, a) {
     let q = ctx.db.from('projects').select(cols('projects')).order('name')
@@ -104,9 +120,7 @@ const list_projects = defineTool({
     if (a.text) q = q.ilike('name', like(a.text))
     const { rows, truncated } = page((await run(q.limit(a.limit + 1))).data, a.limit)
     const ids = rows.map((r) => r.id)
-    const { data: asg } = ids.length
-      ? await run(ctx.db.from('project_assignments').select(cols('project_assignments')).in('project_id', ids))
-      : { data: [] }
+    const asg = await selectIn(ctx, 'project_assignments', 'project_id', ids)
     const names = await namesOf(ctx, asg.map((x) => x.user_id))
     return {
       rows: rows.map((r) => ({
@@ -122,7 +136,7 @@ const get_project = defineTool({
   name: 'get_project',
   description:
     'One project with counts. Args: project_id. Returns { project, counts: { entries, open_issues, open_defects, safety_forms, handovers }, traffic_light_color }. ' +
-    'A count or color is null when the caller may not view that area (see denied_areas). ' + DATES,
+    'Returns { project (all project columns, or null if not found), counts, traffic_light_color, denied_areas (string[] of areas the caller may not view; their counts/color are null) }. ' + DATES,
   shape: { project_id: UUID },
   async body(ctx, a) {
     const { data } = await run(ctx.db.from('projects').select(cols('projects')).eq('id', a.project_id))
@@ -130,9 +144,10 @@ const get_project = defineTool({
     const denied: string[] = []
     // deno-lint-ignore no-explicit-any
     const count = async (table: string, f: (q: any) => any): Promise<number | null> => {
+      const list = cols(table) // throws for a table that is not on the allowlist
       const area = READ[table].area
       if (area && !(await ctx.canView(area))) { denied.push(area); return null }
-      return (await run(f(ctx.db.from(table).select('id', { count: 'exact', head: true })))).count
+      return (await run(f(ctx.db.from(table).select(list, { count: 'exact', head: true })))).count
     }
     const entries = await count('entries', (q) => q.eq('project_id', a.project_id))
     const open_issues = await count('issues', (q) => q.eq('project_id', a.project_id).is('closed_on', null))
@@ -140,11 +155,11 @@ const get_project = defineTool({
     const handovers = await count('handover_forms', (q) => q.eq('project_id', a.project_id))
     let open_defects: number | null = null
     if (await ctx.canView('defects')) {
-      const { data: coops } = await run(ctx.db.from('coops').select('id').eq('project_id', a.project_id))
-      open_defects = coops.length
-        ? (await run(ctx.db.from('coop_defects').select('id', { count: 'exact', head: true })
-            .in('coop_id', coops.map((c) => c.id)).eq('status', 'open'))).count
-        : 0
+      const { data: coops } = await run(ctx.db.from('coops').select(cols('coops')).eq('project_id', a.project_id))
+      open_defects = 0
+      for (let i = 0; i < coops.length; i += CHUNK) {
+        open_defects += (await count('coop_defects', (q) => q.in('coop_id', coops.slice(i, i + CHUNK).map((c) => c.id)).eq('status', 'open'))) ?? 0
+      }
     } else denied.push('defects')
     let color: unknown = null
     if (await ctx.canView('traffic_light')) {
@@ -177,7 +192,10 @@ const search_diary = defineTool({
     if (a.text) {
       // `values` is jsonb, so a text search needs a key per field: OR over the free-text fields.
       const t = like(a.text).replace(/%/g, '*')
-      const keys = defs.filter((d) => d.type === 'text' || d.type === 'long_text').map((d) => String(d.key)).filter((k) => /^\w+$/.test(k))
+      const keys = defs
+        .filter((d) => (d.type === 'text' || d.type === 'long_text') && !PRIVATE_FIELD_TYPES.includes(String(d.type)))
+        .map((d) => String(d.key))
+        .filter((k) => /^\w+$/.test(k) && !DENIED_COLUMN.test(k))
       if (!keys.length) return { rows: [], truncated: false }
       q = q.or(keys.map((k) => `values->>${k}.ilike.${t}`).join(','))
     }
@@ -195,7 +213,12 @@ const search_diary = defineTool({
         // Scrub BEFORE labelling: a phone answer must be dropped by its key/type, not its label.
         const clean = scrubEntryValues((r.values ?? {}) as Record<string, unknown>, typeByKey)
         const values: Record<string, unknown> = {}
-        for (const [k, v] of Object.entries(clean)) values[Object.prototype.hasOwnProperty.call(labelByKey, k) ? labelByKey[k] : k] = v
+        for (const [k, v] of Object.entries(clean)) {
+          let name = Object.prototype.hasOwnProperty.call(labelByKey, k) ? labelByKey[k] : k
+          // Two fields can share a label; the second must not overwrite the first answer.
+          if (name in values) name = `${name} (${k})`
+          values[name] = v
+        }
         const photos = (r.entry_photos as { count?: number }[] | undefined)?.[0]?.count ?? 0
         const { entry_photos: _p, created_by, ...rest } = r
         return { ...rest, author: authors.get(String(created_by)) ?? null, photos, values }
@@ -208,13 +231,14 @@ const search_diary = defineTool({
 const list_issues = defineTool({
   name: 'list_issues',
   description:
-    'Issues / unplanned events. Args: project_id?, status? (open|closed), from?, to? (opened_on range), limit?. ' + LIST +
-    'Each row: id, project_id, seq, opened_on, description, owner_kind, due_date, blocking, systemic, closed_on, closure_note, created_by (id). Open means closed_on is null. ' + DATES,
+    'Issues / unplanned events. Args: project_id?, status? (open|closed), from?, to? (opened_on range), text? (description contains), limit?. ' + LIST +
+    'Each row: id, project_id, seq, entry_id, wbs_template_id, created_at, opened_on, description, owner_kind, due_date, blocking, systemic, closed_on, closure_note, created_by (id). Open means closed_on is null. ' + DATES,
   gate: 'issues', // area null: RLS (0067) decides, it also admits deliveries editors and the issue owner
-  shape: { project_id: UUID.optional(), status: z.enum(['open', 'closed']).optional(), from: DATE.optional(), to: DATE.optional(), limit: LIMIT },
+  shape: { project_id: UUID.optional(), status: z.enum(['open', 'closed']).optional(), from: DATE.optional(), to: DATE.optional(), text: TEXT.optional(), limit: LIMIT },
   async body(ctx, a) {
     let q = ctx.db.from('issues').select(cols('issues'))
     if (a.project_id) q = q.eq('project_id', a.project_id)
+    if (a.text) q = q.ilike('description', like(a.text))
     if (a.status === 'open') q = q.is('closed_on', null)
     if (a.status === 'closed') q = q.not('closed_on', 'is', null)
     if (a.from) q = q.gte('opened_on', a.from)
@@ -226,15 +250,30 @@ const list_issues = defineTool({
 const list_defects = defineTool({
   name: 'list_defects',
   description:
-    'Coop defects (the gate checklists). Args: coop_id?, status? (open|closed), limit?. ' + LIST +
-    'Each row: id, coop_id, seq, gate, item_no, description, severity, assignee, due_date, status, closed_on, closure_note, created_at. ' + DATES,
+    'Coop defects (the gate checklists). Args: project_id? (all coops of the project), coop_id?, status? (open|closed), limit?. ' + LIST +
+    'Each row: id, coop_id, coop_name, seq, gate, item_no, description, severity, assignee, due_date, status, closed_on, closure_note, created_at. ' + DATES,
   gate: 'coop_defects',
-  shape: { coop_id: UUID.optional(), status: z.enum(['open', 'closed']).optional(), limit: LIMIT },
+  shape: { project_id: UUID.optional(), coop_id: UUID.optional(), status: z.enum(['open', 'closed']).optional(), limit: LIMIT },
   async body(ctx, a) {
-    let q = ctx.db.from('coop_defects').select(cols('coop_defects'))
-    if (a.coop_id) q = q.eq('coop_id', a.coop_id)
-    if (a.status) q = q.eq('status', a.status)
-    return page((await run(q.order('created_at', { ascending: false }).limit(a.limit + 1))).data, a.limit)
+    // deno-lint-ignore no-explicit-any
+    const refine = (q: any) => {
+      if (a.coop_id) q = q.eq('coop_id', a.coop_id)
+      if (a.status) q = q.eq('status', a.status)
+      return q.order('created_at', { ascending: false }).limit(a.limit + 1)
+    }
+    let found: Record<string, unknown>[]
+    if (a.project_id) {
+      const { data: coops } = await run(ctx.db.from('coops').select(cols('coops')).eq('project_id', a.project_id))
+      // Each chunk returns its newest limit+1 rows, so the merged newest limit+1 is exact.
+      found = (await selectIn(ctx, 'coop_defects', 'coop_id', coops.map((c) => c.id), refine))
+        .sort((x, y) => String(y.created_at).localeCompare(String(x.created_at)))
+    } else {
+      found = (await run(refine(ctx.db.from('coop_defects').select(cols('coop_defects'))))).data
+    }
+    const { rows, truncated } = page(found, a.limit)
+    const coops = await selectIn(ctx, 'coops', 'id', rows.map((r) => r.coop_id))
+    const nameOf = new Map(coops.map((c) => [String(c.id), c.name]))
+    return { rows: rows.map((r) => ({ ...r, coop_name: nameOf.get(String(r.coop_id)) ?? null })), truncated }
   },
 })
 
@@ -287,9 +326,8 @@ const list_deliveries = defineTool({
   description:
     'Supply deliveries per project. Args: project_id?, status? (not_ordered|ordered|shipped|on_site), limit?. ' + LIST +
     'Each row: id, project_id, item, need_date, status, eta, notes, updated_at. ' + DATES,
-  // project_deliveries is area null in the allowlist (RLS decides), but the spec names the
-  // deliveries area, so check it up front rather than return a list the app would hide.
-  area: 'deliveries',
+  // area null: the 'deliveries' perm gates editing, every member may read (RLS decides).
+  gate: 'project_deliveries',
   shape: { project_id: UUID.optional(), status: z.enum(['not_ordered', 'ordered', 'shipped', 'on_site']).optional(), limit: LIMIT },
   async body(ctx, a) {
     let q = ctx.db.from('project_deliveries').select(cols('project_deliveries'))
@@ -331,6 +369,10 @@ const list_handovers = defineTool({
         ...r,
         // signed_at is set together with the signature (0078), so it answers "signed?" without the image.
         signed: r.signed_at != null,
+        // User-defined fields can be a phone or e-mail box; drop those by label (values are masked anyway).
+        extra_fields: Array.isArray(r.extra_fields)
+          ? (r.extra_fields as { label?: unknown }[]).filter((f) => !PRIVATE_LABEL.test(String(f?.label ?? '')))
+          : r.extra_fields,
         systems: ((r.systems ?? []) as { label?: string; status?: string | null; note?: string | null }[]).map((s) => ({
           label: s.label ?? '',
           status: s.status === 'ok' || s.status === 'bad' || s.status === 'na' ? s.status : null,

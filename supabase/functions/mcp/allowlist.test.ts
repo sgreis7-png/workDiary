@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { READ, DENIED_TABLES, DENIED_COLUMN, cols, scrubEntryValues, scrubDeep } from './allowlist'
+import { READ, DENIED_TABLES, DENIED_COLUMN, cols, scrubEntryValues, scrubDeep, maskContacts, MASKED } from './allowlist'
 
 // A leaked phone number, e-mail address, signature or chat line reaches a third-party model and
 // cannot be recalled, so these tests guard the allowlist rather than any one tool.
@@ -68,5 +68,28 @@ describe('claude connector read allowlist', () => {
 
   it('issues area defers to RLS', () => {
     expect(READ.issues.area).toBeNull()
+  })
+})
+
+
+describe('contact masking in free text', () => {
+  it.each([
+    '050-1234567', '0501234567', '03-1234567', '+972 50 123 4567', '972501234567', '050 123 4567', '(03) 123-4567',
+  ])('masks phone %s', (n) => {
+    expect(maskContacts(`call ${n} today`)).toBe(`call ${MASKED} today`)
+  })
+
+  it('masks e-mail addresses', () => {
+    expect(maskContacts('write dana.k+x@agro-top.co.il now')).toBe(`write ${MASKED} now`)
+  })
+
+  it.each([
+    '2026-10-17', '2026-10-17T10:00:00Z', '8a1f2d3e-0501-4234-8567-000000000001', '12345678', '1,250,000', '123456789',
+  ])('leaves %s alone', (v) => {
+    expect(maskContacts(v)).toBe(v)
+  })
+
+  it('scrubDeep masks strings at any depth and keeps non-strings', () => {
+    expect(scrubDeep({ a: [{ n: 'x 0501234567', k: 5, d: '2026-10-17' }] })).toEqual({ a: [{ n: `x ${MASKED}`, k: 5, d: '2026-10-17' }] })
   })
 })

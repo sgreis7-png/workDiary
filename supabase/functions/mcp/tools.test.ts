@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { TOOLS, page, type ToolCtx } from './tools'
+import { READ } from './allowlist'
 import { newFakeState, makeFakeSupabase, type FakeState } from '../../../src/test/fakeSupabase'
 
 // A tool result goes straight to a third-party model, so these tests pin the two things that are
@@ -131,5 +132,87 @@ describe('claude connector tools', () => {
     })
     const out = await tool('get_schedule').run(ctx(s), { project_id: PID }) as { tasks: { overdue: boolean }[] }
     expect(out.tasks.map((t) => t.overdue)).toEqual([true, false])
+  })
+  it('list_deliveries returns rows even when the deliveries area is not viewable', async () => {
+    const s = newFakeState({ rows: { project_deliveries: [{ id: 'd1' }] } })
+    expect(await tool('list_deliveries').run(ctx(s, () => false), {})).toEqual({ rows: [{ id: 'd1' }], truncated: false })
+  })
+
+  it('get_project only touches allowlisted tables', async () => {
+    const s = newFakeState({ rows: { projects: [{ id: PID }], coops: [{ id: 'c1' }] }, rpcRows: { traffic_light: [{ color: 'green' }] } })
+    const fake = makeFakeSupabase(s)
+    const touched: string[] = []
+    const db = { from: (t: string) => { touched.push(t); return fake.from(t) }, rpc: fake.rpc } as unknown as ToolCtx['db']
+    const out = await tool('get_project').run({ db, canView: async () => true }, { project_id: PID }) as { traffic_light_color: string }
+    expect(out.traffic_light_color).toBe('green')
+    expect(touched.length).toBeGreaterThan(3)
+    for (const t of touched) expect(Object.keys(READ), t).toContain(t)
+  })
+
+  it('list_defects scopes to a project through its coops and names the coop', async () => {
+    const s = newFakeState({ rows: { coops: [{ id: 'c1', name: 'לול 1' }], coop_defects: [{ id: 'd1', coop_id: 'c1', created_at: '2026-01-01' }] } })
+    const out = await tool('list_defects').run(ctx(s), { project_id: PID }) as { rows: Record<string, unknown>[] }
+    expect(out.rows).toEqual([{ id: 'd1', coop_id: 'c1', created_at: '2026-01-01', coop_name: 'לול 1' }])
+  })
+
+  it('list_defects for a project with no coops is empty, not a table scan', async () => {
+    const s = newFakeState({ rows: { coops: [], coop_defects: [{ id: 'dX' }] } })
+    expect(await tool('list_defects').run(ctx(s), { project_id: PID })).toEqual({ rows: [], truncated: false })
+  })
+
+  it('diary text search ignores phone-typed and denied-name fields', async () => {
+    const s = newFakeState({ rows: { entries: [], field_definitions: [
+      { key: 'notes', type: 'text' }, { key: 'ph', type: 'phone' }, { key: 'contact_phone', type: 'text' }, { key: 'email', type: 'long_text' },
+    ] } })
+    const seen: string[] = []
+    const fake = makeFakeSupabase(s)
+    const db = { rpc: fake.rpc, from: (t: string) => {
+      const b = fake.from(t).select() as unknown as { or: (x: string) => unknown }
+      const real = b.or
+      b.or = (x: string) => { seen.push(x); return real(x) }
+      return { select: () => b }
+    } } as unknown as ToolCtx['db']
+    await tool('search_diary').run({ db, canView: async () => true }, { text: 'x' })
+    expect(seen.join()).toContain('values->>notes')
+    expect(seen.join()).not.toMatch(/ph\b|contact_phone|email/)
+  })
+
+  it('two fields with the same label keep both answers', async () => {
+    const s = newFakeState({ rows: {
+      entries: [{ id: 'e1', created_by: 'u', values: { a: '1', b: '2' } }],
+      field_definitions: [{ key: 'a', label_he: 'שם', type: 'text' }, { key: 'b', label_he: 'שם', type: 'text' }],
+      profiles: [],
+    } })
+    const out = await tool('search_diary').run(ctx(s), {}) as { rows: { values: unknown }[] }
+    expect(out.rows[0].values).toEqual({ 'שם': '1', 'שם (b)': '2' })
+  })
+
+  it('in() filters are chunked so 1000 ids never make one huge URL', async () => {
+    const sizes: number[] = []
+    const chain = (): unknown => {
+      const p = Promise.resolve({ data: [], error: null })
+      return new Proxy(p, { get: (t, k) => (k === 'in' ? (_c: string, ids: unknown[]) => { sizes.push(ids.length); return chain() } : k === 'then' ? t.then.bind(t) : () => chain()) })
+    }
+    const ids = Array.from({ length: 400 }, (_, i) => `u${i}`)
+    const fake = makeFakeSupabase(newFakeState({ rows: { entries: ids.map((u) => ({ id: u, created_by: u, values: {} })), field_definitions: [] } }))
+    const db = { rpc: fake.rpc, from: (t: string) => (t === 'profiles' ? { select: () => chain() } : fake.from(t)) } as unknown as ToolCtx['db']
+    await tool('search_diary').run({ db, canView: async () => true }, { limit: 1000 })
+    expect(sizes.length).toBeGreaterThan(1)
+    expect(Math.max(...sizes)).toBeLessThanOrEqual(150)
+  })
+
+  it('list_issues accepts a text filter', async () => {
+    const s = newFakeState({ rows: { issues: [{ id: 'i1' }] } })
+    expect(await tool('list_issues').run(ctx(s), { text: 'גג' })).toEqual({ rows: [{ id: 'i1' }], truncated: false })
+  })
+
+  it('handover extra fields named after a phone or e-mail are dropped, contacts in notes are masked', async () => {
+    const s = newFakeState({ rows: { handover_forms: [{
+      id: 'h1', signed_at: null, systems: [], notes: 'התקשר 050-1234567 או a@b.co',
+      extra_fields: [{ label: 'טלפון מנהל', value: 'x' }, { label: 'דוא"ל', value: 'y' }, { label: 'הערת אתר', value: 'ok' }],
+    }] } })
+    const out = await tool('list_handovers').run(ctx(s), {}) as { rows: { extra_fields: unknown[]; notes: string }[] }
+    expect(out.rows[0].extra_fields).toEqual([{ label: 'הערת אתר', value: 'ok' }])
+    expect(out.rows[0].notes).toBe('התקשר [הוסר] או [הוסר]')
   })
 })

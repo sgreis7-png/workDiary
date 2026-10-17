@@ -218,8 +218,27 @@ export function scrubEntryValues(
   return out
 }
 
-/** Recursively remove object keys matching DENIED_COLUMN at any depth (for rpc output). */
+/** Replacement for a contact detail found inside free text. */
+export const MASKED = '[הוסר]'
+
+const EMAIL = /[\w.+-]+@[\w-]+(?:\.[\w-]+)+/g
+// Israeli mobile/landline: 0 or +972/972 prefix, 1-2 digit area/operator code, 3 + 4 digits, optional
+// space/dash separators. Lookarounds keep it off longer digit runs, uuids, dates and ISO timestamps.
+const PHONE = /(?<![\w-])\(?(?:\+?972[\s-]?|0)\(?\d{1,2}\)?[\s-]?\d{3}[\s-]?\d{4}(?!\d)/g
+
+/** Free text can hold a phone number or e-mail the form never flagged as private (a note, an
+ *  "extra field", a diary answer). Replace them; the rest of the sentence is kept. */
+export function maskContacts(s: string): string {
+  return s.replace(EMAIL, MASKED).replace(PHONE, MASKED)
+}
+
+/** Labels of user-defined handover/diary fields that name a contact detail. */
+export const PRIVATE_LABEL = /טלפון|נייד|פלאפון|מייל|אימייל|דוא"ל|דוא״ל|phone|mobile|e-?mail/i
+
+/** Recursively remove object keys matching DENIED_COLUMN at any depth and mask contact details in
+ *  every string (for tool output, rpc output included). */
 export function scrubDeep<T>(v: T): T {
+  if (typeof v === 'string') return maskContacts(v) as unknown as T
   if (Array.isArray(v)) return v.map((x) => scrubDeep(x)) as unknown as T
   if (v && typeof v === 'object') {
     const out: Record<string, unknown> = {}
