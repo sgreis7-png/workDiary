@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest'
-import { READ, DENIED_TABLES, DENIED_COLUMN, cols } from './allowlist'
+import { READ, DENIED_TABLES, DENIED_COLUMN, cols, scrubEntryValues, scrubDeep } from './allowlist'
 
 // A leaked phone number, e-mail address, signature or chat line reaches a third-party model and
 // cannot be recalled, so these tests guard the allowlist rather than any one tool.
@@ -46,5 +46,27 @@ describe('claude connector read allowlist', () => {
   it('cols rejects unknown tables', () => {
     expect(() => cols('user_messages')).toThrow()
     expect(() => cols('constructor')).toThrow()
+  })
+
+  it('scrubEntryValues drops phone-typed and denied-name keys, keeps the rest', () => {
+    const out = scrubEntryValues(
+      { site_phone: '050', mobile: '052', photo1: 'p.jpg', note: 'ok', contact_phone: '1', odd: 2 },
+      { mobile: 'phone', photo1: 'photo', note: 'text' },
+    )
+    expect(out).toEqual({ note: 'ok', odd: 2 })
+  })
+
+  it('DENIED_COLUMN also matches plural emails', () => {
+    expect(DENIED_COLUMN.test('extra_report_emails')).toBe(true)
+    expect(DENIED_COLUMN.test('email')).toBe(true)
+  })
+
+  it('scrubDeep removes denied keys at any depth, including inside arrays', () => {
+    const out = scrubDeep({ a: 1, issues: [{ id: 1, owner_email: 'x@y' }], n: { phone: '1', ok: 2 } })
+    expect(out).toEqual({ a: 1, issues: [{ id: 1 }], n: { ok: 2 } })
+  })
+
+  it('issues area defers to RLS', () => {
+    expect(READ.issues.area).toBeNull()
   })
 })
