@@ -48,13 +48,18 @@ export function newFakeState(overrides: Partial<FakeState> = {}): FakeState {
  * returning undefined, so an untested call path is obvious.
  */
 export function makeFakeSupabase(s: FakeState) {
-  const result = (table: string) => ({ data: s.rows[table] ?? [], error: s.fail[table] ?? null })
+  const result = (table: string) => ({
+    data: s.rows[table] ?? [], error: s.fail[table] ?? null, count: (s.rows[table] ?? []).length,
+  })
 
   const thenable = (table: string) => {
     const p = Promise.resolve(result(table))
     return Object.assign(p, {
       eq: () => thenable(table),
       in: () => thenable(table),
+      is: () => thenable(table),
+      not: () => thenable(table),
+      or: () => thenable(table),
       ilike: () => thenable(table),
       gte: () => thenable(table),
       lte: () => thenable(table),
